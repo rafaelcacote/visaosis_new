@@ -1,0 +1,186 @@
+/* Estilos para botões principais */
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.btn-lg i {
+    font-size: 18px !important;
+    vertical-align: middle;
+}
+
+.btn-primary.btn-lg,
+.btn-outline-secondary.btn-lg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Estilos para botões de filtro */
+.user-filters .btn-lg {
+    white-space: nowrap;
+    min-width: 0;
+}
+
+@media (max-width: 767.98px) {
+    .user-filters .d-flex {
+        flex-direction: column;
+    }
+    
+    .user-filters .btn-lg {
+        width: 100%;
+    }
+}
+
+/* Tags de localização (pill azul - estilo Loja 2) */
+.locations-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border: none;
+}
+
+.tag i {
+    font-size: 1rem;
+}
+
+.tag-location {
+    background-color: #e0f0ff;
+    color: #1d7dd6;
+}
+
+.tag-location i {
+    color: #1d7dd6;
+}
+
+/* Tags de status (pill verde Ativo / vermelho Inativo) */
+.tag-status {
+    padding: 0.35rem 0.75rem;
+}
+
+.tag-status-ativo {
+    background-color: #e6ffe6;
+    color: #16a34a;
+}
+
+.tag-status-ativo i {
+    color: #16a34a;
+}
+
+.tag-status-inativo {
+    background-color: #ffe6e6;
+    color: #dc2626;
+}
+
+.tag-status-inativo i {
+    color: #dc2626;
+}
+
+.timestamp-cell {
+    color: #6b7280 !important;
+    font-size: 0.875rem;
+}
+
+/* Botões de ação (quadrados arredondados com fundo colorido) */
+.actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-action {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    padding: 0;
+}
+
+.btn-action i {
+    font-size: 1rem;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.btn-action:active {
+    transform: translateY(0);
+}
+
+.btn-action-view {
+    background-color: #e0f0ff;
+    color: #1d7dd6;
+}
+
+.btn-action-view:hover {
+    background-color: #1d7dd6;
+    color: #fff;
+}
+
+.btn-action-edit {
+    background-color: #fff8e6;
+    color: #d97706;
+}
+
+.btn-action-edit:hover {
+    background-color: #d97706;
+    color: #fff;
+}
+
+.btn-action-password,
+.btn-action-delete {
+    background-color: #ffe6e6;
+    color: #dc2626;
+}
+
+.btn-action-password:hover,
+.btn-action-delete:hover {
+    background-color: #dc2626;
+    color: #fff;
+}
+
+.btn-action-status-ativar {
+    background-color: #e6ffe6;
+    color: #16a34a;
+}
+
+.btn-action-status-ativar:hover {
+    background-color: #16a34a;
+    color: #fff;
+}
+
+.btn-action-status-desativar {
+    background-color: #fff8e6;
+    color: #d97706;
+}
+
+.btn-action-status-desativar:hover {
+    background-color: #d97706;
+    color: #fff;
+}
+
+.actions form {
+    margin: 0;
+    display: inline-block;
+}

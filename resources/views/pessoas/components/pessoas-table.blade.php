@@ -1,0 +1,53 @@
+<!-- Lista de pacientes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                @if($pessoas->isEmpty())
+                    <div class="text-center py-5">
+                        <i class="mdi mdi-account-off text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 text-muted">Nenhum paciente encontrado</h5>
+                        <p class="text-muted">
+                            Comece cadastrando um novo paciente ou ajuste os filtros de busca.
+                        </p>
+                        @if(!empty($search))
+                            <a href="{{ route('pessoas.index') }}" class="btn btn-outline-primary mt-3">
+                                <i class="mdi mdi-arrow-left me-2"></i>
+                                Voltar à lista completa
+                            </a>
+                        @else
+                            <a href="{{ route('pessoas.create') }}" class="btn btn-primary mt-3">
+                                <i class="mdi mdi-plus me-2"></i>
+                                Cadastrar Paciente
+                            </a>
+                        @endif
+                    </div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>CPF</th>
+                                    <th>Contato</th>
+                                    <th>Status</th>
+                                    <th width="200">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($pessoas as $pessoa)
+                                    @include('pessoas.components.pessoa-table-row', ['pessoa' => $pessoa])
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3">
+                        {{ $pessoas->appends(request()->query())->links() }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+

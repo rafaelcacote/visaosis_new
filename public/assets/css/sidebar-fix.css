@@ -1,0 +1,23 @@
+/* Fix para dropdown da sidebar - garante que o collapse funcione corretamente */
+
+/* Garante que o collapse seja visível quando expandido, mesmo em modo icon-only */
+body:not(.sidebar-icon-only) .sidebar .nav .nav-item .collapse.show {
+  display: block !important;
+}
+
+/* Animação suave para o collapse */
+.sidebar .nav .nav-item .collapse {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Garante que o submenu seja visível */
+.sidebar .nav .nav-item .collapse.show .sub-menu {
+  display: block !important;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Previne conflitos quando o item está sendo hover */
+.sidebar .nav .nav-item.hover-open .collapse {
+  display: block !important;
+}
