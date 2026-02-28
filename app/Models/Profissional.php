@@ -87,7 +87,7 @@ class Profissional extends Model
             return null;
         }
 
-        return $this->nascimento_em->age ?? null;
+        return $this->nascimento_em->diffInYears(now());
     }
 
     public function getStatusAttribute()

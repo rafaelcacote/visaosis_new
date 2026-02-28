@@ -9,6 +9,12 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\LaboratorioController;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\PessoaController;
+use App\Http\Controllers\RecepcaoController;
+use App\Http\Controllers\ProfessionalController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\SaleController;
+use App\Http\Controllers\OrdemServicoController;
+use App\Http\Controllers\FinancialController;
 
 // Rotas de autenticação
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -17,6 +23,52 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // API para informações do usuário (usada durante o login)
 Route::post('/api/user/info', [AuthController::class, 'getUserInfo']);
+
+// ============================================
+// ROTAS DE DEBUG - Menu e Sessão
+// ============================================
+// View visual de debug
+Route::get('/debug/menu', function () {
+    return view('debug.menu');
+})->middleware('auth')->name('debug.menu');
+
+// API JSON de debug
+Route::get('/debug/menu/json', function () {
+    if (!auth()->check()) {
+        return response()->json([
+            'error' => 'Usuário não autenticado',
+            'message' => 'Faça login primeiro'
+        ]);
+    }
+    
+    return response()->json([
+        'auth_check' => auth()->check(),
+        'user_id' => auth()->id(),
+        'user_name' => auth()->user()->name ?? null,
+        'session_data' => [
+            'has_cerberus_token' => session()->has('cerberusToken'),
+            'cerberus_token' => session('cerberusToken') ? substr(session('cerberusToken'), 0, 20) . '...' : null,
+            'has_items' => session()->has('items'),
+            'items_count' => count(session('items', [])),
+            'items_raw' => session('items', []),
+            'perfis' => session('perfis', []),
+            'tenant_id' => session('tenant_id'),
+            'tenant_name' => session('tenant') ? (session('tenant')->name ?? null) : null,
+            'location_id' => session('location_id'),
+        ],
+        'menu_helper' => [
+            'left_sidebar_items' => \App\Helpers\MenuHelper::getMenuItems('left_sidebar'),
+            'topnav_items' => \App\Helpers\MenuHelper::getMenuItems('topnav'),
+        ],
+        'auth_helper' => [
+            'check' => \App\Helpers\AuthHelper::check(),
+            'name' => \App\Helpers\AuthHelper::name(),
+            'email' => \App\Helpers\AuthHelper::email(),
+            'permissions_count' => count(\App\Helpers\AuthHelper::permissions()),
+            'has_dashboard_permission' => \App\Helpers\AuthHelper::hasPermission('/dashboard'),
+        ],
+    ]);
+})->middleware('auth')->name('debug.menu.json');
 
 // Rotas protegidas
 Route::middleware(['auth'])->group(function () {
@@ -65,4 +117,74 @@ Route::middleware(['auth'])->group(function () {
         'pessoas' => 'pessoa',
     ]);
     Route::post('pessoas/{pessoa}/toggle-status', [PessoaController::class, 'toggleStatus'])->name('pessoas.toggle-status');
+
+    // Módulo de Recepção
+    Route::get('/recepcao', [RecepcaoController::class, 'index'])->name('recepcao.index');
+    Route::prefix('recepcao')->name('recepcao.')->group(function () {
+        Route::get('/dashboard', [RecepcaoController::class, 'dashboard'])->name('dashboard');
+        Route::get('/triage', [RecepcaoController::class, 'triage'])->name('triage');
+        Route::post('/triage', [RecepcaoController::class, 'storeTriage'])->name('triage.store');
+        Route::get('/consulta/{consulta}', [RecepcaoController::class, 'show'])->name('consulta.show');
+        Route::post('/checkin', [RecepcaoController::class, 'checkin'])->name('checkin');
+        Route::patch('/status/{consulta}', [RecepcaoController::class, 'updateStatus'])->name('updateStatus');
+        Route::get('/api/patients/search', [RecepcaoController::class, 'searchPatient'])->name('patients.search');
+    });
+
+    // Módulo de Atendimento (Attendance)
+    Route::prefix('attendance')->name('attendance.')->group(function () {
+        Route::get('/', [AttendanceController::class, 'index'])->name('index');
+        Route::get('/triage', [AttendanceController::class, 'triage'])->name('triage');
+        Route::post('/triage', [AttendanceController::class, 'storeTriage'])->name('triage.store');
+        Route::patch('/status/{id}', [AttendanceController::class, 'updateStatus'])->name('updateStatus');
+        Route::get('/api/patients/search', [AttendanceController::class, 'searchPatient'])->name('patients.search');
+    });
+
+    // Módulo Profissional (Painel do Profissional - Atendimentos)
+    Route::prefix('professional')->name('professional.')->group(function () {
+        Route::get('/', [ProfessionalController::class, 'index'])->name('index');
+        Route::get('/search-patient', [ProfessionalController::class, 'searchPatient'])->name('searchPatient');
+        Route::get('/consultation/{id}', [ProfessionalController::class, 'startConsultation'])->name('consultation');
+        Route::post('/generate-prescription/{id}', [ProfessionalController::class, 'generatePrescription'])->name('generatePrescription');
+        Route::post('/send-whatsapp', [ProfessionalController::class, 'sendWhatsApp'])->name('sendWhatsApp');
+        Route::post('/send-exam-whatsapp', [ProfessionalController::class, 'sendExamWhatsApp'])->name('sendExamWhatsApp');
+        Route::post('/send-referral-whatsapp', [ProfessionalController::class, 'sendReferralWhatsApp'])->name('sendReferralWhatsApp');
+        Route::post('/refer-patient/{id}', [ProfessionalController::class, 'referPatient'])->name('referPatient');
+        Route::post('/finish-consultation/{id}', [ProfessionalController::class, 'finishConsultation'])->name('finishConsultation');
+        Route::get('/patient-history/{id}', [ProfessionalController::class, 'patientHistory'])->name('patientHistory');
+        Route::get('/patient-history-full/{id}', [ProfessionalController::class, 'patientHistoryFull'])->name('patientHistoryFull');
+        Route::get('/print-prescription/{id}', [ProfessionalController::class, 'printPrescription'])->name('printPrescription');
+        Route::get('/print-exame/{id}', [ProfessionalController::class, 'printExamDoc'])->name('print-exame');
+        Route::get('/print-referral/{id}', [ProfessionalController::class, 'printReferralDoc'])->name('print-referral');
+        Route::get('/new-prescription', [ProfessionalController::class, 'newPrescription'])->name('newPrescription');
+        Route::post('/new-prescription/store', [ProfessionalController::class, 'storeNewPrescription'])->name('storeNewPrescription');
+        Route::post('/update-status/{id}', [ProfessionalController::class, 'updateStatus'])->name('update-status');
+        Route::post('/save-prescription-draft/{id}', [ProfessionalController::class, 'savePrescriptionDraft'])->name('savePrescriptionDraft');
+        Route::post('/save-exame/{id}', [ProfessionalController::class, 'saveExame'])->name('saveExame');
+    });
+
+    // Módulo de Vendas
+    Route::resource('sales', SaleController::class);
+    Route::get('/sales/{id}/print', [SaleController::class, 'print'])->name('sales.print');
+
+    // Módulo de Ordens de Serviço
+    Route::resource('ordens-servico', OrdemServicoController::class)->parameters([
+        'ordens-servico' => 'ordemServico'
+    ]);
+    Route::get('/ordens-servico/api/buscar-clientes', [OrdemServicoController::class, 'buscarClientes'])->name('ordens-servico.buscar-clientes');
+    Route::get('/ordens-servico/api/buscar-vendas-cliente', [OrdemServicoController::class, 'buscarVendasCliente'])->name('ordens-servico.buscar-vendas-cliente');
+    Route::get('/ordens-servico/api/buscar-prescricoes', [OrdemServicoController::class, 'buscarPrescricoes'])->name('ordens-servico.buscar-prescricoes');
+
+    // Módulo Financeiro
+    Route::prefix('financial')->name('financial.')->group(function () {
+        Route::get('/', [FinancialController::class, 'index'])->name('index');
+        Route::get('/receivables', [FinancialController::class, 'receivables'])->name('receivables');
+        Route::get('/boletos', [FinancialController::class, 'boletos'])->name('boletos');
+        Route::get('/notifications', [FinancialController::class, 'notifications'])->name('notifications');
+
+        // Ações AJAX
+        Route::post('/generate-boleto/{id}', [FinancialController::class, 'generateBoleto'])->name('generate-boleto');
+        Route::get('/boleto-pdf/{id}', [FinancialController::class, 'boletoPdf'])->name('boleto-pdf');
+        Route::post('/send-whatsapp/{id}', [FinancialController::class, 'sendWhatsApp'])->name('send-whatsapp');
+        Route::post('/receive-payment', [FinancialController::class, 'receivePayment'])->name('receive-payment');
+    });
 });

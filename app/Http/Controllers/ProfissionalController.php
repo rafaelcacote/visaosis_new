@@ -101,6 +101,12 @@ class ProfissionalController extends Controller
      */
     public function store(Request $request)
     {
+        // Verificar se há erro de validação CPF do JavaScript
+        if ($request->has('cpf_validation_error')) {
+            return back()->withInput()
+                ->with('validation_message', $request->cpf_validation_error);
+        }
+
         // Limpar CPF e telefone antes da validação
         $cpfLimpo = $request->cpf ? preg_replace('/[^0-9]/', '', $request->cpf) : null;
         $telefoneLimpo = $request->telefone ? preg_replace('/[^0-9]/', '', $request->telefone) : null;
@@ -219,6 +225,12 @@ class ProfissionalController extends Controller
     {
         // Verificar se o profissional pertence ao tenant atual
         $this->checkTenantAccess($profissional);
+        
+        // Verificar se há erro de validação CPF do JavaScript
+        if ($request->has('cpf_validation_error')) {
+            return back()->withInput()
+                ->with('validation_message', $request->cpf_validation_error);
+        }
         
         // Limpar CPF e telefone antes da validação
         $cpfLimpo = $request->cpf ? preg_replace('/[^0-9]/', '', $request->cpf) : null;

@@ -17,6 +17,14 @@
     </a>
 </div>
 
+@if (session('validation_message'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="mdi mdi-alert-circle me-2"></i>
+        {{ session('validation_message') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+    </div>
+@endif
+
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -215,42 +223,6 @@
 </div>
 @endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Máscara para CPF
-    const cpfField = document.getElementById('cpf');
-    if (cpfField) {
-        cpfField.addEventListener('input', function() {
-            let value = this.value.replace(/\D/g, '');
-            if (value.length > 11) {
-                value = value.substring(0, 11);
-            }
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-            this.value = value;
-        });
-    }
-
-    // Máscara para telefone
-    const telefoneField = document.getElementById('telefone');
-    if (telefoneField) {
-        telefoneField.addEventListener('input', function() {
-            let value = this.value.replace(/\D/g, '');
-            if (value.length > 11) {
-                value = value.substring(0, 11);
-            }
-            if (value.length > 10) {
-                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            } else if (value.length > 6) {
-                value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
-            } else if (value.length > 2) {
-                value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
-            }
-            this.value = value;
-        });
-    }
-});
-</script>
-@endpush
+{{-- Incluir scripts de validação e formatação --}}
+@include('components.forms.cpf-script')
+@include('components.forms.telefone-script')

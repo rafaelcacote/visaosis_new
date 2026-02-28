@@ -1,23 +1,47 @@
-/* Fix para dropdown da sidebar - garante que o collapse funcione corretamente */
+/*
+ * sidebar-fix.css
+ * Corrige comportamento do collapse da sidebar sem quebrar a animação nativa do Bootstrap.
+ *
+ * PROBLEMA RAIZ:
+ *   .sidebar .nav { overflow: hidden } — o flex container column com overflow:hidden
+ *   pode clipar verticalmente os itens dos submenus durante/após a animação.
+ *
+ * SOLUÇÃO:
+ *   Sobrescrevemos overflow no nav principal da sidebar para permitir que o conteúdo
+ *   dos collapses apareça. Overflow horizontal continua clipado via overflow-x.
+ *   No modo sidebar-icon-only mantemos o comportamento original.
+ */
 
-/* Garante que o collapse seja visível quando expandido, mesmo em modo icon-only */
-body:not(.sidebar-icon-only) .sidebar .nav .nav-item .collapse.show {
+/* Permite que os submenus abertos apareçam sem serem clipados verticalmente */
+.sidebar .nav {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+/* O sub-menu em si também não deve clipar seus itens */
+.sidebar .nav.sub-menu {
+  overflow: visible;
+}
+
+/* Durante a animação Bootstrap usa overflow:hidden no .collapsing — mantemos isso */
+/* Após abrir (.collapse.show) garantimos que o conteúdo seja visível */
+.sidebar .nav .nav-item .collapse.show {
+  overflow: visible;
+}
+
+/* Modo icon-only: manter display block no hover para que o submenu flutue */
+.sidebar-icon-only .sidebar .nav .nav-item.hover-open .collapse,
+.sidebar-icon-only .sidebar .nav .nav-item.hover-open .collapsing {
   display: block !important;
 }
 
-/* Animação suave para o collapse */
-.sidebar .nav .nav-item .collapse {
-  transition: all 0.3s ease-in-out;
-}
-
-/* Garante que o submenu seja visível */
-.sidebar .nav .nav-item .collapse.show .sub-menu {
-  display: block !important;
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Previne conflitos quando o item está sendo hover */
-.sidebar .nav .nav-item.hover-open .collapse {
-  display: block !important;
+/*
+ * BUGFIX: Menu bloqueando cliques em outros itens
+ * O z-index: 999 no .collapse fazia o submenu expandido sobrepor os itens abaixo,
+ * capturando todos os cliques. Com overflow-y: visible, o conteúdo expandido
+ * podia se sobrepor e impedir acesso ao Dashboard e outros menus.
+ * Removemos o z-index alto no modo normal (não icon-only) para permitir cliques.
+ */
+body:not(.sidebar-icon-only) .sidebar .nav .nav-item .collapse {
+  z-index: auto;
 }
