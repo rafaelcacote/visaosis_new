@@ -58,6 +58,15 @@ class AuthController extends Controller
 
             $dados = $authResult['data'];
 
+            // LOG: Verificar o que veio do Cerberus
+            Log::info('=== DADOS RETORNADOS DO CERBERUS ===', [
+                'items_count' => count($dados['items'] ?? []),
+                'items_raw' => $dados['items'] ?? [],
+                'perfis_count' => count($dados['perfis'] ?? []),
+                'perfis' => $dados['perfis'] ?? [],
+                'user' => $dados['user'] ?? null,
+            ]);
+
             // Buscar dados completos do usuário do Cerberus (incluindo tenant e location)
             $userInfoResponse = Http::timeout(10)
                 ->withOptions([
@@ -131,6 +140,7 @@ class AuthController extends Controller
             session([
                 'cerberusToken' => $dados['token'],
                 'perfis' => $dados['perfis'] ?? [],
+                'items' => $dados['items'] ?? [], // Itens de menu/permissões do Cerberus
                 'user' => (object)($dados['user'] ?? null),
                 'user_locations' => $userLocations,
                 'needs_location_selection' => $needsLocationSelection,
@@ -138,6 +148,14 @@ class AuthController extends Controller
                 'location' => $locationData,
                 'tenant_id' => $tenantId,
                 'tenant' => $tenantData, // Dados do tenant vêm da API
+            ]);
+
+            // LOG: Verificar o que foi salvo na sessão
+            Log::info('=== DADOS SALVOS NA SESSÃO ===', [
+                'items_count' => count(session('items', [])),
+                'items_sample' => array_slice(session('items', []), 0, 2), // Primeiros 2 items
+                'perfis_count' => count(session('perfis', [])),
+                'has_token' => !empty(session('cerberusToken')),
             ]);
 
             // Cache local do usuário

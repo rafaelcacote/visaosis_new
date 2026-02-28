@@ -122,8 +122,7 @@
     <!-- Custom js for this page -->
     @stack('scripts')
     <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        // Initialize toasts
+      window.addEventListener('load', function () {
         if (window.bootstrap && window.bootstrap.Toast) {
           document.querySelectorAll('.toast-container .toast').forEach(function (el) {
             try {
@@ -134,49 +133,6 @@
             } catch (e) {
               // no-op
             }
-          });
-        }
-
-        // Initialize sidebar collapses
-        if (window.bootstrap && window.bootstrap.Collapse) {
-          // Pré-inicializa todos os elementos collapse da sidebar
-          document.querySelectorAll('.sidebar .collapse').forEach(function (collapseEl) {
-            // Cria instância do collapse com configurações adequadas
-            window.bootstrap.Collapse.getOrCreateInstance(collapseEl, {
-              toggle: false, // Não alterna automaticamente na inicialização
-              parent: false  // Permite múltiplos dropdowns abertos
-            });
-          });
-
-          // Adiciona event listeners para os botões de toggle
-          document.querySelectorAll('.sidebar [data-bs-toggle="collapse"]').forEach(function (toggleEl) {
-            toggleEl.addEventListener('click', function(e) {
-              e.preventDefault();
-              e.stopPropagation();
-              
-              const targetId = this.getAttribute('href') || this.getAttribute('data-bs-target');
-              const targetEl = document.querySelector(targetId);
-              
-              if (targetEl) {
-                const bsCollapse = window.bootstrap.Collapse.getInstance(targetEl);
-                if (bsCollapse) {
-                  bsCollapse.toggle();
-                }
-              }
-            });
-          });
-
-          // Event listeners para manter o estado visual correto
-          document.querySelectorAll('.sidebar .collapse').forEach(function (collapseEl) {
-            collapseEl.addEventListener('show.bs.collapse', function() {
-              // Adiciona classe show para garantir visibilidade
-              this.classList.add('show');
-            });
-            
-            collapseEl.addEventListener('shown.bs.collapse', function() {
-              // Garante que o elemento permanece visível após animação
-              this.style.display = 'block';
-            });
           });
         }
       });

@@ -10,32 +10,43 @@
     //Add active class to nav-link based on url dynamically
     //Active class can be hard coded directly in html file also as required
 
-    function addActiveClass(element) {
-      if (current === "") {
-        //for root url
-        if (element.attr('href').indexOf("index.html") !== -1) {
-          element.parents('.nav-item').last().addClass('active');
-          if (element.parents('.sub-menu').length) {
-            element.closest('.collapse').addClass('show');
-            element.addClass('active');
-          }
-        }
-      } else {
-        //for other url
-        if (element.attr('href').indexOf(current) !== -1) {
-          element.parents('.nav-item').last().addClass('active');
-          if (element.parents('.sub-menu').length) {
-            element.closest('.collapse').addClass('show');
-            element.addClass('active');
-          }
-          if (element.parents('.submenu-item').length) {
-            element.addClass('active');
-          }
-        }
+    function normalizePath(pathname) {
+      if (!pathname) return '/';
+      var normalized = pathname.replace(/\/+$/, '');
+      return normalized === '' ? '/' : normalized;
+    }
+
+    function isSamePath(href) {
+      if (!href || href === '#') {
+        return false;
+      }
+
+      try {
+        var parsed = new URL(href, window.location.origin);
+        return normalizePath(parsed.pathname) === currentPath;
+      } catch (e) {
+        return false;
       }
     }
 
-    var current = location.pathname.split("/").slice(-1)[0].replace(/^\/|\/$/g, '');
+    function addActiveClass(element) {
+      var href = element.attr('href');
+
+      if (!isSamePath(href)) {
+        return;
+      }
+
+      element.parents('.nav-item').last().addClass('active');
+      if (element.parents('.sub-menu').length) {
+        element.closest('.collapse').addClass('show');
+        element.addClass('active');
+      }
+      if (element.parents('.submenu-item').length) {
+        element.addClass('active');
+      }
+    }
+
+    var currentPath = normalizePath(window.location.pathname);
     $('.nav li a', sidebar).each(function() {
       var $this = $(this);
       addActiveClass($this);
@@ -104,35 +115,45 @@
         }
       }
     })
-    if ($.cookie('connectplus-free-banner')!="true") {
-      document.querySelector('#proBanner').classList.add('d-flex');
-      document.querySelector('.navbar').classList.remove('fixed-top');
+    // proBanner: apenas aplica se o elemento existir no DOM
+    var proBannerEl = document.querySelector('#proBanner');
+    var navbarEl    = document.querySelector('.navbar');
+    var pageWrapper = document.querySelector('.page-body-wrapper');
+
+    if (proBannerEl) {
+      if ($.cookie('connectplus-free-banner') != "true") {
+        proBannerEl.classList.add('d-flex');
+        if (navbarEl) navbarEl.classList.remove('fixed-top');
+      } else {
+        proBannerEl.classList.add('d-none');
+        if (navbarEl) navbarEl.classList.add('fixed-top');
+      }
+
+      if (navbarEl && $(navbarEl).hasClass('fixed-top')) {
+        if (pageWrapper) pageWrapper.classList.remove('pt-0');
+        navbarEl.classList.remove('pt-5');
+      } else if (navbarEl) {
+        if (pageWrapper) pageWrapper.classList.add('pt-0');
+        navbarEl.classList.add('pt-5');
+        navbarEl.classList.add('mt-3');
+      }
+
+      var bannerClose = document.querySelector('#bannerClose');
+      if (bannerClose) {
+        bannerClose.addEventListener('click', function() {
+          proBannerEl.classList.add('d-none');
+          proBannerEl.classList.remove('d-flex');
+          if (navbarEl) {
+            navbarEl.classList.remove('pt-5');
+            navbarEl.classList.add('fixed-top');
+            navbarEl.classList.remove('mt-3');
+          }
+          if (pageWrapper) pageWrapper.classList.add('proBanner-padding-top');
+          var date = new Date();
+          date.setTime(date.getTime() + 24 * 60 * 60 * 1000);
+          $.cookie('connectplus-free-banner', "true", { expires: date });
+        });
+      }
     }
-    else {
-      document.querySelector('#proBanner').classList.add('d-none');
-      document.querySelector('.navbar').classList.add('fixed-top');
-    }
-    
-    if ($( ".navbar" ).hasClass( "fixed-top" )) {
-      document.querySelector('.page-body-wrapper').classList.remove('pt-0');
-      document.querySelector('.navbar').classList.remove('pt-5');
-    }
-    else {
-      document.querySelector('.page-body-wrapper').classList.add('pt-0');
-      document.querySelector('.navbar').classList.add('pt-5');
-      document.querySelector('.navbar').classList.add('mt-3');
-      
-    }
-    document.querySelector('#bannerClose').addEventListener('click',function() {
-      document.querySelector('#proBanner').classList.add('d-none');
-      document.querySelector('#proBanner').classList.remove('d-flex');
-      document.querySelector('.navbar').classList.remove('pt-5');
-      document.querySelector('.navbar').classList.add('fixed-top');
-      document.querySelector('.page-body-wrapper').classList.add('proBanner-padding-top');
-      document.querySelector('.navbar').classList.remove('mt-3');
-      var date = new Date();
-      date.setTime(date.getTime() + 24 * 60 * 60 * 1000); 
-      $.cookie('connectplus-free-banner', "true", { expires: date });
-    });
   });
 })(jQuery);

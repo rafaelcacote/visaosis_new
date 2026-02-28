@@ -138,6 +138,37 @@
     max-width: 200px;
   }
 
+  /* Fix para dropdown do perfil não ser cortado na lateral direita */
+  .navbar-nav .nav-item.nav-profile {
+    position: relative;
+  }
+
+  .navbar-nav .nav-item.nav-profile .dropdown-menu {
+    right: 0 !important;
+    left: auto !important;
+    margin-right: 0;
+    margin-top: 0.5rem;
+    min-width: 250px;
+    max-width: 300px;
+  }
+
+  /* Garantir que o dropdown não seja cortado pelo container */
+  .navbar-menu-wrapper {
+    overflow: visible !important;
+  }
+
+  .navbar-nav {
+    overflow: visible !important;
+  }
+
+  /* Ajustar posicionamento do dropdown em telas menores */
+  @media (max-width: 991px) {
+    .navbar-nav .nav-item.nav-profile .dropdown-menu {
+      right: 10px !important;
+      left: auto !important;
+    }
+  }
+
 </style>
 @endpush
 
@@ -206,18 +237,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   </div>
   <div class="navbar-menu-wrapper d-flex align-items-stretch">
-         
-          <div class="search-field d-none d-xl-block">
-            <div class="d-flex align-items-center h-100 tenant-brand-display">
-              @if($tenantLogo)
-                <div class="tenant-logo-container me-2">
-                  <img src="{{ $tenantLogo }}" alt="{{ $tenantName }}" class="tenant-logo-navbar" style="max-height: 24px; max-width: 80px; height: auto; width: auto; object-fit: contain;" />
-                </div>
-              @endif
-              <span class="tenant-name-navbar">{{ $tenantName }}</span>
-            </div>
-          </div>
-  
     <ul class="navbar-nav navbar-nav-right">
       @auth
       @if(session('user_locations') && count(session('user_locations')) > 1)
@@ -292,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <p class="mb-1 text-black">@auth{{ Auth::user()->name }}@else User @endauth</p>
           </div>
         </a>
-        <div class="dropdown-menu navbar-dropdown dropdown-menu-right p-0 border-0 font-size-sm" aria-labelledby="profileDropdown" data-x-placement="bottom-end">
+        <div class="dropdown-menu navbar-dropdown dropdown-menu-end p-0 border-0 font-size-sm" aria-labelledby="profileDropdown" data-bs-popper="static">
           <div class="p-3 text-center bg-primary">
             @auth
               @php
@@ -314,36 +333,36 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             @endauth
           </div>
-          <div class="p-2">
-            <h5 class="dropdown-header text-uppercase ps-2 text-dark">User Options</h5>
-            <a class="dropdown-item py-1 d-flex align-items-center justify-content-between" href="#">
+          <div class="p-3">
+            <h5 class="dropdown-header text-uppercase ps-2 pe-2 text-dark mb-2">User Options</h5>
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between" href="#">
               <span>Inbox</span>
               <span class="p-0">
                 <span class="badge badge-primary">3</span>
                 <i class="mdi mdi-email-open-outline ms-1"></i>
               </span>
             </a>
-            <a class="dropdown-item py-1 d-flex align-items-center justify-content-between" href="#">
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between" href="#">
               <span>Profile</span>
               <span class="p-0">
                 <span class="badge badge-success">1</span>
                 <i class="mdi mdi-account-outline ms-1"></i>
               </span>
             </a>
-            <a class="dropdown-item py-1 d-flex align-items-center justify-content-between" href="javascript:void(0)">
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between" href="javascript:void(0)">
               <span>Settings</span>
               <i class="mdi mdi-settings"></i>
             </a>
-            <div role="separator" class="dropdown-divider"></div>
-            <h5 class="dropdown-header text-uppercase  ps-2 text-dark mt-2">Actions</h5>
-            <a class="dropdown-item py-1 d-flex align-items-center justify-content-between" href="#">
+            <div role="separator" class="dropdown-divider my-2"></div>
+            <h5 class="dropdown-header text-uppercase ps-2 pe-2 text-dark mt-2 mb-2">Actions</h5>
+            <a class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between" href="#">
               <span>Lock Account</span>
               <i class="mdi mdi-lock ms-1"></i>
             </a>
             @auth
             <form method="POST" action="{{ route('logout') }}" class="d-inline w-100">
               @csrf
-              <button type="submit" class="dropdown-item py-1 d-flex align-items-center justify-content-between w-100 border-0 bg-transparent text-start" style="cursor: pointer;">
+              <button type="submit" class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between w-100 border-0 bg-transparent text-start" style="cursor: pointer;">
                 <span>Sair</span>
                 <i class="mdi mdi-logout ms-1"></i>
               </button>

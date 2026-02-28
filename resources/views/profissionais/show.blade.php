@@ -1,141 +1,195 @@
 @extends('layouts.app')
 
-@section('title', 'Detalhes do Profissional')
+@section('title', $profissional->nome . ' - VisaoSis')
 
 @section('content')
-<div class="content-wrapper">
-    <div class="page-header">
-        <h3 class="page-title">Detalhes do Profissional</h3>
-        <nav aria-label="breadcrumb">
-            <div class="d-flex">
-                <a href="{{ route('profissionais.index') }}" class="btn btn-outline-secondary btn-sm me-2">
-                    <i class="mdi mdi-arrow-left"></i> Voltar
-                </a>
-                <a href="{{ route('profissionais.edit', $profissional->id) }}" class="btn btn-primary btn-sm">
-                    <i class="mdi mdi-pencil"></i> Editar
-                </a>
-            </div>
-        </nav>
+<div class="d-xl-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="text-dark font-weight-bold mb-2">
+            <i class="mdi mdi-account-tie me-2"></i>
+            Profissional
+        </h2>
+        <p class="text-muted mb-0">Detalhes do profissional</p>
     </div>
+    <div class="d-flex gap-2">
+        <a href="{{ route('profissionais.index') }}" class="btn btn-outline-secondary">
+            <i class="mdi mdi-arrow-left me-2"></i>
+            Voltar
+        </a>
+        <a href="{{ route('profissionais.edit', $profissional) }}" class="btn btn-primary">
+            <i class="mdi mdi-pencil me-2"></i>
+            Editar
+        </a>
+    </div>
+</div>
 
-    <div class="row">
-        <div class="col-md-4 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <div class="img-lg rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
-                            <h2 class="text-white mb-0">{{ strtoupper(substr($profissional->nome, 0, 1)) }}</h2>
+<div class="row">
+    <div class="col-md-8">
+        <!-- Dados Principais -->
+        <div class="card">
+            <div class="card-header bg-secondary">
+                <h5 class="mb-0">
+                    <i class="mdi mdi-account-card-details me-2"></i>
+                    Dados do Profissional
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label text-muted">Nome</label>
+                        <div class="fw-medium">{{ $profissional->nome }}</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">CPF</label>
+                        <div class="fw-medium">{{ $profissional->cpf_formatado ?: 'Não informado' }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Status</label>
+                        <div>
+                            @if ($profissional->ativo)
+                                <span class="badge bg-success fs-6">
+                                    <i class="mdi mdi-check-circle me-1"></i>
+                                    Ativo
+                                </span>
+                            @else
+                                <span class="badge bg-secondary fs-6">
+                                    <i class="mdi mdi-pause-circle me-1"></i>
+                                    Inativo
+                                </span>
+                            @endif
                         </div>
                     </div>
-                    <h4>{{ $profissional->nome }}</h4>
-                    @if($profissional->especialidade)
-                        <p class="text-muted">{{ $profissional->especialidade->descricao }}</p>
-                    @endif
-                    @if($profissional->ativo)
-                        <span class="badge badge-success">Ativo</span>
-                    @else
-                        <span class="badge badge-danger">Inativo</span>
-                    @endif
+                </div>
 
-                    <hr>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Especialidade</label>
+                        <div class="fw-medium">{{ $profissional->especialidade?->descricao ?? '-' }}</div>
+                    </div>
 
-                    <div class="text-start mt-4">
-                        @if($profissional->email)
-                            <p class="text-muted mb-2"><i class="mdi mdi-email-outline me-2 text-primary"></i>{{ $profissional->email }}</p>
-                        @endif
-                        @if($profissional->telefone_formatado)
-                            <p class="text-muted mb-2"><i class="mdi mdi-phone me-2 text-primary"></i>{{ $profissional->telefone_formatado }}</p>
-                        @endif
-                        @if($profissional->chave_pix)
-                            <p class="text-muted mb-0"><i class="mdi mdi-qrcode me-2 text-primary"></i>{{ $profissional->chave_pix }}</p>
-                        @endif
-                        @if(!$profissional->email && !$profissional->telefone_formatado && !$profissional->chave_pix)
-                            <p class="text-muted mb-0 small">Nenhuma informação de contato cadastrada.</p>
-                        @endif
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Registro</label>
+                        <div class="fw-medium">{{ $profissional->registro_conselho ?? '-' }}</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Sexo</label>
+                        <div class="fw-medium">{{ $profissional->sexo_texto }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label text-muted">Nascimento</label>
+                        <div class="fw-medium">{{ $profissional->nascimento_em?->format('d/m/Y') ?? '-' }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label text-muted">Idade</label>
+                        <div class="fw-medium">{{ $profissional->idade ?? '-' }}</div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-8 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title text-primary"><i class="mdi mdi-account-card-details me-2"></i>Informações Completas</h4>
-                    <p class="card-description">Dados cadastrais do profissional no sistema</p>
-
-                    <div class="row mt-4">
-                        <div class="col-sm-6 mb-3">
-                            <label class="text-muted d-block">CPF</label>
-                            <span class="font-weight-bold">{{ $profissional->cpf_formatado ?: 'Não informado' }}</span>
-                        </div>
-                        <div class="col-sm-6 mb-3">
-                            <label class="text-muted d-block">Especialidade</label>
-                            <span class="font-weight-bold">{{ $profissional->especialidade->descricao ?? 'Não informado' }}</span>
-                        </div>
-                        @if($profissional->sexo)
-                        <div class="col-sm-6 mb-3">
-                            <label class="text-muted d-block">Sexo</label>
-                            <span class="font-weight-bold">{{ $profissional->sexo_texto }}</span>
-                        </div>
-                        @endif
-                        @if($profissional->nascimento_em)
-                        <div class="col-sm-6 mb-3">
-                            <label class="text-muted d-block">Data de Nascimento</label>
-                            <span class="font-weight-bold">{{ $profissional->nascimento_em->format('d/m/Y') }}@if($profissional->idade) ({{ $profissional->idade }} anos)@endif</span>
-                        </div>
-                        @endif
-                        @if($profissional->registro_conselho)
-                        <div class="col-sm-6 mb-3">
-                            <label class="text-muted d-block">Registro do Conselho</label>
-                            <span class="font-weight-bold">{{ $profissional->registro_conselho }}</span>
-                        </div>
-                        @endif
-                    </div>
-
-                    <hr>
-
-                    <h4 class="card-title text-muted mt-4"><i class="mdi mdi-clock-outline me-2"></i>Histórico do Registro</h4>
-                    <div class="row mt-3">
-                        <div class="col-sm-6 mb-3">
-                            <label class="text-muted d-block small">Criado em</label>
-                            <span class="font-weight-bold">
-                                <i class="mdi mdi-calendar-plus me-1 text-muted"></i>
-                                {{ $profissional->created_at ? $profissional->created_at->format('d/m/Y') : 'N/A' }}
-                                @if($profissional->created_at)
-                                    <small class="text-muted">às {{ $profissional->created_at->format('H:i') }}</small>
-                                @endif
-                            </span>
-                        </div>
-                        <div class="col-sm-6 mb-3">
-                            <label class="text-muted d-block small">Última atualização</label>
-                            <span class="font-weight-bold">
-                                <i class="mdi mdi-calendar-edit me-1 text-muted"></i>
-                                {{ $profissional->updated_at ? $profissional->updated_at->format('d/m/Y') : 'N/A' }}
-                                @if($profissional->updated_at)
-                                    <small class="text-muted">às {{ $profissional->updated_at->format('H:i') }}</small>
-                                @endif
-                            </span>
+    <div class="col-md-4">
+        <!-- Informações de Contato -->
+        <div class="card">
+            <div class="card-header bg-secondary">
+                <h5 class="mb-0">
+                    <i class="mdi mdi-phone me-2"></i>
+                    Contato
+                </h5>
+            </div>
+            <div class="card-body">
+                @if ($profissional->telefone)
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Telefone</label>
+                        <div class="fw-medium">
+                            {{ $profissional->telefone_formatado }}
                         </div>
                     </div>
+                @endif
+
+                @if ($profissional->email)
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">E-mail</label>
+                        <div class="fw-medium">
+                            {{ $profissional->email }}
+                        </div>
+                    </div>
+                @endif
+
+                @if ($profissional->chave_pix)
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Chave PIX</label>
+                        <div class="fw-medium font-monospace small d-flex align-items-center">
+                            <span class="me-2">{{ $profissional->chave_pix }}</span>
+                            <i class="mdi mdi-content-copy text-primary fs-5 cursor-pointer" onclick="copiarChavePix()"
+                                title="Copiar chave PIX" style="cursor: pointer;"></i>
+                        </div>
+                    </div>
+                @endif
+
+                @if (!$profissional->telefone && !$profissional->email && !$profissional->chave_pix)
+                    <div class="text-center text-muted py-3">
+                        <i class="mdi mdi-information-outline me-2"></i>
+                        Nenhuma informação de contato cadastrada
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Informações do Sistema -->
+        <div class="card mt-3">
+            <div class="card-header bg-secondary">
+                <h5 class="mb-0">
+                    <i class="mdi mdi-information-outline me-2"></i>
+                    Informações do Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <label class="form-label text-muted small">Cadastrado em</label>
+                    <div class="small">{{ $profissional->created_at->format('d/m/Y H:i') }}</div>
                 </div>
+                @if ($profissional->updated_at && $profissional->updated_at != $profissional->created_at)
+                    <div class="mb-2">
+                        <label class="form-label text-muted small">Última atualização</label>
+                        <div class="small">{{ $profissional->updated_at->format('d/m/Y H:i') }}</div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
 </div>
 
-@push('styles')
 <style>
-.badge-success {
-    border: 1px solid #44ce42;
-    color: #ffffff;
-    background: #44ce42;
-}
-
-.badge-danger {
-    border: 1px solid #fc5a5a;
-    color: #ffffff;
-    background: #fc5a5a;
-}
+    .card-header.bg-secondary {
+        background-color: #e9ecef !important;
+        border-color: #e9ecef !important;
+        color: black !important;
+    }
 </style>
-@endpush
 @endsection
+
+@push('scripts')
+<script>
+    function copiarChavePix() {
+        const chavePix = "{{ $profissional->chave_pix }}";
+        navigator.clipboard.writeText(chavePix).then(function() {
+            const icon = event.target;
+            const originalClass = icon.className;
+
+            icon.className = 'mdi mdi-check-circle text-success fs-5 cursor-pointer';
+            icon.style.transform = 'scale(1.1)';
+
+            setTimeout(() => {
+                icon.className = originalClass;
+                icon.style.transform = '';
+            }, 2000);
+        });
+    }
+</script>
+@endpush

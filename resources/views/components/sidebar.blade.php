@@ -1,158 +1,126 @@
+@php
+use App\Helpers\MenuHelper;
+use App\Helpers\AuthHelper;
+$menuItems = MenuHelper::getMenuItems('left_sidebar');
+@endphp
+
 <nav class="sidebar sidebar-offcanvas" id="sidebar">
   <ul class="nav">
-    <li class="nav-item nav-category">Main</li>
-    <li class="nav-item">
-      <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-        <span class="icon-bg"><i class="mdi mdi-cube menu-icon"></i></span>
-        <span class="menu-title">Dashboard</span>
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
-        <span class="icon-bg"><i class="mdi mdi-account-multiple menu-icon"></i></span>
-        <span class="menu-title">Usuários</span>
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" data-bs-toggle="collapse" href="#cadastros" aria-expanded="{{ request()->routeIs('pessoas.*') || request()->routeIs('profissionais.*') || request()->routeIs('categorias.*') || request()->routeIs('laboratorios.*') || request()->routeIs('produtos.*') ? 'true' : 'false' }}" aria-controls="cadastros">
-        <span class="icon-bg"><i class="mdi mdi-file-document-edit-outline menu-icon"></i></span>
-        <span class="menu-title">Cadastros</span>
-        <i class="menu-arrow"></i>
-      </a>
-      <div class="collapse {{ request()->routeIs('pessoas.*') || request()->routeIs('profissionais.*') || request()->routeIs('categorias.*') || request()->routeIs('laboratorios.*') || request()->routeIs('produtos.*') ? 'show' : '' }}" id="cadastros">
-        <ul class="nav flex-column sub-menu">
-          <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('pessoas.*') ? 'active' : '' }}" href="{{ route('pessoas.index') }}">
-              <i class="mdi mdi-account-heart-outline menu-icon me-2"></i>
-              Pacientes
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('profissionais.*') ? 'active' : '' }}" href="{{ route('profissionais.index') }}">
-              <i class="mdi mdi-account-tie menu-icon me-2"></i>
-              Profissionais
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('categorias.*') ? 'active' : '' }}" href="{{ route('categorias.index') }}">
-              <i class="mdi mdi-tag-multiple menu-icon me-2"></i>
-              Categorias
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('laboratorios.*') ? 'active' : '' }}" href="{{ route('laboratorios.index') }}">
-              <i class="mdi mdi-flask-outline menu-icon me-2"></i>
-              Laboratórios
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('produtos.*') ? 'active' : '' }}" href="{{ route('produtos.index') }}">
-              <i class="mdi mdi-package-variant menu-icon me-2"></i>
-              Produtos
-            </a>
-          </li>
-        </ul>
-      </div>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" data-bs-toggle="collapse" href="#ui-basic" aria-expanded="false" aria-controls="ui-basic">
-        <span class="icon-bg"><i class="mdi mdi-crosshairs-gps menu-icon"></i></span>
-        <span class="menu-title">UI Elements</span>
-        <i class="menu-arrow"></i>
-      </a>
-      <div class="collapse" id="ui-basic">
-        <ul class="nav flex-column sub-menu">
-          <li class="nav-item"> <a class="nav-link" href="#">Buttons</a></li>
-          <li class="nav-item"> <a class="nav-link" href="#">Dropdowns</a></li>
-          <li class="nav-item"> <a class="nav-link" href="#">Typography</a></li>
-        </ul>
-      </div>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="#">
-        <span class="icon-bg"><i class="mdi mdi-contacts menu-icon"></i></span>
-        <span class="menu-title">Icons</span>
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="#">
-        <span class="icon-bg"><i class="mdi mdi-format-list-bulleted menu-icon"></i></span>
-        <span class="menu-title">Forms</span>
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="#">
-        <span class="icon-bg"><i class="mdi mdi-chart-bar menu-icon"></i></span>
-        <span class="menu-title">Charts</span>
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="#">
-        <span class="icon-bg"><i class="mdi mdi-table-large menu-icon"></i></span>
-        <span class="menu-title">Tables</span>
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" data-bs-toggle="collapse" href="#auth" aria-expanded="false" aria-controls="auth">
-        <span class="icon-bg"><i class="mdi mdi-lock menu-icon"></i></span>
-        <span class="menu-title">User Pages</span>
-        <i class="menu-arrow"></i>
-      </a>
-      <div class="collapse" id="auth">
-        <ul class="nav flex-column sub-menu">
-          <li class="nav-item"> <a class="nav-link" href="#"> Blank Page </a></li>
-          @guest
-          @if(Route::has('login'))
-          <li class="nav-item"> <a class="nav-link" href="{{ route('login') }}"> Login </a></li>
+    {{-- Logo do Tenant --}}
+    @if(AuthHelper::check())
+    <li class="nav-item nav-profile border-bottom">
+      <div class="nav-link d-flex align-items-center py-3">
+        <div class="me-3">
+          @if(AuthHelper::hasTenantLogo())
+            <img src="{{ AuthHelper::tenantLogoUrl() }}" 
+                 alt="{{ AuthHelper::tenantName() ?? 'Logo' }}" 
+                 class="img-fluid" 
+                 style="max-height: 50px; max-width: 50px; object-fit: contain; border: 2px solid #e0e0e0; border-radius: 8px; padding: 6px; background-color: #fff;"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <i class="mdi mdi-hospital-building text-primary" style="font-size: 1.5rem; display: none; border: 2px solid #e0e0e0; border-radius: 8px; padding: 6px;"></i>
+          @else
+            <i class="mdi mdi-hospital-building text-primary" style="font-size: 1.5rem; border: 2px solid #e0e0e0; border-radius: 8px; padding: 6px;"></i>
           @endif
-          @if(Route::has('register'))
-          <li class="nav-item"> <a class="nav-link" href="{{ route('register') }}"> Register </a></li>
-          @endif
-          @endguest
-          <li class="nav-item"> <a class="nav-link" href="#"> 404 </a></li>
-          <li class="nav-item"> <a class="nav-link" href="#"> 500 </a></li>
-        </ul>
-      </div>
-    </li>
-    <li class="nav-item documentation-link">
-      <a class="nav-link" href="http://www.bootstrapdash.com/demo/connect-plus-free/jquery/documentation/documentation.html" target="_blank">
-        <span class="icon-bg">
-          <i class="mdi mdi-file-document-box menu-icon"></i>
-        </span>
-        <span class="menu-title">Documentation</span>
-      </a>
-    </li>
-    @auth
-    <li class="nav-item sidebar-user-actions">
-      <div class="user-details">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="d-flex align-items-center">
-              <div class="sidebar-profile-img">
-                <img src="{{ asset('assets/images/faces/face28.png') }}" alt="image">
-              </div>
-              <div class="sidebar-profile-text">
-                <p class="mb-1">@auth{{ Auth::user()->name }}@else User @endauth</p>
-              </div>
-            </div>
+        </div>
+        <div class="d-flex align-items-center flex-wrap flex-grow-1 gap-2">
+          <div class="d-flex align-items-center">
+            <i class="mdi mdi-office-building text-primary me-2" style="font-size: 0.875rem;"></i>
+            <span class="nav-profile-name small fw-semibold">{{ AuthHelper::tenantName() ?? 'VisaoSis' }}</span>
           </div>
-          <div class="badge badge-danger">3</div>
+          @if(AuthHelper::locationName())
+            <div class="d-flex align-items-center">
+              <i class="mdi mdi-map-marker text-muted me-2" style="font-size: 0.75rem;"></i>
+              <span class="text-muted" style="font-size: 0.7rem;">{{ AuthHelper::locationName() }}</span>
+            </div>
+          @endif
         </div>
       </div>
     </li>
-    <li class="nav-item sidebar-user-actions">
-      <div class="sidebar-user-menu">
-        <a href="#" class="nav-link"><i class="mdi mdi-settings menu-icon"></i>
-          <span class="menu-title">Settings</span>
-        </a>
-      </div>
-    </li>
-    <li class="nav-item sidebar-user-actions">
-      <div class="sidebar-user-menu">
-        <a href="#" class="nav-link"><i class="mdi mdi-speedometer menu-icon"></i>
-          <span class="menu-title">Take Tour</span></a>
-      </div>
-    </li>
+    @endif
+    
+    <li class="nav-item nav-category">Menu</li>
+    
+    {{-- Menu dinâmico baseado nas permissões do Cerberus --}}
+    @foreach($menuItems as $item)
+        @php
+          $hasChildren = !empty($item['children']) && is_array($item['children']);
+          $itemKey = 'menu_' . ($item['id'] ?? uniqid());
+          $hasActiveChild = false;
+          // Verificar se algum filho está realmente ativo
+          if ($hasChildren) {
+            foreach ($item['children'] as $child) {
+              if (isset($child['url']) && !empty($child['url']) && $child['url'] !== '#') {
+                $url = MenuHelper::processUrl($child['url']);
+                // Verificação mais rigorosa: URL não pode ser vazia, não pode ser #, e deve estar realmente ativa
+                if (!empty($url) && $url !== '#' && $url !== '/' && MenuHelper::isRouteActive($url)) {
+                  $hasActiveChild = true;
+                  break;
+                }
+              }
+            }
+          }
+          // Por padrão, todos os menus começam fechados (false)
+          $isExpanded = $hasActiveChild ? 'true' : 'false';
+          $showClass = $hasActiveChild ? 'show' : '';
+        @endphp
+
+        @if($hasChildren)
+          {{-- Item com submenu --}}
+          <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="collapse" href="#{{ $itemKey }}" aria-expanded="{{ $isExpanded }}" aria-controls="{{ $itemKey }}">
+              <span class="icon-bg"><i class="{{ $item['icon'] ?? 'mdi mdi-circle' }} menu-icon"></i></span>
+              <span class="menu-title">{{ $item['name'] ?? $item['short_name'] ?? 'Menu' }}</span>
+              <i class="menu-arrow"></i>
+            </a>
+            <div class="collapse {{ $showClass }}" id="{{ $itemKey }}" data-initial-state="{{ $hasActiveChild ? 'open' : 'closed' }}">
+              <ul class="nav flex-column sub-menu">
+                @php
+                  $children = $item['children'] ?? [];
+                  usort($children, function ($a, $b) {
+                    $orderA = $a['ordering'] ?? 999;
+                    $orderB = $b['ordering'] ?? 999;
+                    return $orderA <=> $orderB;
+                  });
+                @endphp
+                @foreach($children as $child)
+                  @if(isset($child['show_menu']) && $child['show_menu'])
+                    @php
+                      $childUrl = MenuHelper::processUrl($child['url'] ?? '#');
+                      if ($childUrl === '#') {
+                        $childUrl = MenuHelper::resolveUrlFromItemKey($child);
+                      }
+                      $isActive = MenuHelper::isRouteActive($childUrl);
+                    @endphp
+                    <li class="nav-item">
+                      <a class="nav-link {{ $isActive ? 'active' : '' }}" href="{{ $childUrl }}" target="{{ $child['target'] ?? '_self' }}">
+                        <i class="{{ $child['icon'] ?? 'mdi mdi-circle' }} menu-icon me-2"></i>
+                        {{ $child['name'] ?? $child['short_name'] ?? 'Item' }}
+                      </a>
+                    </li>
+                  @endif
+                @endforeach
+              </ul>
+            </div>
+          </li>
+        @else
+          {{-- Item simples --}}
+          @php
+            $url = MenuHelper::processUrl($item['url'] ?? '#');
+            if ($url === '#') {
+              $url = MenuHelper::resolveUrlFromItemKey($item);
+            }
+            $isActive = MenuHelper::isRouteActive($url);
+          @endphp
+          <li class="nav-item">
+            <a class="nav-link {{ $isActive ? 'active' : '' }}" href="{{ $url }}" target="{{ $item['target'] ?? '_self' }}">
+              <span class="icon-bg"><i class="{{ $item['icon'] ?? 'mdi mdi-circle' }} menu-icon"></i></span>
+              <span class="menu-title">{{ $item['name'] ?? $item['short_name'] ?? 'Item' }}</span>
+            </a>
+          </li>
+        @endif
+      @endforeach
+   
+    @auth
     <li class="nav-item sidebar-user-actions">
       <div class="sidebar-user-menu">
         @if(Route::has('logout'))
@@ -160,13 +128,13 @@
           @csrf
           <button type="submit" class="nav-link border-0 bg-transparent w-100 text-start" style="cursor: pointer;">
             <i class="mdi mdi-logout menu-icon"></i>
-            <span class="menu-title">Log Out</span>
+            <span class="menu-title">Sair</span>
           </button>
         </form>
         @else
         <a href="#" class="nav-link">
           <i class="mdi mdi-logout menu-icon"></i>
-          <span class="menu-title">Log Out</span>
+          <span class="menu-title">Sair</span>
         </a>
         @endif
       </div>

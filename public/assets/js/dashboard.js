@@ -1,8 +1,12 @@
 (function($) {
-	document.querySelector('#bannerClose').addEventListener('click',function() {
-		document.querySelector('#proBanner').classList.add('d-none');
-	});
 	'use strict';
+	var bannerClose = document.querySelector('#bannerClose');
+	if (bannerClose) {
+		bannerClose.addEventListener('click', function() {
+			var proBanner = document.querySelector('#proBanner');
+			if (proBanner) proBanner.classList.add('d-none');
+		});
+	}
 	$(function() {
 		if ($(".dashboard-progress-1").length) {
 			$('.dashboard-progress-1').circleProgress({
@@ -1456,6 +1460,86 @@
 				options: myBalanceOptions
 			});
     }
+
+		if ($("#evolucao-vendas-chart").length) {
+			var vendasData = window.DASHBOARD_VENDAS_POR_MES || { labels: [], valores: [] };
+			var labels = vendasData.labels && vendasData.labels.length ? vendasData.labels : ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+			var valores = vendasData.valores && vendasData.valores.length ? vendasData.valores : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+			var evolucaoVendasData = {
+				labels: labels,
+				datasets: [{
+					label: 'Vendas',
+					data: valores,
+					backgroundColor: ['#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8'],
+					borderColor: ['#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8'],
+					borderWidth: 1,
+					fill: false
+				}]
+			};
+			var evolucaoVendasOptions = {
+				responsive: true,
+				maintainAspectRatio: false,
+				scales: {
+					xAxes: [{
+						stacked: false,
+						barPercentage: 0.5,
+						categoryPercentage: 0.4,
+						position: 'bottom',
+						display: true,
+						gridLines: {
+							display: false,
+							drawBorder: false,
+							drawTicks: false
+						},
+						ticks: {
+							display: true,
+							fontColor: '#a7afb7',
+							fontSize: 14,
+							padding: 10,
+						}
+					}],
+					yAxes: [{
+						stacked: false,
+						display: true,
+						gridLines: {
+							drawBorder: false,
+							display: true,
+							color: '#eef0fa',
+							drawTicks: false,
+							zeroLineColor: 'rgba(90, 113, 208, 0)',
+						},
+						ticks: {
+							display: true,
+							beginAtZero: true,
+							fontColor: '#a7afb7',
+							fontSize: 14,
+							callback: function(value) {
+								return 'R$ ' + Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+							}
+						},
+					}]
+				},
+				legend: { display: false },
+				tooltips: {
+					backgroundColor: 'rgba(0, 0, 0, 1)',
+					callbacks: {
+						label: function(tooltipItem) {
+							var val = tooltipItem.yLabel != null ? tooltipItem.yLabel : 0;
+							return 'R$ ' + Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+						}
+					}
+				},
+				plugins: {
+					datalabels: { display: false, align: 'center', anchor: 'center' }
+				}
+			};
+			var evolucaoCanvas = document.getElementById("evolucao-vendas-chart").getContext("2d");
+			new Chart(evolucaoCanvas, {
+				type: 'bar',
+				data: evolucaoVendasData,
+				options: evolucaoVendasOptions
+			});
+		}
     
 		if ($("#my-balance-dark").length) {
 			var myBalanceDarkData = {
