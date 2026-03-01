@@ -83,6 +83,7 @@ $menuItems = MenuHelper::getMenuItems('left_sidebar');
                   });
                 @endphp
                 @foreach($children as $child)
+                  @continue(!is_array($child))
                   @php
                     // Mantém a mesma regra flexível do MenuHelper:
                     // se show_menu não vier no payload, considera true.
