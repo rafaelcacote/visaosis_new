@@ -13,20 +13,28 @@
  */
 
 /* Permite que os submenus abertos apareçam sem serem clipados verticalmente */
+/* !important necessário para sobrescrever inline styles do PerfectScrollbar */
 .sidebar .nav {
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
 }
 
 /* O sub-menu em si também não deve clipar seus itens */
 .sidebar .nav.sub-menu {
-  overflow: visible;
+  overflow: visible !important;
 }
 
 /* Durante a animação Bootstrap usa overflow:hidden no .collapsing — mantemos isso */
 /* Após abrir (.collapse.show) garantimos que o conteúdo seja visível */
 .sidebar .nav .nav-item .collapse.show {
-  overflow: visible;
+  overflow: visible !important;
+}
+
+/* Garantir que o collapse show tenha altura automática */
+.sidebar .nav .nav-item .collapse.show {
+  height: auto !important;
+  max-height: none !important;
+  visibility: visible !important;
 }
 
 /* Modo icon-only: manter display block no hover para que o submenu flutue */
