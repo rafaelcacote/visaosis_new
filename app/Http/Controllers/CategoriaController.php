@@ -90,6 +90,11 @@ class CategoriaController extends Controller
             $locationId = $firstLocation['location_id'] ?? null;
         }
 
+        if (!$tenantId) {
+            return back()->withInput()
+                ->with('error', 'Nenhum tenant disponível para criar a categoria.');
+        }
+
         if (!$locationId) {
             return back()->withInput()
                 ->with('error', 'Nenhuma localização disponível para criar a categoria.');
@@ -100,8 +105,9 @@ class CategoriaController extends Controller
                 'required',
                 'string',
                 'max:255',
-                function ($attribute, $value, $fail) use ($locationId) {
+                function ($attribute, $value, $fail) use ($locationId, $tenantId) {
                     $exists = Categoria::whereRaw('LOWER(descricao) = ?', [strtolower($value)])
+                        ->where('tenant_id', $tenantId)
                         ->where('location_id', $locationId)
                         ->whereNull('deleted_at')
                         ->exists();
@@ -121,6 +127,7 @@ class CategoriaController extends Controller
             DB::beginTransaction();
 
             $categoria = Categoria::create([
+                'tenant_id' => $tenantId,
                 'location_id' => $locationId,
                 'user_id' => auth()->id(),
                 'descricao' => $request->descricao,

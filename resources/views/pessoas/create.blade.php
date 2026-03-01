@@ -149,18 +149,28 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label for="cep">CEP</label>
-                                <input
-                                    type="text"
-                                    class="form-control @error('cep') is-invalid @enderror"
-                                    id="cep"
-                                    name="cep"
-                                    value="{{ old('cep') }}"
-                                    placeholder="00000-000"
-                                    maxlength="9"
-                                >
+                                <div class="input-group">
+                                    <input
+                                        type="text"
+                                        class="form-control @error('cep') is-invalid @enderror"
+                                        id="cep"
+                                        name="cep"
+                                        value="{{ old('cep') }}"
+                                        placeholder="00000-000"
+                                        maxlength="9"
+                                        autocomplete="postal-code"
+                                    >
+                                    <span class="input-group-text" id="cep-spinner" style="display:none;">
+                                        <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                    </span>
+                                </div>
                                 @error('cep')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
+                                <small id="cep-feedback" class="text-danger" style="display:none;">
+                                    <i class="mdi mdi-alert-circle-outline me-1"></i>
+                                    CEP não encontrado. Digite o endereço manualmente ou informe outro CEP.
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-8">
@@ -329,3 +339,87 @@
 </div>
 @endsection
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const cepInput     = document.getElementById('cep');
+    const logradouro   = document.getElementById('logradouro');
+    const bairro       = document.getElementById('bairro');
+    const localidade   = document.getElementById('localidade');
+    const uf           = document.getElementById('uf');
+    const numero       = document.getElementById('numero');
+    const spinner      = document.getElementById('cep-spinner');
+    const feedback     = document.getElementById('cep-feedback');
+
+    if (!cepInput) return;
+
+    // ── Máscara do CEP ──────────────────────────────────────────────────────
+    cepInput.addEventListener('input', async function () {
+        // Aplica mascara e busca automaticamente ao completar 8 digitos
+        let v = this.value.replace(/\D/g, '').substring(0, 8);
+        if (v.length > 5) v = v.substring(0, 5) + '-' + v.substring(5);
+        this.value = v;
+
+        const cep = v.replace(/\D/g, '');
+
+        // Limpa feedback anterior
+        feedback.style.display = 'none';
+        cepInput.classList.remove('is-invalid');
+
+        if (cep.length !== 8) return;
+
+        // Mostra spinner
+        spinner.style.display = 'inline-flex';
+
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data     = await response.json();
+
+            spinner.style.display = 'none';
+
+            if (data.erro) {
+                // CEP não encontrado → seleciona conteúdo para o usuário substituir
+                feedback.style.display = 'block';
+                cepInput.classList.add('is-invalid');
+                cepInput.focus();
+                cepInput.select();
+            } else {
+                // Preenche campos automaticamente
+                logradouro.value = data.logradouro || '';
+                bairro.value     = data.bairro     || '';
+                localidade.value = data.localidade || '';
+                uf.value         = data.uf         || '';
+
+                // Foca no campo Número
+                numero.focus();
+            }
+        } catch (err) {
+            spinner.style.display = 'none';
+            feedback.style.display = 'block';
+            cepInput.classList.add('is-invalid');
+            cepInput.focus();
+            cepInput.select();
+        }
+    });
+    // Mascara de telefone: (00) 00000-0000 ou (00) 0000-0000
+    const telefoneInput = document.getElementById('telefone');
+    if (telefoneInput) {
+        telefoneInput.addEventListener('input', function () {
+            let v = this.value.replace(/\D/g, '').substring(0, 11);
+            if (v.length > 10) {
+                // Celular: (00) 00000-0000
+                v = '(' + v.substring(0, 2) + ') ' + v.substring(2, 7) + '-' + v.substring(7);
+            } else if (v.length > 6) {
+                // Fixo parcial: (00) 0000-XXXX
+                v = '(' + v.substring(0, 2) + ') ' + v.substring(2, 6) + '-' + v.substring(6);
+            } else if (v.length > 2) {
+                v = '(' + v.substring(0, 2) + ') ' + v.substring(2);
+            } else if (v.length > 0) {
+                v = '(' + v;
+            }
+            this.value = v;
+        });
+    }
+});
+</script>
+@endpush

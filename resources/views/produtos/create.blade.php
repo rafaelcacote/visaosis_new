@@ -81,14 +81,13 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label for="preco_custo">Preço de custo</label>
-                                <input type="number"
-                                       step="0.01"
-                                       min="0"
+                                <input type="text"
                                        class="form-control @error('preco_custo') is-invalid @enderror"
                                        id="preco_custo"
                                        name="preco_custo"
-                                       value="{{ old('preco_custo') }}"
-                                       placeholder="0,00">
+                                       value="{{ old('preco_custo') ? 'R$ ' . number_format(old('preco_custo'), 2, ',', '.') : '' }}"
+                                       placeholder="R$ 0,00"
+                                       data-mask="currency">
                                 @error('preco_custo')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -97,14 +96,13 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label for="preco_venda">Preço de venda <span class="text-danger">*</span></label>
-                                <input type="number"
-                                       step="0.01"
-                                       min="0"
+                                <input type="text"
                                        class="form-control @error('preco_venda') is-invalid @enderror"
                                        id="preco_venda"
                                        name="preco_venda"
-                                       value="{{ old('preco_venda') }}"
-                                       placeholder="0,00"
+                                       value="{{ old('preco_venda') ? 'R$ ' . number_format(old('preco_venda'), 2, ',', '.') : '' }}"
+                                       placeholder="R$ 0,00"
+                                       data-mask="currency"
                                        required>
                                 @error('preco_venda')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -181,6 +179,79 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Máscara monetária
+    function formatCurrency(value) {
+        // Remove tudo que não é número
+        value = value.replace(/\D/g, '');
+        
+        // Se estiver vazio, retorna vazio
+        if (!value) return '';
+        
+        // Converte para número e divide por 100 para ter os centavos
+        const number = parseFloat(value) / 100;
+        
+        // Formata como moeda brasileira
+        return number.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function applyCurrencyMask(input) {
+        input.addEventListener('input', function(e) {
+            const cursorPosition = e.target.selectionStart;
+            const oldValue = e.target.value;
+            const newValue = formatCurrency(e.target.value);
+            
+            e.target.value = newValue ? 'R$ ' + newValue : '';
+            
+            // Ajustar posição do cursor
+            const lengthDiff = e.target.value.length - oldValue.length;
+            const newPosition = Math.max(0, cursorPosition + lengthDiff);
+            e.target.setSelectionRange(newPosition, newPosition);
+        });
+
+        // Formatar valor inicial se existir
+        if (input.value) {
+            // Remove R$ se existir e extrai apenas números
+            let numericValue = input.value.replace(/\D/g, '');
+            if (numericValue) {
+                // Se o valor original tinha vírgula ou ponto, significa que já estava formatado
+                // Nesse caso, o valor numérico já está correto (ex: "1.234,56" -> "123456")
+                // Dividimos por 100 para converter centavos em reais
+                input.value = 'R$ ' + formatCurrency(numericValue);
+            }
+        }
+
+        // Limpar formatação antes do submit
+        const form = input.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const value = input.value.replace(/\D/g, '');
+                if (value) {
+                    // Converte para formato numérico com ponto decimal (ex: 1000 -> 10.00)
+                    const numericValue = (parseFloat(value) / 100).toFixed(2);
+                    input.value = numericValue;
+                } else {
+                    input.value = '';
+                }
+            });
+        }
+    }
+
+    // Aplicar máscara nos campos de preço
+    const precoCusto = document.getElementById('preco_custo');
+    const precoVenda = document.getElementById('preco_venda');
+    
+    if (precoCusto) {
+        applyCurrencyMask(precoCusto);
+    }
+    
+    if (precoVenda) {
+        applyCurrencyMask(precoVenda);
+    }
+
+    // Gerenciamento de atributos
     const container = document.getElementById('attributes-container');
     if (!container) return;
 

@@ -34,6 +34,7 @@
                                        name="cnpj"
                                        value="{{ old('cnpj') }}"
                                        placeholder="00.000.000/0001-00"
+                                       maxlength="14"
                                        required>
                                 @error('cnpj')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -80,7 +81,7 @@
                             <div class="form-group">
                                 <label for="telefone">Telefone</label>
                                 <input type="text"
-                                       class="form-control @error('telefone') is-invalid @enderror"
+                                       class="form-control phone-mask @error('telefone') is-invalid @enderror"
                                        id="telefone"
                                        name="telefone"
                                        value="{{ old('telefone') }}"
@@ -163,4 +164,8 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script src="{{ asset('assets/js/phone-mask.js') }}"></script>
+@endpush
 @endsection
