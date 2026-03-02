@@ -35,8 +35,13 @@ class LaboratorioController extends Controller
             return view('laboratorios.index', compact('laboratorios', 'filters'));
         }
 
+        // Detectar o driver do banco de dados para usar ILIKE (PostgreSQL) ou LIKE (MySQL)
+        $driver = DB::connection()->getDriverName();
+        $isPostgres = ($driver === 'pgsql');
+
         $query = Laboratorio::where('tenant_id', $tenantId);
 
+        // Aplicar filtro de location
         if (!empty($locationIds)) {
             $query->where(function ($q) use ($locationIds) {
                 $q->whereIn('location_id', $locationIds)
@@ -44,25 +49,73 @@ class LaboratorioController extends Controller
             });
         }
 
+        // Aplicar busca ANTES do filtro de status para garantir que funcione
         if (!empty($filters['search'])) {
-            $search = $filters['search'];
-            $cnpjLimpo = preg_replace('/[^0-9]/', '', $search);
-            $query->where(function ($q) use ($search, $cnpjLimpo) {
-                $q->where('razao_social', 'ILIKE', "%{$search}%")
-                    ->orWhere('nome_fantasia', 'ILIKE', "%{$search}%")
-                    ->orWhere('email', 'ILIKE', "%{$search}%")
-                    ->orWhere('telefone', 'ILIKE', "%{$search}%");
-                if (strlen($cnpjLimpo) >= 3) {
-                    $q->orWhere('cnpj', 'LIKE', "%{$cnpjLimpo}%");
-                }
-            });
+            $search = trim($filters['search']);
+            
+            if (!empty($search)) {
+                $cnpjLimpo = preg_replace('/[^0-9]/', '', $search);
+                $telefoneLimpo = preg_replace('/[^0-9]/', '', $search);
+                
+                $query->where(function ($q) use ($search, $cnpjLimpo, $telefoneLimpo, $isPostgres) {
+                    // Buscar por razão social (case insensitive)
+                    if ($isPostgres) {
+                        $q->where('razao_social', 'ILIKE', "%{$search}%");
+                    } else {
+                        $q->whereRaw('LOWER(razao_social) LIKE ?', ['%' . mb_strtolower($search, 'UTF-8') . '%']);
+                    }
+                    
+                    // Buscar por nome fantasia (case insensitive)
+                    if ($isPostgres) {
+                        $q->orWhere('nome_fantasia', 'ILIKE', "%{$search}%");
+                    } else {
+                        $q->orWhereRaw('LOWER(nome_fantasia) LIKE ?', ['%' . mb_strtolower($search, 'UTF-8') . '%']);
+                    }
+                    
+                    // Buscar por email (case insensitive)
+                    if ($isPostgres) {
+                        $q->orWhere('email', 'ILIKE', "%{$search}%");
+                    } else {
+                        $q->orWhereRaw('LOWER(email) LIKE ?', ['%' . mb_strtolower($search, 'UTF-8') . '%']);
+                    }
+                    
+                    // Buscar por telefone (apenas números)
+                    if (!empty($telefoneLimpo) && strlen($telefoneLimpo) >= 3) {
+                        $q->orWhere('telefone', 'LIKE', "%{$telefoneLimpo}%");
+                    }
+                    
+                    // Buscar por CNPJ (apenas números)
+                    if (!empty($cnpjLimpo) && strlen($cnpjLimpo) >= 3) {
+                        $q->orWhere('cnpj', 'LIKE', "%{$cnpjLimpo}%");
+                    }
+                });
+            }
         }
 
-        if ($filters['status'] !== '') {
+        // Aplicar filtro de status DEPOIS da busca
+        if ($filters['status'] !== '' && $filters['status'] !== null) {
             $query->where('ativo', $filters['status'] == '1');
         }
 
+        // Debug temporário - remover depois
+        \Log::info('Query de Laboratórios', [
+            'search' => $filters['search'] ?? '',
+            'status' => $filters['status'] ?? '',
+            'status_empty' => empty($filters['status']),
+            'tenant_id' => $tenantId,
+            'location_ids' => $locationIds,
+            'sql' => $query->toSql(),
+            'bindings' => $query->getBindings(),
+        ]);
+
         $laboratorios = $query->orderBy('razao_social')->paginate(15);
+
+        // Debug temporário - remover depois
+        \Log::info('Resultado da busca', [
+            'total' => $laboratorios->total(),
+            'count' => $laboratorios->count(),
+            'has_results' => $laboratorios->count() > 0,
+        ]);
 
         return view('laboratorios.index', compact('laboratorios', 'filters'));
     }
