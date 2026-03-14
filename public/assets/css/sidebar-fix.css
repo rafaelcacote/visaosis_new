@@ -9,12 +9,13 @@
  * SOLUÇÃO:
  *   Sobrescrevemos overflow no nav principal da sidebar para permitir que o conteúdo
  *   dos collapses apareça. Overflow horizontal continua clipado via overflow-x.
- *   No modo sidebar-icon-only mantemos o comportamento original.
+ *   Usamos !important para garantir que funcione em todos os ambientes (clone, servidor, etc).
  */
 
 /* Permite que os submenus abertos apareçam sem serem clipados verticalmente */
-/* !important necessário para sobrescrever inline styles do PerfectScrollbar */
-.sidebar .nav {
+/* Especificidade aumentada para vencer .sidebar-fixed .sidebar .nav e outras regras */
+.sidebar .nav,
+.sidebar-fixed .sidebar .nav {
   overflow-x: hidden !important;
   overflow-y: visible !important;
 }
@@ -35,6 +36,14 @@
   height: auto !important;
   max-height: none !important;
   visibility: visible !important;
+}
+
+/* Garantir que os itens do submenu sejam visíveis (evitar height: 0 ou max-height que esconda) */
+.sidebar .nav .nav-item .collapse.show .sub-menu,
+.sidebar .nav .nav-item .collapse.show .nav.sub-menu {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Modo icon-only: manter display block no hover para que o submenu flutue */

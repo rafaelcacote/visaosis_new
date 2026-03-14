@@ -19,11 +19,12 @@
     <!-- endinject -->
     <!-- Layout styles -->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/sidebar-fix.css') }}">
     <!-- End layout styles -->
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
     <!-- Vite HMR for auto-reload -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- sidebar-fix DEVE vir após style e vite para garantir submenus visíveis em todos os ambientes -->
+    <link rel="stylesheet" href="{{ asset('assets/css/sidebar-fix.css') }}">
     @stack('styles')
   </head>
   <body>
