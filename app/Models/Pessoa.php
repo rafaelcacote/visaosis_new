@@ -216,5 +216,15 @@ class Pessoa extends Model
             ? preg_replace('/\D/', '', $value)
             : null;
     }
-}
 
+    public function getUltimaConsultaAttribute()
+    {
+        $consulta = \App\Models\Consulta::where('pessoa_paciente_id', $this->id)
+            ->where('status', \App\Models\Consulta::STATUS_ATENDIDO)
+            ->whereNotNull('atendido_em')
+            ->with('profissional.especialidade')
+            ->orderByDesc('atendido_em')
+            ->first();
+        return $consulta ? $consulta->atendido_em : null;
+    }
+}

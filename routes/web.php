@@ -15,6 +15,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\OrdemServicoController;
 use App\Http\Controllers\FinancialController;
+use App\Http\Controllers\ProfissionalWorkflowController;
 
 // Rotas de autenticação
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -40,7 +41,7 @@ Route::get('/debug/menu/json', function () {
             'message' => 'Faça login primeiro'
         ]);
     }
-    
+
     return response()->json([
         'auth_check' => auth()->check(),
         'user_id' => auth()->id(),
@@ -77,22 +78,22 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Rota para seleção de location
     Route::post('/location/select', [AuthController::class, 'selectLocation'])->name('location.select');
-    
+
     // Rotas de usuários
     Route::resource('users', UserController::class);
     Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
     Route::post('users/{user}/change-password', [UserController::class, 'changePassword'])->name('users.change-password');
-    
+
     // Rotas de profissionais
     Route::resource('profissionais', ProfissionalController::class)->parameters([
         'profissionais' => 'profissional'
     ]);
     Route::get('profissionais/search', [ProfissionalController::class, 'search'])->name('profissionais.search');
     Route::post('profissionais/{profissional}/toggle-status', [ProfissionalController::class, 'toggleStatus'])->name('profissionais.toggle-status');
-    
+
     // Rotas de categorias
     Route::resource('categorias', CategoriaController::class)->parameters([
         'categorias' => 'categoria'
@@ -139,28 +140,29 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/api/patients/search', [AttendanceController::class, 'searchPatient'])->name('patients.search');
     });
 
-    // Módulo Profissional (Painel do Profissional - Atendimentos)
+    // Módulo Profissional (Workflow de Atendimento)
     Route::prefix('professional')->name('professional.')->group(function () {
-        Route::get('/', [ProfessionalController::class, 'index'])->name('index');
-        Route::get('/search-patient', [ProfessionalController::class, 'searchPatient'])->name('searchPatient');
-        Route::get('/consultation/{id}', [ProfessionalController::class, 'startConsultation'])->name('consultation');
-        Route::post('/generate-prescription/{id}', [ProfessionalController::class, 'generatePrescription'])->name('generatePrescription');
-        Route::post('/send-whatsapp', [ProfessionalController::class, 'sendWhatsApp'])->name('sendWhatsApp');
-        Route::post('/send-exam-whatsapp', [ProfessionalController::class, 'sendExamWhatsApp'])->name('sendExamWhatsApp');
-        Route::post('/send-referral-whatsapp', [ProfessionalController::class, 'sendReferralWhatsApp'])->name('sendReferralWhatsApp');
-        Route::post('/refer-patient/{id}', [ProfessionalController::class, 'referPatient'])->name('referPatient');
-        Route::post('/finish-consultation/{id}', [ProfessionalController::class, 'finishConsultation'])->name('finishConsultation');
-        Route::get('/patient-history/{id}', [ProfessionalController::class, 'patientHistory'])->name('patientHistory');
-        Route::get('/patient-history-full/{id}', [ProfessionalController::class, 'patientHistoryFull'])->name('patientHistoryFull');
-        Route::get('/print-prescription/{id}', [ProfessionalController::class, 'printPrescription'])->name('printPrescription');
-        Route::get('/print-exame/{id}', [ProfessionalController::class, 'printExamDoc'])->name('print-exame');
-        Route::get('/print-referral/{id}', [ProfessionalController::class, 'printReferralDoc'])->name('print-referral');
-        Route::get('/new-prescription', [ProfessionalController::class, 'newPrescription'])->name('newPrescription');
-        Route::post('/new-prescription/store', [ProfessionalController::class, 'storeNewPrescription'])->name('storeNewPrescription');
-        Route::post('/update-status/{id}', [ProfessionalController::class, 'updateStatus'])->name('update-status');
-        Route::post('/save-prescription-draft/{id}', [ProfessionalController::class, 'savePrescriptionDraft'])->name('savePrescriptionDraft');
-        Route::post('/save-exame/{id}', [ProfessionalController::class, 'saveExame'])->name('saveExame');
+        Route::get('/', [ProfissionalWorkflowController::class, 'index'])->name('index');
+        Route::get('/search-patient', [ProfissionalWorkflowController::class, 'searchPatient'])->name('searchPatient');
+        Route::get('/consultation/{id}', [ProfissionalWorkflowController::class, 'startConsultation'])->name('consultation');
+        Route::post('/generate-prescription/{id}', [ProfissionalWorkflowController::class, 'generatePrescription'])->name('generatePrescription');
+        Route::post('/send-whatsapp', [ProfissionalWorkflowController::class, 'sendWhatsApp'])->name('sendWhatsApp');
+        Route::post('/send-exam-whatsapp', [ProfissionalWorkflowController::class, 'sendExamWhatsApp'])->name('sendExamWhatsApp');
+        Route::post('/send-referral-whatsapp', [ProfissionalWorkflowController::class, 'sendReferralWhatsApp'])->name('sendReferralWhatsApp');
+        Route::post('/refer-patient/{id}', [ProfissionalWorkflowController::class, 'referPatient'])->name('referPatient');
+        Route::post('/finish-consultation/{id}', [ProfissionalWorkflowController::class, 'finishConsultation'])->name('finishConsultation');
+        Route::get('/patient-history/{id}', [ProfissionalWorkflowController::class, 'patientHistory'])->name('patientHistory');
+        Route::get('/patient-history-full/{id}', [ProfissionalWorkflowController::class, 'patientHistoryFull'])->name('patientHistoryFull');
+        Route::get('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescription'])->name('printPrescription');
+        Route::get('/print-exame/{id}', [ProfissionalWorkflowController::class, 'printExamDoc'])->name('print-exame');
+        Route::get('/print-referral/{id}', [ProfissionalWorkflowController::class, 'printReferralDoc'])->name('print-referral');
+        Route::get('/new-prescription', [ProfissionalWorkflowController::class, 'newPrescription'])->name('newPrescription');
+        Route::post('/new-prescription/store', [ProfissionalWorkflowController::class, 'storeNewPrescription'])->name('storeNewPrescription');
+        Route::post('/update-status/{id}', [ProfissionalWorkflowController::class, 'updateStatus'])->name('update-status');
+        Route::post('/save-prescription-draft/{id}', [ProfissionalWorkflowController::class, 'savePrescriptionDraft'])->name('savePrescriptionDraft');
+        Route::post('/save-exame/{id}', [ProfissionalWorkflowController::class, 'saveExame'])->name('saveExame');
     });
+
 
     // Módulo de Vendas
     Route::resource('sales', SaleController::class);
@@ -187,4 +189,5 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/send-whatsapp/{id}', [FinancialController::class, 'sendWhatsApp'])->name('send-whatsapp');
         Route::post('/receive-payment', [FinancialController::class, 'receivePayment'])->name('receive-payment');
     });
+    Route::post('/professional/toggle-pause/{id}', [ProfissionalWorkflowController::class, 'togglePause']);
 });
