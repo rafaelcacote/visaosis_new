@@ -122,6 +122,26 @@
                 </div>
             </div>
         </div>
+        <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 grid-margin stretch-card">
+            <div class="card card-statistics">
+                <div class="card-body">
+                    <div class="clearfix">
+                        <div class="float-start">
+                            <i class="mdi mdi-send-circle text-primary icon-lg"></i>
+                        </div>
+                        <div class="float-end">
+                            <p class="mb-0 text-right text-dark">Encaminhados</p>
+                            <div class="fluid-container">
+                                <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $stats['encaminhado'] }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3 mb-0">
+                        <i class="mdi mdi-send me-1" aria-hidden="true"></i> Encaminhados hoje
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row">
