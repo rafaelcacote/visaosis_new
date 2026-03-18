@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Helpers\AuthHelper;
 use App\Models\Consulta; // Import the Consulta model
 use App\Models\Encaminhamento;
 use App\Models\Especialidade;
-use App\Models\Prescricao;
 use App\Models\Exame;
-use Illuminate\Support\Facades\Validator;
-use App\Models\Profissional;
 use App\Models\Pessoa;
+use App\Models\Prescricao;
+use App\Models\Profissional;
 use Carbon\Carbon;
-use App\Helpers\AuthHelper;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class ProfissionalWorkflowController extends Controller
 {
@@ -51,7 +51,7 @@ class ProfissionalWorkflowController extends Controller
                         'telefone_formatado' => $p->telefone_formatado,
                         'email' => $p->email,
                         'nascimento_em' => $p->nascimento_em ? $p->nascimento_em->format('Y-m-d') : null,
-                        'idade' => $p->idade
+                        'idade' => $p->idade,
                     ];
                 }),
                 'paciente' => $pacientes->count() === 1 ? [
@@ -63,8 +63,8 @@ class ProfissionalWorkflowController extends Controller
                     'telefone_formatado' => $pacientes->first()->telefone_formatado,
                     'email' => $pacientes->first()->email,
                     'nascimento_em' => $pacientes->first()->nascimento_em ? $pacientes->first()->nascimento_em->format('Y-m-d') : null,
-                    'idade' => $pacientes->first()->idade
-                ] : null
+                    'idade' => $pacientes->first()->idade,
+                ] : null,
             ]);
         }
 
@@ -73,7 +73,7 @@ class ProfissionalWorkflowController extends Controller
             'count' => 0,
             'multiple' => false,
             'pacientes' => [],
-            'paciente' => null
+            'paciente' => null,
         ]);
     }
 
@@ -86,7 +86,6 @@ class ProfissionalWorkflowController extends Controller
         // com eager loading dos relacionamentos paciente e profissional
 
         $today = Carbon::now('America/Manaus')->format('Y-m-d');
-
 
         $patients = Consulta::with(['paciente', 'profissional'])
             ->where('ativo', true)
@@ -108,10 +107,9 @@ class ProfissionalWorkflowController extends Controller
             'in_service' => $inService,
             'completed' => $completed,
             'cancelled' => $cancelled,
-            'encaminhado' => $encaminhado
+            'encaminhado' => $encaminhado,
 
         ];
-
 
         return view('professional.index', compact('patients', 'stats'));
     }
@@ -127,7 +125,7 @@ class ProfissionalWorkflowController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exameModel) {
+        if (! $exameModel) {
             return redirect()->back()->with('error', 'Exame não encontrado.');
         }
 
@@ -161,6 +159,7 @@ class ProfissionalWorkflowController extends Controller
         ];
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.exame-pdf', compact('exame'));
+
         return $pdf->stream('exame-' . $consulta->id . '.pdf');
     }
 
@@ -176,7 +175,7 @@ class ProfissionalWorkflowController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$encaminhamentoModel) {
+        if (! $encaminhamentoModel) {
             return redirect()->back()->with('error', 'Encaminhamento não encontrado.');
         }
 
@@ -209,6 +208,7 @@ class ProfissionalWorkflowController extends Controller
         ];
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.referral-pdf', compact('referral'));
+
         return $pdf->stream('encaminhamento-' . $consulta->id . '.pdf');
     }
 
@@ -222,13 +222,12 @@ class ProfissionalWorkflowController extends Controller
             ->first();
         // $patient = Pessoa::find($id);
 
-        //dd($consulta);
+        // dd($consulta);
 
-        if (!$consulta) {
+        if (! $consulta) {
             return redirect()->route('professional.index')->with('error', 'Paciente não encontrado.');
         }
         $patient = $consulta->paciente;
-
 
         // Buscar o último atendimento do paciente
         $ultimaConsulta = Consulta::with(['prescricao'])
@@ -238,15 +237,13 @@ class ProfissionalWorkflowController extends Controller
             ->orderByDesc('atendido_em')
             ->first();
 
-        $prescricao = array();
+        $prescricao = [];
         if ($ultimaConsulta) {
             $prescricao = \App\Models\Prescricao::where('consulta_id', $ultimaConsulta->id)
                 ->where('tenant_id', $ultimaConsulta->tenant_id)
                 ->whereNull('deleted_at')
                 ->first();
         }
-
-
 
         // Buscar histórico de consultas
         $historico = Consulta::with(['profissional'])
@@ -269,6 +266,7 @@ class ProfissionalWorkflowController extends Controller
                         $hora = '';
                     }
                 }
+
                 return [
                     'data' => $data,
                     'hora' => $hora,
@@ -293,7 +291,6 @@ class ProfissionalWorkflowController extends Controller
             ->where('tenant_id', $consulta->tenant_id)
             ->whereNull('deleted_at')
             ->first();
-
 
         // Monta os dados do paciente para a view
         $patientData = [
@@ -324,21 +321,21 @@ class ProfissionalWorkflowController extends Controller
             ] : null,
             // Add: current prescription values to prefill the form
             'prescricao' => $prescricaoAtual ? [
-                'od_esferico'   => $prescricaoAtual->esfera_od,
+                'od_esferico' => $prescricaoAtual->esfera_od,
                 'od_cilindrico' => $prescricaoAtual->cilindro_od,
-                'od_eixo'       => $prescricaoAtual->eixo_od,
-                'od_dnp'        => $prescricaoAtual->dnp_od,
-                'od_altura'     => $prescricaoAtual->altura_od,
-                'od_adicao'     => $prescricaoAtual->adicao_od,
-                'oe_esferico'   => $prescricaoAtual->esfera_oe,
+                'od_eixo' => $prescricaoAtual->eixo_od,
+                'od_dnp' => $prescricaoAtual->dnp_od,
+                'od_altura' => $prescricaoAtual->altura_od,
+                'od_adicao' => $prescricaoAtual->adicao_od,
+                'oe_esferico' => $prescricaoAtual->esfera_oe,
                 'oe_cilindrico' => $prescricaoAtual->cilindro_oe,
-                'oe_eixo'       => $prescricaoAtual->eixo_oe,
-                'oe_dnp'        => $prescricaoAtual->dnp_oe,
-                'oe_altura'     => $prescricaoAtual->altura_oe,
-                'oe_adicao'     => $prescricaoAtual->adicao_oe,
-                'tipo_lente'    => $prescricaoAtual->tipo_lente,
+                'oe_eixo' => $prescricaoAtual->eixo_oe,
+                'oe_dnp' => $prescricaoAtual->dnp_oe,
+                'oe_altura' => $prescricaoAtual->altura_oe,
+                'oe_adicao' => $prescricaoAtual->adicao_oe,
+                'tipo_lente' => $prescricaoAtual->tipo_lente,
                 'validade_dias' => $prescricaoAtual->validade_dias,
-                'diagnostico'   => $prescricaoAtual->diagnostico,
+                'diagnostico' => $prescricaoAtual->diagnostico,
                 'observacoes_receita' => $prescricaoAtual->observacoes,
                 'recomendacoes' => $prescricaoAtual->recomendacoes,
             ] : null,
@@ -397,21 +394,21 @@ class ProfissionalWorkflowController extends Controller
                 'especialidade' => $profissional->especialidade->descricao ?? null,
             ],
             'prescricao' => [
-                'od_esferico'   => $request->input('od_esferico', optional($prescricao)->esfera_od),
+                'od_esferico' => $request->input('od_esferico', optional($prescricao)->esfera_od),
                 'od_cilindrico' => $request->input('od_cilindrico', optional($prescricao)->cilindro_od),
-                'od_eixo'       => $request->input('od_eixo', optional($prescricao)->eixo_od),
-                'od_dnp'        => $request->input('od_dnp', optional($prescricao)->dnp_od),
-                'od_altura'     => $request->input('od_altura', optional($prescricao)->altura_od),
-                'od_adicao'     => $request->input('od_adicao', optional($prescricao)->adicao_od),
+                'od_eixo' => $request->input('od_eixo', optional($prescricao)->eixo_od),
+                'od_dnp' => $request->input('od_dnp', optional($prescricao)->dnp_od),
+                'od_altura' => $request->input('od_altura', optional($prescricao)->altura_od),
+                'od_adicao' => $request->input('od_adicao', optional($prescricao)->adicao_od),
 
-                'oe_esferico'   => $request->input('oe_esferico', optional($prescricao)->esfera_oe),
+                'oe_esferico' => $request->input('oe_esferico', optional($prescricao)->esfera_oe),
                 'oe_cilindrico' => $request->input('oe_cilindrico', optional($prescricao)->cilindro_oe),
-                'oe_eixo'       => $request->input('oe_eixo', optional($prescricao)->eixo_oe),
-                'oe_dnp'        => $request->input('oe_dnp', optional($prescricao)->dnp_oe),
-                'oe_altura'     => $request->input('oe_altura', optional($prescricao)->altura_oe),
-                'oe_adicao'     => $request->input('oe_adicao', optional($prescricao)->adicao_oe),
+                'oe_eixo' => $request->input('oe_eixo', optional($prescricao)->eixo_oe),
+                'oe_dnp' => $request->input('oe_dnp', optional($prescricao)->dnp_oe),
+                'oe_altura' => $request->input('oe_altura', optional($prescricao)->altura_oe),
+                'oe_adicao' => $request->input('oe_adicao', optional($prescricao)->adicao_oe),
 
-                'tipo_lente'    => $request->input('tipo_lente', optional($prescricao)->tipo_lente),
+                'tipo_lente' => $request->input('tipo_lente', optional($prescricao)->tipo_lente),
                 'validade_dias' => $request->input('validade_dias', optional($prescricao)->validade_dias),
             ],
             'diagnostico' => $request->input('diagnostico', optional($prescricao)->diagnostico),
@@ -430,7 +427,7 @@ class ProfissionalWorkflowController extends Controller
         $phone = $request->input('phone');
         $consultaId = $request->input('consulta_id');
 
-        if (!$phone || !$consultaId) {
+        if (! $phone || ! $consultaId) {
             return response()->json(['success' => false, 'message' => 'Dados incompletos'], 400);
         }
 
@@ -456,7 +453,7 @@ class ProfissionalWorkflowController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'WhatsApp Web será aberto com a mensagem pronta.',
-            'whatsapp_url' => $whatsappUrl
+            'whatsapp_url' => $whatsappUrl,
         ]);
     }
 
@@ -468,7 +465,7 @@ class ProfissionalWorkflowController extends Controller
         $phone = $request->input('phone');
         $consultaId = $request->input('consulta_id');
 
-        if (!$phone || !$consultaId) {
+        if (! $phone || ! $consultaId) {
             return response()->json(['success' => false, 'message' => 'Dados incompletos'], 400);
         }
 
@@ -494,7 +491,7 @@ class ProfissionalWorkflowController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'WhatsApp Web será aberto com a mensagem pronta.',
-            'whatsapp_url' => $whatsappUrl
+            'whatsapp_url' => $whatsappUrl,
         ]);
     }
 
@@ -506,7 +503,7 @@ class ProfissionalWorkflowController extends Controller
         $phone = $request->input('phone');
         $consultaId = $request->input('consulta_id');
 
-        if (!$phone || !$consultaId) {
+        if (! $phone || ! $consultaId) {
             return response()->json(['success' => false, 'message' => 'Dados incompletos'], 400);
         }
 
@@ -532,7 +529,7 @@ class ProfissionalWorkflowController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'WhatsApp Web será aberto com a mensagem pronta.',
-            'whatsapp_url' => $whatsappUrl
+            'whatsapp_url' => $whatsappUrl,
         ]);
     }
 
@@ -569,7 +566,6 @@ class ProfissionalWorkflowController extends Controller
                 ]
             );
 
-
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -578,9 +574,10 @@ class ProfissionalWorkflowController extends Controller
                         'consulta_id' => $consulta->id,
                         'especialidade_id' => $encaminhamento->especialidade_id,
                         'urgencia' => $encaminhamento->urgencia,
-                    ]
+                    ],
                 ]);
             }
+
             return redirect()->back()->with('success', 'Encaminhamento salvo com sucesso!')->with('active_tab', 'referral');
         } catch (\Exception $e) {
             if ($request->wantsJson()) {
@@ -589,6 +586,7 @@ class ProfissionalWorkflowController extends Controller
                     'message' => 'Erro ao encaminhar paciente: ' . $e->getMessage(),
                 ], 422);
             }
+
             return redirect()->back()->with('error', 'Erro ao encaminhar paciente: ' . $e->getMessage())->with('active_tab', 'referral');
         }
     }
@@ -640,7 +638,7 @@ class ProfissionalWorkflowController extends Controller
     {
         $patient = Pessoa::find($id);
 
-        if (!$patient) {
+        if (! $patient) {
             return response()->json(['error' => 'Paciente não encontrado'], 404);
         }
 
@@ -670,7 +668,6 @@ class ProfissionalWorkflowController extends Controller
                 }
             }
 
-
             return [
                 'id' => $consulta->id, // Add ID for generating links
                 'data' => $data,
@@ -690,16 +687,14 @@ class ProfissionalWorkflowController extends Controller
             'cpf' => $patient->cpf_formatado,
             'telefone' => $patient->telefone_formatado,
             'email' => $patient->email,
-            'ultima_consulta' => $ultimaConsulta
+            'ultima_consulta' => $ultimaConsulta,
         ];
-
-
 
         \Log::info('History contents:', ['history' => $history]);
 
         return response()->json([
             'patient' => $patientData,
-            'history' => $history
+            'history' => $history,
         ]);
     }
 
@@ -709,7 +704,7 @@ class ProfissionalWorkflowController extends Controller
         $consultaId = $request->query('consulta_id');
 
         $patientModel = Pessoa::find($id);
-        if (!$patientModel) {
+        if (! $patientModel) {
             abort(404, 'Paciente não encontrado');
         }
 
@@ -734,7 +729,7 @@ class ProfissionalWorkflowController extends Controller
                     $hora = '';
                 }
             }
-            //dd($consulta);
+            // dd($consulta);
             $pres = $consulta->prescricao ?: Prescricao::where('consulta_id', $consulta->id)
                 ->where('tenant_id', $consulta->tenant_id)
                 ->whereNull('deleted_at')
@@ -801,10 +796,10 @@ class ProfissionalWorkflowController extends Controller
             'cpf' => $patientModel->cpf_formatado,
             'telefone' => $patientModel->telefone_formatado,
             'email' => $patientModel->email,
-            'ultima_consulta' => $ultimaConsulta
+            'ultima_consulta' => $ultimaConsulta,
         ];
 
-        //dd($history);
+        // dd($history);
 
         return view('professional.patient-history-full', compact('patient', 'history', 'returnTo', 'consultaId'));
     }
@@ -851,21 +846,21 @@ class ProfissionalWorkflowController extends Controller
                 'especialidade' => $profissional->especialidade->descricao ?? null,
             ],
             'prescricao' => [
-                'od_esferico'   => optional($prescricao)->esfera_od,
+                'od_esferico' => optional($prescricao)->esfera_od,
                 'od_cilindrico' => optional($prescricao)->cilindro_od,
-                'od_eixo'       => optional($prescricao)->eixo_od,
-                'od_dnp'        => optional($prescricao)->dnp_od,
-                'od_altura'     => optional($prescricao)->altura_od,
-                'od_adicao'     => optional($prescricao)->adicao_od,
+                'od_eixo' => optional($prescricao)->eixo_od,
+                'od_dnp' => optional($prescricao)->dnp_od,
+                'od_altura' => optional($prescricao)->altura_od,
+                'od_adicao' => optional($prescricao)->adicao_od,
 
-                'oe_esferico'   => optional($prescricao)->esfera_oe,
+                'oe_esferico' => optional($prescricao)->esfera_oe,
                 'oe_cilindrico' => optional($prescricao)->cilindro_oe,
-                'oe_eixo'       => optional($prescricao)->eixo_oe,
-                'oe_dnp'        => optional($prescricao)->dnp_oe,
-                'oe_altura'     => optional($prescricao)->altura_oe,
-                'oe_adicao'     => optional($prescricao)->adicao_oe,
+                'oe_eixo' => optional($prescricao)->eixo_oe,
+                'oe_dnp' => optional($prescricao)->dnp_oe,
+                'oe_altura' => optional($prescricao)->altura_oe,
+                'oe_adicao' => optional($prescricao)->adicao_oe,
 
-                'tipo_lente'    => optional($prescricao)->tipo_lente,
+                'tipo_lente' => optional($prescricao)->tipo_lente,
                 'validade_dias' => optional($prescricao)->validade_dias,
             ],
             'diagnostico' => optional($prescricao)->diagnostico,
@@ -874,6 +869,7 @@ class ProfissionalWorkflowController extends Controller
         ];
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
+
         return $pdf->stream('receita.pdf');
     }
 
@@ -894,7 +890,7 @@ class ProfissionalWorkflowController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$exameModel) {
+        if (! $exameModel) {
             abort(404, 'Exame não encontrado.');
         }
 
@@ -928,6 +924,7 @@ class ProfissionalWorkflowController extends Controller
         ];
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.exame-pdf', compact('exame'));
+
         return $pdf->stream('exame-' . $consulta->id . '.pdf');
     }
 
@@ -949,7 +946,7 @@ class ProfissionalWorkflowController extends Controller
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$encaminhamentoModel) {
+        if (! $encaminhamentoModel) {
             abort(404, 'Encaminhamento não encontrado.');
         }
 
@@ -982,6 +979,7 @@ class ProfissionalWorkflowController extends Controller
         ];
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.referral-pdf', compact('referral'));
+
         return $pdf->stream('encaminhamento-' . $consulta->id . '.pdf');
     }
 
@@ -1021,21 +1019,21 @@ class ProfissionalWorkflowController extends Controller
                 'especialidade' => $profissional->especialidade->descricao ?? null,
             ],
             'prescricao' => [
-                'od_esferico'   => optional($prescricao)->esfera_od,
+                'od_esferico' => optional($prescricao)->esfera_od,
                 'od_cilindrico' => optional($prescricao)->cilindro_od,
-                'od_eixo'       => optional($prescricao)->eixo_od,
-                'od_dnp'        => optional($prescricao)->dnp_od,
-                'od_altura'     => optional($prescricao)->altura_od,
-                'od_adicao'     => optional($prescricao)->adicao_od,
+                'od_eixo' => optional($prescricao)->eixo_od,
+                'od_dnp' => optional($prescricao)->dnp_od,
+                'od_altura' => optional($prescricao)->altura_od,
+                'od_adicao' => optional($prescricao)->adicao_od,
 
-                'oe_esferico'   => optional($prescricao)->esfera_oe,
+                'oe_esferico' => optional($prescricao)->esfera_oe,
                 'oe_cilindrico' => optional($prescricao)->cilindro_oe,
-                'oe_eixo'       => optional($prescricao)->eixo_oe,
-                'oe_dnp'        => optional($prescricao)->dnp_oe,
-                'oe_altura'     => optional($prescricao)->altura_oe,
-                'oe_adicao'     => optional($prescricao)->adicao_oe,
+                'oe_eixo' => optional($prescricao)->eixo_oe,
+                'oe_dnp' => optional($prescricao)->dnp_oe,
+                'oe_altura' => optional($prescricao)->altura_oe,
+                'oe_adicao' => optional($prescricao)->adicao_oe,
 
-                'tipo_lente'    => optional($prescricao)->tipo_lente,
+                'tipo_lente' => optional($prescricao)->tipo_lente,
                 'validade_dias' => optional($prescricao)->validade_dias,
             ],
             'diagnostico' => optional($prescricao)->diagnostico,
@@ -1044,10 +1042,9 @@ class ProfissionalWorkflowController extends Controller
         ];
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
+
         return $pdf->stream('receita-' . $consulta->id . '.pdf');
     }
-
-
 
     public function newPrescription()
     {
@@ -1098,7 +1095,7 @@ class ProfissionalWorkflowController extends Controller
                 'email' => $request->input('email'),
                 'location_id' => $locationId,
                 'user_id' => $userId,
-                'ativo' => true
+                'ativo' => true,
             ]
         );
         $pessoa->nome = $request->input('nome');
@@ -1108,7 +1105,7 @@ class ProfissionalWorkflowController extends Controller
 
         $profissional = Profissional::where('user_id', $userId)->first();
 
-        $consulta = new Consulta();
+        $consulta = new Consulta;
         $consulta->tenant_id = $tenantId;
         $consulta->location_id = $locationId;
         $consulta->user_id = $userId;
@@ -1122,7 +1119,9 @@ class ProfissionalWorkflowController extends Controller
 
         $data = $request->all();
         foreach (['od_esferico', 'od_cilindrico', 'oe_esferico', 'oe_cilindrico', 'od_adicao', 'oe_adicao', 'od_dnp', 'oe_dnp', 'od_altura', 'oe_altura'] as $f) {
-            if (!empty($data[$f])) $data[$f] = str_replace(',', '.', $data[$f]);
+            if (! empty($data[$f])) {
+                $data[$f] = str_replace(',', '.', $data[$f]);
+            }
         }
 
         Prescricao::create([
@@ -1153,11 +1152,12 @@ class ProfissionalWorkflowController extends Controller
 
         return redirect()->route('professional.index')->with('success', 'Receita criada com sucesso!');
     }
+
     public function togglePause(Request $request, $id)
     {
 
         $profissional = Profissional::findOrFail($id);
-        $profissional->pausar_atendimento = !$profissional->pausar_atendimento;
+        $profissional->pausar_atendimento = ! $profissional->pausar_atendimento;
         $profissional->save();
 
         return response()->json(['success' => true]);
@@ -1187,7 +1187,7 @@ class ProfissionalWorkflowController extends Controller
                 'od_dnp',
                 'oe_dnp',
                 'od_altura',
-                'oe_altura'
+                'oe_altura',
             ];
             foreach ($decimalFields as $f) {
                 if ($request->filled($f)) {
@@ -1196,21 +1196,21 @@ class ProfissionalWorkflowController extends Controller
             }
 
             $rules = [
-                'od_esferico'   => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+                'od_esferico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
                 'od_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'od_eixo'       => ['nullable', 'integer', 'between:0,180'],
-                'oe_esferico'   => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+                'od_eixo' => ['nullable', 'integer', 'between:0,180'],
+                'oe_esferico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
                 'oe_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'oe_eixo'       => ['nullable', 'integer', 'between:0,180'],
-                'od_dnp'        => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'oe_dnp'        => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'od_adicao'     => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'oe_adicao'     => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'od_altura'     => ['nullable', 'string', 'max:100'],
-                'oe_altura'     => ['nullable', 'string', 'max:100'],
-                'tipo_lente'    => ['nullable', 'string', 'max:100'],
+                'oe_eixo' => ['nullable', 'integer', 'between:0,180'],
+                'od_dnp' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+                'oe_dnp' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+                'od_adicao' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+                'oe_adicao' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+                'od_altura' => ['nullable', 'string', 'max:100'],
+                'oe_altura' => ['nullable', 'string', 'max:100'],
+                'tipo_lente' => ['nullable', 'string', 'max:100'],
                 'validade_dias' => ['nullable', 'integer', 'in:30,90,180,365'],
-                'diagnostico'   => ['nullable', 'string', 'max:255'],
+                'diagnostico' => ['nullable', 'string', 'max:255'],
                 'observacoes_receita' => ['nullable', 'string', 'max:1000'],
                 'recomendacoes' => ['nullable', 'string', 'max:1000'],
             ];
@@ -1226,7 +1226,11 @@ class ProfissionalWorkflowController extends Controller
 
             $validator = Validator::make($requestData, $rules, $messages);
             if ($validator->fails()) {
-                return redirect()->back()->withErrors($validator)->withInput()->with('active_tab', 'prescription');
+                return redirect()
+                    ->route('professional.consultation', ['id' => $id])
+                    ->withErrors($validator)
+                    ->withInput()
+                    ->with('active_tab', 'prescription');
             }
             $consulta = Consulta::with(['paciente', 'profissional'])
                 ->where('id', $id)
@@ -1236,7 +1240,7 @@ class ProfissionalWorkflowController extends Controller
             $prescricao = \App\Models\Prescricao::updateOrCreate(
                 [
                     'consulta_id' => $id,
-                    'tenant_id' => AuthHelper::tenantId()
+                    'tenant_id' => AuthHelper::tenantId(),
                 ],
                 [
                     'user_id' => AuthHelper::userId(),
@@ -1262,11 +1266,16 @@ class ProfissionalWorkflowController extends Controller
                     'pessoa_paciente_id' => $paciente->id,
                 ]
             );
-            // Update: redirect back for normal form submit
-            return redirect()->back()->with('success', 'Rascunho salvo com sucesso!')->with('active_tab', 'prescription');
+
+            return redirect()
+                ->route('professional.consultation', ['id' => $id])
+                ->with('success', 'Rascunho salvo com sucesso!')
+                ->with('active_tab', 'prescription');
         } catch (\Exception $e) {
-            // Update: redirect back with error message
-            return redirect()->back()->with('error', 'Falha ao salvar rascunho: ' . $e->getMessage())->with('active_tab', 'prescription');
+            return redirect()
+                ->route('professional.consultation', ['id' => $id])
+                ->with('error', 'Falha ao salvar rascunho: ' . $e->getMessage())
+                ->with('active_tab', 'prescription');
         }
     }
 
@@ -1291,7 +1300,11 @@ class ProfissionalWorkflowController extends Controller
 
             $validator = Validator::make($request->all(), $rules, $messages);
             if ($validator->fails()) {
-                return redirect()->back()->withErrors($validator)->withInput()->with('active_tab', 'examination');
+                return redirect()
+                    ->route('professional.consultation', ['id' => $id])
+                    ->withErrors($validator)
+                    ->withInput()
+                    ->with('active_tab', 'examination');
             }
             $consulta = Consulta::with(['paciente', 'profissional'])
                 ->where('id', $id)
@@ -1300,7 +1313,7 @@ class ProfissionalWorkflowController extends Controller
             $exame = \App\Models\Exame::updateOrCreate(
                 [
                     'consulta_id' => $id,
-                    'tenant_id' => AuthHelper::tenantId()
+                    'tenant_id' => AuthHelper::tenantId(),
                 ],
                 [
                     'user_id' => AuthHelper::userId(),
@@ -1313,14 +1326,19 @@ class ProfissionalWorkflowController extends Controller
                     'anamnese' => $request->input('anamnese'),
                     'observacoes' => $request->input('observacoes'),
                     'ativo' => true,
-                    'location_id' => AuthHelper::locationId()
+                    'location_id' => AuthHelper::locationId(),
                 ]
             );
-            // Update: redirect back for normal form submit
-            return redirect()->back()->with('success', 'Exame salvo com sucesso!')->with('active_tab', 'examination');
+
+            return redirect()
+                ->route('professional.consultation', ['id' => $id])
+                ->with('success', 'Exame salvo com sucesso!')
+                ->with('active_tab', 'examination');
         } catch (\Exception $e) {
-            // Update: redirect back with error message
-            return redirect()->back()->with('error', 'Falha ao salvar exame: ' . $e->getMessage())->with('active_tab', 'examination');
+            return redirect()
+                ->route('professional.consultation', ['id' => $id])
+                ->with('error', 'Falha ao salvar exame: ' . $e->getMessage())
+                ->with('active_tab', 'examination');
         }
     }
 }

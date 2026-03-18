@@ -1,21 +1,20 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\ProfissionalController;
-use App\Http\Controllers\CategoriaController;
-use App\Http\Controllers\LaboratorioController;
-use App\Http\Controllers\ProdutoController;
-use App\Http\Controllers\PessoaController;
-use App\Http\Controllers\RecepcaoController;
-use App\Http\Controllers\ProfessionalController;
 use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\SaleController;
-use App\Http\Controllers\OrdemServicoController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialController;
+use App\Http\Controllers\LaboratorioController;
+use App\Http\Controllers\OrdemServicoController;
+use App\Http\Controllers\PessoaController;
+use App\Http\Controllers\ProdutoController;
+use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\ProfissionalWorkflowController;
+use App\Http\Controllers\RecepcaoController;
+use App\Http\Controllers\SaleController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 // Rotas de autenticação
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -24,6 +23,12 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // API para informações do usuário (usada durante o login)
 Route::post('/api/user/info', [AuthController::class, 'getUserInfo']);
+
+Route::prefix('public')->name('public.')->group(function () {
+    Route::get('/prescription/{token}', [ProfissionalWorkflowController::class, 'viewPrescriptionByToken'])->name('prescription.view');
+    Route::get('/exam/{token}', [ProfissionalWorkflowController::class, 'viewExamByToken'])->name('exam.view');
+    Route::get('/referral/{token}', [ProfissionalWorkflowController::class, 'viewReferralByToken'])->name('referral.view');
+});
 
 // ============================================
 // ROTAS DE DEBUG - Menu e Sessão
@@ -35,10 +40,10 @@ Route::get('/debug/menu', function () {
 
 // API JSON de debug
 Route::get('/debug/menu/json', function () {
-    if (!auth()->check()) {
+    if (! auth()->check()) {
         return response()->json([
             'error' => 'Usuário não autenticado',
-            'message' => 'Faça login primeiro'
+            'message' => 'Faça login primeiro',
         ]);
     }
 
@@ -89,26 +94,26 @@ Route::middleware(['auth'])->group(function () {
 
     // Rotas de profissionais
     Route::resource('profissionais', ProfissionalController::class)->parameters([
-        'profissionais' => 'profissional'
+        'profissionais' => 'profissional',
     ]);
     Route::get('profissionais/search', [ProfissionalController::class, 'search'])->name('profissionais.search');
     Route::post('profissionais/{profissional}/toggle-status', [ProfissionalController::class, 'toggleStatus'])->name('profissionais.toggle-status');
 
     // Rotas de categorias
     Route::resource('categorias', CategoriaController::class)->parameters([
-        'categorias' => 'categoria'
+        'categorias' => 'categoria',
     ]);
     Route::post('categorias/{categoria}/toggle-status', [CategoriaController::class, 'toggleStatus'])->name('categorias.toggle-status');
 
     // Rotas de laboratórios
     Route::resource('laboratorios', LaboratorioController::class)->parameters([
-        'laboratorios' => 'laboratorio'
+        'laboratorios' => 'laboratorio',
     ]);
     Route::post('laboratorios/{laboratorio}/toggle-status', [LaboratorioController::class, 'toggleStatus'])->name('laboratorios.toggle-status');
 
     // Rotas de produtos
     Route::resource('produtos', ProdutoController::class)->parameters([
-        'produtos' => 'produto'
+        'produtos' => 'produto',
     ]);
     Route::post('produtos/{produto}/toggle-status', [ProdutoController::class, 'toggleStatus'])->name('produtos.toggle-status');
 
@@ -163,14 +168,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/save-exame/{id}', [ProfissionalWorkflowController::class, 'saveExame'])->name('saveExame');
     });
 
-
     // Módulo de Vendas
     Route::resource('sales', SaleController::class);
     Route::get('/sales/{id}/print', [SaleController::class, 'print'])->name('sales.print');
 
     // Módulo de Ordens de Serviço
     Route::resource('ordens-servico', OrdemServicoController::class)->parameters([
-        'ordens-servico' => 'ordemServico'
+        'ordens-servico' => 'ordemServico',
     ]);
     Route::get('/ordens-servico/api/buscar-clientes', [OrdemServicoController::class, 'buscarClientes'])->name('ordens-servico.buscar-clientes');
     Route::get('/ordens-servico/api/buscar-vendas-cliente', [OrdemServicoController::class, 'buscarVendasCliente'])->name('ordens-servico.buscar-vendas-cliente');
