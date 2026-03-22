@@ -404,7 +404,8 @@ class OrdemServicoController extends Controller
             'prescricao.consulta.paciente' => function ($query) {
                 $query->select('id', 'nome', 'cpf');
             },
-            'fornecedor'
+            'fornecedor',
+            'itensOrdem.item.produto.categoria',
         ]);
 
         // Se prescrição não tem consulta, mas tem pessoa_paciente_id, carrega o paciente diretamente
