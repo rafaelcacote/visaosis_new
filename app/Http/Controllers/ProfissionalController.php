@@ -150,7 +150,7 @@ class ProfissionalController extends Controller
         try {
             DB::beginTransaction();
 
-            // Obter location_id do tenant atual
+            // Obter location_id e tenant_id (coluna tenant_id é NOT NULL na tabela profissional)
             $locationId = session('location_id');
             $tenantId = session('tenant_id');
             $userLocations = session('user_locations', []);
@@ -163,12 +163,24 @@ class ProfissionalController extends Controller
                 $locationId = $firstLocation['location_id'] ?? null;
             }
 
+            // Sessão pode ter só location_id (ex.: fluxo antigo); obter tenant pela location
+            if (!$tenantId && $locationId) {
+                $match = collect($userLocations)->firstWhere('location_id', (int) $locationId);
+                $tenantId = $match['tenant_id'] ?? null;
+            }
+
+            if (!$tenantId) {
+                return back()->withInput()
+                    ->with('error', 'Não foi possível identificar o tenant para cadastrar o profissional. Selecione a localidade novamente ou faça login de novo.');
+            }
+
             if (!$locationId) {
                 return back()->withInput()
                     ->with('error', 'Nenhuma localização disponível para criar o profissional.');
             }
 
             $profissional = Profissional::create([
+                'tenant_id' => $tenantId,
                 'location_id' => $locationId,
                 'nome' => $request->nome,
                 'cpf' => $cpfLimpo,

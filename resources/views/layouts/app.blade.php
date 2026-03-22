@@ -25,6 +25,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- sidebar-fix DEVE vir após style e vite para garantir submenus visíveis em todos os ambientes -->
     <link rel="stylesheet" href="{{ asset('assets/css/sidebar-fix.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/show-pages.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/content-readability.css') }}">
     @stack('styles')
   </head>
   <body>

@@ -3,32 +3,34 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body laboratorio-filters">
-                <form method="GET" action="{{ route('laboratorios.index') }}" class="row g-3 align-items-end">
-                    <div class="col-12 col-sm-6 col-md-4">
-                        <label for="search" class="form-label mb-1">Buscar</label>
-                        <input type="text" class="form-control" id="search" name="search"
+                <form method="GET" action="{{ route('laboratorios.index') }}" class="row g-3 form-aligned-sm js-list-filter-form">
+                    <div class="col-12 col-sm-6 col-md-5">
+                        <label for="search" class="form-label">Buscar</label>
+                        <input type="text" class="form-control form-control-sm" id="search" name="search"
                                value="{{ $filters['search'] ?? '' }}"
                                placeholder="Razão social, nome fantasia, CNPJ ou e-mail">
                     </div>
                     <div class="col-12 col-sm-6 col-md-2">
-                        <label for="status" class="form-label mb-1">Status</label>
-                        <select class="form-select" id="status" name="status">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select form-select-sm" id="status" name="status">
                             <option value="">Todos</option>
                             <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Ativos</option>
                             <option value="0" {{ ($filters['status'] ?? '') == '0' ? 'selected' : '' }}>Inativos</option>
                         </select>
                     </div>
-                    <div class="col-12 col-sm-6 col-md-2">
-                        <label class="form-label mb-1 d-block" aria-hidden="true">&nbsp;</label>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary flex-fill" style="min-width: 0;">
-                                <i class="mdi mdi-magnify me-1"></i>
-                                Buscar
-                            </button>
-                            <a href="{{ route('laboratorios.index') }}" class="btn btn-outline-secondary flex-fill" style="min-width: 0;">
-                                <i class="mdi mdi-refresh me-1"></i>
-                                Limpar
-                            </a>
+                    <div class="col-12 col-sm-6 col-md-5 d-flex flex-column">
+                        <label class="form-label invisible user-select-none" aria-hidden="true">.</label>
+                        <div class="d-flex align-items-end flex-grow-1">
+                            <div class="d-flex gap-2 align-items-end flex-wrap">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="mdi mdi-magnify me-1"></i>
+                                    Buscar
+                                </button>
+                                <a href="{{ route('laboratorios.index') }}" class="btn btn-sm btn-outline-secondary js-list-filter-clear d-none">
+                                    <i class="mdi mdi-refresh me-1"></i>
+                                    Limpar
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </form>

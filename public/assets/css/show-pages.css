@@ -1,0 +1,30 @@
+/**
+ * Páginas de detalhe (show): o tema usa --bs-body-color claro (#a7afb7) no body;
+ * em cards brancos o texto herdado fica difícil de ler. Este escopo só afeta .page-show.
+ */
+.page-show {
+  color: #212529;
+}
+
+.page-show .card,
+.page-show .card-body {
+  color: #212529;
+}
+
+.page-show .text-muted {
+  color: #495057 !important;
+}
+
+.page-show small.text-muted,
+.page-show .small.text-muted {
+  color: #5c636a !important;
+}
+
+.page-show .table {
+  --bs-table-color: #212529;
+  color: #212529;
+}
+
+.page-show .card-header:not(.text-white) {
+  color: #212529;
+}
