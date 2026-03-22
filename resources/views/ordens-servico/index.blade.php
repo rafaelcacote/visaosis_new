@@ -22,7 +22,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <form class="row g-3 form-aligned-sm js-list-filter-form" method="GET">
+                <form class="row g-3 align-items-end form-aligned-sm js-list-filter-form" method="GET">
                     <div class="col-md-4">
                         <label for="search" class="form-label">Buscar</label>
                         <input type="text" class="form-control form-control-sm" id="search" name="search"
@@ -49,19 +49,16 @@
                             <option value="expressa" {{ ($prioridade ?? '') === 'expressa' ? 'selected' : '' }}>Expressa</option>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex flex-column">
-                        <label class="form-label invisible user-select-none" aria-hidden="true">.</label>
-                        <div class="d-flex align-items-end flex-grow-1">
-                            <div class="d-flex gap-2 align-items-end flex-wrap">
-                                <button type="submit" class="btn btn-sm btn-outline-primary">
-                                    <i class="mdi mdi-magnify me-1"></i>
-                                    Buscar
-                                </button>
-                                <a href="{{ route('ordens-servico.index') }}" class="btn btn-sm btn-outline-secondary js-list-filter-clear d-none">
-                                    <i class="mdi mdi-refresh me-1"></i>
-                                    Limpar
-                                </a>
-                            </div>
+                    <div class="col-md-2">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="mdi mdi-magnify me-1"></i>
+                                Buscar
+                            </button>
+                            <a href="{{ route('ordens-servico.index') }}" class="btn btn-sm btn-outline-secondary js-list-filter-clear d-none">
+                                <i class="mdi mdi-refresh me-1"></i>
+                                Limpar
+                            </a>
                         </div>
                     </div>
                 </form>
