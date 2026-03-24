@@ -3,6 +3,7 @@
 @section('title', 'Visualizar Laboratório')
 
 @section('content')
+<div class="page-show">
 <div class="d-xl-flex justify-content-between align-items-start mb-4">
     <div>
         <h2 class="text-dark font-weight-bold mb-2">
@@ -117,5 +118,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 @endsection

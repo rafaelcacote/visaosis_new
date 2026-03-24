@@ -12,6 +12,7 @@ class Profissional extends Model
     protected $table = 'profissional';
 
     protected $fillable = [
+        'tenant_id',
         'location_id',
         'user_id',
         'especialidade_id',

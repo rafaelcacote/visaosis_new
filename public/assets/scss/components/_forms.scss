@@ -66,3 +66,14 @@ select {
 .form-control-sm {
   height: 2.875rem;
 }
+
+.form-select-sm {
+  height: 2.875rem;
+}
+
+.form-aligned-sm .btn-sm {
+  min-height: 2.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -22,15 +22,15 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <form class="row g-3" method="GET">
+                <form class="row g-3 align-items-end form-aligned-sm js-list-filter-form" method="GET">
                     <div class="col-md-4">
                         <label for="search" class="form-label">Buscar</label>
-                        <input type="text" class="form-control" id="search" name="search"
+                        <input type="text" class="form-control form-control-sm" id="search" name="search"
                             placeholder="Cliente, fornecedor ou observações..." value="{{ $search ?? '' }}">
                     </div>
                     <div class="col-md-3">
                         <label for="status" class="form-label">Status</label>
-                        <select class="form-select" id="status" name="status">
+                        <select class="form-select form-select-sm" id="status" name="status">
                             <option value="todos" {{ ($status ?? 'todos') === 'todos' ? 'selected' : '' }}>Todos</option>
                             <option value="pendente" {{ ($status ?? '') === 'pendente' ? 'selected' : '' }}>Pendente</option>
                             <option value="enviado" {{ ($status ?? '') === 'enviado' ? 'selected' : '' }}>Enviado</option>
@@ -42,18 +42,24 @@
                     </div>
                     <div class="col-md-3">
                         <label for="prioridade" class="form-label">Prioridade</label>
-                        <select class="form-select" id="prioridade" name="prioridade">
+                        <select class="form-select form-select-sm" id="prioridade" name="prioridade">
                             <option value="todas" {{ ($prioridade ?? 'todas') === 'todas' ? 'selected' : '' }}>Todas</option>
                             <option value="normal" {{ ($prioridade ?? '') === 'normal' ? 'selected' : '' }}>Normal</option>
                             <option value="urgente" {{ ($prioridade ?? '') === 'urgente' ? 'selected' : '' }}>Urgente</option>
                             <option value="expressa" {{ ($prioridade ?? '') === 'expressa' ? 'selected' : '' }}>Expressa</option>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-outline-primary w-100">
-                            <i class="mdi mdi-magnify me-1"></i>
-                            Buscar
-                        </button>
+                    <div class="col-md-2">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="mdi mdi-magnify me-1"></i>
+                                Buscar
+                            </button>
+                            <a href="{{ route('ordens-servico.index') }}" class="btn btn-sm btn-outline-secondary js-list-filter-clear d-none">
+                                <i class="mdi mdi-refresh me-1"></i>
+                                Limpar
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>

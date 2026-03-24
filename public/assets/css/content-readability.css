@@ -1,0 +1,43 @@
+/**
+ * Contraste na área principal (dashboard, listagens, formulários).
+ * O tema define --bs-body-color claro no body; em fundos claros o texto e os labels ficam difíceis de ler.
+ */
+.main-panel .content-wrapper {
+  --bs-body-color: #212529;
+  color: #212529;
+}
+
+.main-panel .content-wrapper .card,
+.main-panel .content-wrapper .card-body {
+  color: #212529;
+}
+
+.main-panel .content-wrapper .text-muted {
+  color: #5c636a !important;
+}
+
+.main-panel .content-wrapper small.text-muted,
+.main-panel .content-wrapper .small.text-muted {
+  color: #6c757d !important;
+}
+
+/* Labels: .form-label também aparece fora de <form> (ex.: vendas/create) */
+.main-panel .content-wrapper .form-label,
+.main-panel .content-wrapper form label:not(.btn),
+.main-panel .content-wrapper .col-form-label {
+  color: #343a40 !important;
+}
+
+/* Classe do tema usada no dashboard e em links secundários */
+.main-panel .content-wrapper .text-gray {
+  color: #495057 !important;
+}
+
+.main-panel .content-wrapper .card-header:not(.text-white) {
+  color: #212529;
+}
+
+.main-panel .content-wrapper .table {
+  --bs-table-color: #212529;
+  color: #212529;
+}

@@ -106,15 +106,15 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <form class="row g-3" method="GET" action="{{ route('sales.index') }}">
+                    <form class="row g-3 align-items-end form-aligned-sm js-list-filter-form" method="GET" action="{{ route('sales.index') }}">
                         <div class="col-md-3">
                             <label for="search" class="form-label">Buscar Venda</label>
-                            <input type="text" class="form-control" id="search" name="search" 
+                            <input type="text" class="form-control form-control-sm" id="search" name="search"
                                    placeholder="Número, cliente..." value="{{ request('search') }}">
                         </div>
                         <div class="col-md-2">
                             <label for="status" class="form-label">Status</label>
-                            <select class="form-select" id="status" name="status">
+                            <select class="form-select form-select-sm" id="status" name="status">
                                 <option value="">Todos</option>
                                 <option value="faturado" {{ request('status') == 'faturado' ? 'selected' : '' }}>Faturado</option>
                                 <option value="aberto" {{ request('status') == 'aberto' ? 'selected' : '' }}>Aberto</option>
@@ -123,7 +123,7 @@
                         </div>
                         <div class="col-md-2">
                             <label for="pagamento" class="form-label">Pagamento</label>
-                            <select class="form-select" id="pagamento" name="pagamento">
+                            <select class="form-select form-select-sm" id="pagamento" name="pagamento">
                                 <option value="">Todos</option>
                                 <option value="Dinheiro" {{ request('pagamento') == 'Dinheiro' ? 'selected' : '' }}>Dinheiro</option>
                                 <option value="Cartão de Débito" {{ request('pagamento') == 'Cartão de Débito' ? 'selected' : '' }}>Cartão de Débito</option>
@@ -132,25 +132,26 @@
                                 <option value="PIX" {{ request('pagamento') == 'PIX' ? 'selected' : '' }}>PIX</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="periodo" class="form-label">Período</label>
-                            <select class="form-select" id="periodo" name="periodo">
+                            <select class="form-select form-select-sm" id="periodo" name="periodo">
                                 <option value="">Qualquer período</option>
                                 <option value="hoje" {{ request('periodo') == 'hoje' ? 'selected' : '' }}>Hoje</option>
                                 <option value="semana" {{ request('periodo') == 'semana' ? 'selected' : '' }}>Esta semana</option>
                                 <option value="mes" {{ request('periodo') == 'mes' ? 'selected' : '' }}>Este mês</option>
                             </select>
                         </div>
-                        <div class="col-md-2 d-flex align-items-end gap-2">
-                            <button type="submit" class="btn btn-outline-primary w-100">
-                                <i class="mdi mdi-magnify me-1"></i>
-                                Filtrar
-                            </button>
-                            @if(request()->anyFilled(['search', 'status', 'pagamento', 'periodo']))
-                                <a href="{{ route('sales.index') }}" class="btn btn-outline-secondary">
-                                    <i class="mdi mdi-close"></i>
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="mdi mdi-magnify me-1"></i>
+                                    Buscar
+                                </button>
+                                <a href="{{ route('sales.index') }}" class="btn btn-sm btn-outline-secondary js-list-filter-clear d-none">
+                                    <i class="mdi mdi-refresh me-1"></i>
+                                    Limpar
                                 </a>
-                            @endif
+                            </div>
                         </div>
                     </form>
                 </div>

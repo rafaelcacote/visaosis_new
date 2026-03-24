@@ -340,6 +340,92 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de aviso (validação) -->
+<div class="modal fade" id="ordemValidacaoModal" tabindex="-1" aria-labelledby="ordemValidacaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title text-warning" id="ordemValidacaoModalLabel">
+                    <i class="mdi mdi-alert-circle-outline me-2"></i>
+                    Atenção
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="text-muted mb-0" id="ordemValidacaoModalMessage"></p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="mdi mdi-check me-1"></i>
+                    Entendi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação de criação -->
+<div class="modal fade" id="confirmCriarOrdemModal" tabindex="-1" aria-labelledby="confirmCriarOrdemModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmCriarOrdemModalLabel">
+                    <i class="mdi mdi-check-circle me-2"></i>
+                    Confirmar ordem de serviço
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Revise os dados abaixo antes de criar a ordem de serviço.</p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1 small text-uppercase">Cliente</h6>
+                        <p class="mb-0 fw-semibold" id="confirm_os_cliente">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1 small text-uppercase">Venda</h6>
+                        <p class="mb-0 fw-semibold" id="confirm_os_venda">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1 small text-uppercase">Fornecedor / Laboratório</h6>
+                        <p class="mb-0 fw-semibold" id="confirm_os_fornecedor">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1 small text-uppercase">Itens selecionados</h6>
+                        <p class="mb-0 fw-semibold" id="confirm_os_itens">—</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted mb-1 small text-uppercase">Quantidade</h6>
+                        <p class="mb-0 fw-semibold" id="confirm_os_quantidade">—</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted mb-1 small text-uppercase">Prioridade</h6>
+                        <p class="mb-0 fw-semibold text-capitalize" id="confirm_os_prioridade">—</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted mb-1 small text-uppercase">Total (linha)</h6>
+                        <p class="mb-0 fw-semibold text-success" id="confirm_os_total">—</p>
+                    </div>
+                </div>
+                <div class="alert alert-light border mt-3 mb-0">
+                    <i class="mdi mdi-information-outline me-2 text-primary"></i>
+                    <small class="text-muted">Após confirmar, a ordem será registrada e enviada conforme os dados informados.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="mdi mdi-close-circle me-1"></i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarCriarOrdem">
+                    <i class="mdi mdi-check-circle me-1"></i>
+                    Criar ordem de serviço
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -447,6 +533,38 @@
         const CLIENT_SEARCH_URL = "{{ route('ordens-servico.buscar-clientes') }}";
         const VENDAS_SEARCH_URL = "{{ route('ordens-servico.buscar-vendas-cliente') }}";
         const PRESCRICOES_SEARCH_URL = "{{ route('ordens-servico.buscar-prescricoes') }}";
+
+        let ordemFormSubmitSkipConfirm = false;
+        let validacaoModalInstance = null;
+        let confirmOrdemModalInstance = null;
+
+        function getValidacaoModal() {
+            if (!validacaoModalInstance) {
+                validacaoModalInstance = new bootstrap.Modal(document.getElementById('ordemValidacaoModal'));
+            }
+            return validacaoModalInstance;
+        }
+
+        function getConfirmOrdemModal() {
+            if (!confirmOrdemModalInstance) {
+                confirmOrdemModalInstance = new bootstrap.Modal(document.getElementById('confirmCriarOrdemModal'));
+            }
+            return confirmOrdemModalInstance;
+        }
+
+        function showOrdemValidacao(message) {
+            document.getElementById('ordemValidacaoModalMessage').textContent = message;
+            getValidacaoModal().show();
+        }
+
+        function prioridadeLabel(value) {
+            const map = {
+                normal: 'Normal',
+                urgente: 'Urgente',
+                expressa: 'Expressa'
+            };
+            return map[value] || value || '—';
+        }
 
         // Busca de clientes
         document.getElementById('client_search').addEventListener('input', function() {
@@ -840,32 +958,58 @@
             document.getElementById(id).addEventListener('input', calcularTotal);
         });
 
+        document.getElementById('btnConfirmarCriarOrdem').addEventListener('click', function() {
+            const form = document.getElementById('ordemForm');
+            getConfirmOrdemModal().hide();
+            ordemFormSubmitSkipConfirm = true;
+            form.requestSubmit();
+        });
+
         // Validação do formulário
         document.getElementById('ordemForm').addEventListener('submit', function(e) {
+            if (ordemFormSubmitSkipConfirm) {
+                ordemFormSubmitSkipConfirm = false;
+                return true;
+            }
+
+            e.preventDefault();
+
             if (!selectedVenda) {
-                e.preventDefault();
-                alert('Por favor, selecione uma venda antes de continuar.');
+                showOrdemValidacao('Por favor, selecione uma venda antes de continuar.');
                 return false;
             }
 
-            // Verificar se pelo menos um item foi selecionado
             const itensSelecionados = document.querySelectorAll('input[name="itens_selecionados[]"]:checked');
             if (itensSelecionados.length === 0) {
-                e.preventDefault();
-                alert(
-                    '⚠️ ATENÇÃO: Você deve selecionar pelo menos um item da venda para criar a ordem de serviço!'
+                showOrdemValidacao(
+                    'Selecione pelo menos um item da venda para incluir na ordem de serviço.'
                 );
                 return false;
             }
 
-            // Confirmação antes de enviar
-            const confirmacao = confirm(
-                `Confirma a criação da ordem de serviço com ${itensSelecionados.length} item(s) selecionado(s)?`
+            const fornecedorSelect = document.getElementById('fornecedor_id');
+            const fornecedorText = fornecedorSelect.options[fornecedorSelect.selectedIndex]?.text?.trim() || '—';
+
+            document.getElementById('confirm_os_cliente').textContent =
+                document.getElementById('client_name')?.textContent?.trim() || '—';
+            document.getElementById('confirm_os_venda').textContent = selectedVenda ?
+                `Venda #${selectedVenda.numero}` :
+                '—';
+            document.getElementById('confirm_os_fornecedor').textContent = fornecedorText;
+            document.getElementById('confirm_os_itens').textContent =
+                `${itensSelecionados.length} item(ns) selecionado(s)`;
+            document.getElementById('confirm_os_quantidade').textContent =
+                document.getElementById('quantidade').value || '—';
+            document.getElementById('confirm_os_prioridade').textContent = prioridadeLabel(
+                document.getElementById('prioridade').value
             );
-            if (!confirmacao) {
-                e.preventDefault();
-                return false;
-            }
+            document.getElementById('confirm_os_total').textContent =
+                document.getElementById('total_linha').value ?
+                `R$ ${document.getElementById('total_linha').value}` :
+                '—';
+
+            getConfirmOrdemModal().show();
+            return false;
         });
 
         // Função para selecionar todos os itens
