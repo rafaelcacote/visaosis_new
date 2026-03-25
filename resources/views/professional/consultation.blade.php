@@ -1348,7 +1348,7 @@
 
         function editPatientData() {
             window.location.href =
-                "{{ route('pessoas.edit', $consulta->paciente->id) }}?from=consultation&pid={{ $consulta->paciente->id }}";
+                "{{ route('pessoas.edit', $consulta->paciente->id) }}?from=consultation&pid={{ $consulta->id }}";
         }
 
         function printExamDoc() {

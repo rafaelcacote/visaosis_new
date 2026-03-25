@@ -16,7 +16,7 @@
             @if (request('from') === 'consultation')
                 <a href="{{ route('professional.consultation', request('pid', $pessoa->id)) }}"
                     class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>
+                    <i class="mdi mdi-arrow-left me-2"></i>
                     Voltar à Consulta
                 </a>
             @else
