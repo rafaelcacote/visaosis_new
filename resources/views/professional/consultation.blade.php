@@ -365,7 +365,7 @@
                                 </div>
 
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-success" onclick="generatePrescription()"
+                                    <button type="button" class="btn btn-primary" onclick="generatePrescription()"
                                         {{ empty($patient['prescricao']) ? 'disabled' : '' }}>
                                         <i class="mdi mdi-file-document me-2"></i>
                                         Gerar Receita
@@ -716,7 +716,7 @@
                                 </div>
 
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-success" onclick="finishConsultation()">
+                                    <button type="button" class="btn btn-primary" onclick="finishConsultation()">
                                         <i class="mdi mdi-check-circle me-2"></i>
                                         Finalizar Consulta
                                     </button>
@@ -898,18 +898,21 @@
                         <i class="mdi mdi-close me-2"></i>
                         Fechar
                     </button>
-                    <button type="button" class="btn btn-success" id="confirmFinishBtn">Finalizar</button>
+                    </button> <button type="button" class="btn btn-primary" id="confirmFinishBtn">
+                        <i class="mdi mdi-check-circle me-2"></i>Finalizar
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
+
     <div class="modal fade" id="finishFeedbackModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title">Finalização</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="finishFeedbackMessage"></div>
                 <div class="modal-footer">
