@@ -53,7 +53,7 @@ Route::get('/debug/menu/json', function () {
         'user_name' => auth()->user()->name ?? null,
         'session_data' => [
             'has_cerberus_token' => session()->has('cerberusToken'),
-            'cerberus_token' => session('cerberusToken') ? substr(session('cerberusToken'), 0, 20) . '...' : null,
+            'cerberus_token' => session('cerberusToken') ? substr(session('cerberusToken'), 0, 20).'...' : null,
             'has_items' => session()->has('items'),
             'items_count' => count(session('items', [])),
             'items_raw' => session('items', []),
@@ -119,6 +119,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Rotas de pacientes (pessoas)
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
+    Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
+    Route::post('pessoas/{pessoa}/receitas', [PessoaController::class, 'storePrescription'])->name('pessoas.receitas.store');
     Route::resource('pessoas', PessoaController::class)->parameters([
         'pessoas' => 'pessoa',
     ]);

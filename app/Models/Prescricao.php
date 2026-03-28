@@ -12,8 +12,11 @@ class Prescricao extends Model
     protected $table = 'prescricao';
 
     protected $primaryKey = 'id';
+
     public $incrementing = true;
+
     protected $keyType = 'int';
+
     public $timestamps = true;
 
     protected $fillable = [
@@ -21,6 +24,7 @@ class Prescricao extends Model
         'consulta_id',
         'user_id',
         'pessoa_paciente_id',
+        'especialista_externo',
         'esfera_od',
         'cilindro_od',
         'eixo_od',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuthHelper;
 use App\Models\Pessoa;
 use App\Rules\ValidCpf;
 use Illuminate\Http\Request;
@@ -35,7 +36,7 @@ class PessoaController extends Controller
         }
 
         // Se não houver tenant ou locations válidas, retorna lista vazia
-        if (!$tenantId || empty($locationIds)) {
+        if (! $tenantId || empty($locationIds)) {
             $pessoas = Pessoa::whereRaw('1 = 0')->paginate(15);
 
             return view('pessoas.index', compact('pessoas', 'search', 'status'));
@@ -101,20 +102,20 @@ class PessoaController extends Controller
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
 
-        if (!$tenantId) {
+        if (! $tenantId) {
             return back()->withInput()
                 ->with('error', 'Nenhum tenant disponível para criar o paciente.');
         }
 
         // Se não tem location_id, buscar a primeira location do tenant
-        if (!$locationId && $tenantId) {
+        if (! $locationId && $tenantId) {
             $firstLocation = collect($userLocations)
                 ->where('tenant_id', $tenantId)
                 ->first();
             $locationId = $firstLocation['location_id'] ?? null;
         }
 
-        if (!$locationId) {
+        if (! $locationId) {
             return back()->withInput()
                 ->with('error', 'Nenhuma localização disponível para criar o paciente.');
         }
@@ -124,7 +125,7 @@ class PessoaController extends Controller
             'cpf' => [
                 'required',
                 'string',
-                new ValidCpf(),
+                new ValidCpf,
                 Rule::unique('pessoa', 'cpf')
                     ->where(function ($query) use ($cpfLimpo, $tenantId) {
                         return $query->where('tenant_id', $tenantId)
@@ -212,6 +213,29 @@ class PessoaController extends Controller
         return view('pessoas.show', compact('pessoa'));
     }
 
+    public function receitas(Pessoa $pessoa)
+    {
+        $this->checkTenantAccess($pessoa);
+
+        $query = \App\Models\Prescricao::with(['consulta.profissional.especialidade'])
+            ->where('pessoa_paciente_id', $pessoa->id)
+            ->whereNull('deleted_at');
+
+        $tenantId = session('tenant_id');
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        $locationId = session('location_id');
+        if ($locationId) {
+            $query->where('location_id', $locationId);
+        }
+
+        $prescricoes = $query->orderByDesc('created_at')->get();
+
+        return view('pessoas.receitas', compact('pessoa', 'prescricoes'));
+    }
+
     /**
      * Formulário de edição.
      */
@@ -253,7 +277,7 @@ class PessoaController extends Controller
             'cpf' => [
                 'required',
                 'string',
-                new ValidCpf(),
+                new ValidCpf,
                 Rule::unique('pessoa', 'cpf')
                     ->ignore($pessoa->id)
                     ->where(function ($query) use ($cpfLimpo, $tenantId) {
@@ -371,7 +395,7 @@ class PessoaController extends Controller
             $locationIds = [$locationId];
         }
 
-        if (!$tenantId || empty($locationIds)) {
+        if (! $tenantId || empty($locationIds)) {
             return response()->json([]);
         }
 
@@ -417,7 +441,7 @@ class PessoaController extends Controller
         try {
             DB::beginTransaction();
 
-            $novoStatus = !$pessoa->ativo;
+            $novoStatus = ! $pessoa->ativo;
             $pessoa->update(['ativo' => $novoStatus]);
 
             DB::commit();
@@ -446,7 +470,7 @@ class PessoaController extends Controller
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
 
-        if (!$tenantId || (int) $pessoa->tenant_id !== (int) $tenantId) {
+        if (! $tenantId || (int) $pessoa->tenant_id !== (int) $tenantId) {
             abort(403, 'Acesso negado. Este paciente não pertence ao seu tenant.');
         }
 
@@ -460,9 +484,101 @@ class PessoaController extends Controller
             $locationIds = [$locationId];
         }
 
-        if (!empty($locationIds) && $pessoa->location_id !== null && !in_array($pessoa->location_id, $locationIds)) {
+        if (! empty($locationIds) && $pessoa->location_id !== null && ! in_array($pessoa->location_id, $locationIds)) {
             abort(403, 'Acesso negado. Este paciente não pertence à sua localização.');
         }
     }
-}
 
+    /**
+     * Store a new prescription for the patient.
+     */
+    public function storePrescription(Request $request, Pessoa $pessoa)
+    {
+        $this->checkTenantAccess($pessoa);
+
+        $validatedData = $request->validate([
+            'especialista_externo' => 'required|string|max:255',
+            'od_esferico' => 'nullable|string',
+            'od_cilindrico' => 'nullable|string',
+            'od_eixo' => 'nullable|string',
+            'od_dnp' => 'nullable|string',
+            'od_altura' => 'nullable|string',
+            'od_adicao' => 'nullable|string',
+            'oe_esferico' => 'nullable|string',
+            'oe_cilindrico' => 'nullable|string',
+            'oe_eixo' => 'nullable|string',
+            'oe_dnp' => 'nullable|string',
+            'oe_altura' => 'nullable|string',
+            'oe_adicao' => 'nullable|string',
+            'tipo_lente' => 'nullable|string',
+            'validade_dias' => 'nullable|integer',
+            'diagnostico' => 'nullable|string',
+            'recomendacoes' => 'nullable|string',
+            'observacoes_receita' => 'nullable|string',
+        ], [
+            'required' => 'O campo :attribute é obrigatório.',
+            'string' => 'O campo :attribute deve ser um texto.',
+            'boolean' => 'O campo :attribute deve ser verdadeiro ou falso.',
+            'integer' => 'O campo :attribute deve ser um número inteiro.',
+            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
+        ], [
+            'especialista_externo' => 'Nome do profissional que prescreveu',
+            'od_esferico' => 'OD Esférico',
+            'od_cilindrico' => 'OD Cilíndrico',
+            'od_eixo' => 'OD Eixo',
+            'od_dnp' => 'OD DNP',
+            'od_altura' => 'OD Altura',
+            'od_adicao' => 'OD Adição',
+            'oe_esferico' => 'OE Esférico',
+            'oe_cilindrico' => 'OE Cilíndrico',
+            'oe_eixo' => 'OE Eixo',
+            'oe_dnp' => 'OE DNP',
+            'oe_altura' => 'OE Altura',
+            'oe_adicao' => 'OE Adição',
+            'tipo_lente' => 'Tipo de Lente',
+            'validade_dias' => 'Validade',
+            'diagnostico' => 'Diagnóstico',
+            'recomendacoes' => 'Recomendações',
+            'observacoes_receita' => 'Observações da Receita',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $prescricao = \App\Models\Prescricao::create([
+                'pessoa_paciente_id' => $pessoa->id,
+                'user_id' => auth()->id(),
+                'especialista_externo' => $validatedData['especialista_externo'],
+                'esfera_od' => $validatedData['od_esferico'],
+                'cilindro_od' => $validatedData['od_cilindrico'],
+                'eixo_od' => $validatedData['od_eixo'],
+                'dnp_od' => $validatedData['od_dnp'],
+                'altura_od' => $validatedData['od_altura'],
+                'adicao_od' => $validatedData['od_adicao'],
+                'esfera_oe' => $validatedData['oe_esferico'],
+                'cilindro_oe' => $validatedData['oe_cilindrico'],
+                'eixo_oe' => $validatedData['oe_eixo'],
+                'dnp_oe' => $validatedData['oe_dnp'],
+                'altura_oe' => $validatedData['oe_altura'],
+                'adicao_oe' => $validatedData['oe_adicao'],
+                'tipo_lente' => $validatedData['tipo_lente'],
+                'validade_dias' => $validatedData['validade_dias'],
+                'diagnostico' => $validatedData['diagnostico'],
+                'recomendacoes' => $validatedData['recomendacoes'],
+                'observacoes' => $validatedData['observacoes_receita'],
+                'tenant_id' => AuthHelper::tenantId(),
+                'location_id' => AuthHelper::locationId(),
+                'ativo' => true,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('pessoas.receitas', $pessoa->id)
+                ->with('success', 'Receita cadastrada com sucesso!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return back()->withInput()->with('error', 'Erro ao cadastrar receita: ' . $e->getMessage());
+        }
+    }
+}
