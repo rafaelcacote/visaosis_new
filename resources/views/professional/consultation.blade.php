@@ -881,18 +881,23 @@
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="finishConfirmModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+
+                <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title">Confirmar Finalização</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     Tem certeza que deseja finalizar a consulta?
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <div class="modal-footer border-0 pt-0 justify-content-center">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close me-2"></i>
+                        Fechar
+                    </button>
                     <button type="button" class="btn btn-success" id="confirmFinishBtn">Finalizar</button>
                 </div>
             </div>
