@@ -14,6 +14,7 @@ use App\Http\Controllers\ProfissionalWorkflowController;
 use App\Http\Controllers\RecepcaoController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 // Rotas de autenticação
@@ -53,7 +54,7 @@ Route::get('/debug/menu/json', function () {
         'user_name' => auth()->user()->name ?? null,
         'session_data' => [
             'has_cerberus_token' => session()->has('cerberusToken'),
-            'cerberus_token' => session('cerberusToken') ? substr(session('cerberusToken'), 0, 20).'...' : null,
+            'cerberus_token' => session('cerberusToken') ? substr(session('cerberusToken'), 0, 20) . '...' : null,
             'has_items' => session()->has('items'),
             'items_count' => count(session('items', [])),
             'items_raw' => session('items', []),
@@ -196,4 +197,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/receive-payment', [FinancialController::class, 'receivePayment'])->name('receive-payment');
     });
     Route::post('/professional/toggle-pause/{id}', [ProfissionalWorkflowController::class, 'togglePause']);
+
+    // Relatórios
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/financial', [ReportController::class, 'financial'])->name('financial');
+        Route::get('/attendance', [ReportController::class, 'attendance'])->name('attendance');
+        Route::get('/attendance/export', [ReportController::class, 'exportAttendance'])->name('attendance.export');
+    });
 });
