@@ -220,7 +220,7 @@
                                                             \Carbon\Carbon::now(),
                                                             true,
                                                         );
-                                                        $tempoEsperaMinutos = $horaReferencia->diffInMinutes(
+                                                        $tempoEsperaMinutos = (int) $horaReferencia->diffInMinutes(
                                                             \Carbon\Carbon::now(),
                                                         );
                                                     @endphp

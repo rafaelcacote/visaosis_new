@@ -7,6 +7,8 @@ use App\Models\Produto;
 use App\Models\Categoria;
 use App\Models\PedidoVenda;
 use App\Models\ItemPedido;
+use App\Models\PedidoVendaParcela;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\AuthHelper;
@@ -362,6 +364,33 @@ class SaleController extends Controller
                             // Por enquanto, assumimos que está em atributos
                         }
                     }
+                }
+            }
+
+            if ($validated['forma_pagamento'] === 'crediario') {
+                $totalParcelas = (int) $validated['parcelas'];
+                if ($totalParcelas < 1) {
+                    $totalParcelas = 1;
+                }
+
+                $totalCents = (int) round(((float) $validated['total']) * 100);
+                $parcelaCents = (int) floor($totalCents / $totalParcelas);
+                $lastParcelaCents = $totalCents - ($parcelaCents * ($totalParcelas - 1));
+
+                $primeiroVencimento = Carbon::today()->addMonthNoOverflow();
+                for ($numero = 1; $numero <= $totalParcelas; $numero++) {
+                    $valorCents = $numero === $totalParcelas ? $lastParcelaCents : $parcelaCents;
+
+                    PedidoVendaParcela::create([
+                        'tenant_id' => $tenantId,
+                        'location_id' => $locationId,
+                        'pedido_venda_id' => $pedidoVenda->id,
+                        'numero_parcela' => $numero,
+                        'total_parcelas' => $totalParcelas,
+                        'valor' => $valorCents / 100,
+                        'vencimento_em' => $primeiroVencimento->copy()->addMonthsNoOverflow($numero - 1),
+                        'status' => 'aberta',
+                    ]);
                 }
             }
 
