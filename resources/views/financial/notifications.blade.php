@@ -90,7 +90,7 @@
                                 <i class="mdi mdi-check-circle text-success icon-lg"></i>
                             </div>
                             <div class="float-end">
-                                <p class="mb-0 text-right text-dark">Mensagens Enviadas</p>
+                                <p class="mb-0 text-right text-dark">Enviadas</p>
                                 <div class="fluid-container">
                                     <h3 class="font-weight-medium text-right mb-0 text-dark">
                                         {{ count(array_filter($notifications, fn($n) => $n['status'] == 'enviado')) }}</h3>
@@ -467,14 +467,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted" id="historyCountLabel">Mostrando {{ count($notifications) }}
                                 mensagens</small>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-success" onclick="scheduleReminders()">
-                                    <i class="mdi mdi-calendar-plus me-2"></i>Programar Lembretes
-                                </button>
-                                <button class="btn btn-sm btn-outline-primary" onclick="bulkActions()">
-                                    <i class="mdi mdi-cog me-2"></i>Ações em Lote
-                                </button>
-                            </div>
+
                         </div>
                     </div>
                 </div>
