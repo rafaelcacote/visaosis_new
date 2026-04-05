@@ -189,6 +189,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/receivables', [FinancialController::class, 'receivables'])->name('receivables');
         Route::get('/boletos', [FinancialController::class, 'boletos'])->name('boletos');
         Route::get('/notifications', [FinancialController::class, 'notifications'])->name('notifications');
+        Route::get('/notifications/templates', [FinancialController::class, 'templates'])->name('notifications.templates');
+        Route::post('/notifications/templates', [FinancialController::class, 'saveTemplates'])->name('notifications.templates.save');
+        Route::post('/notifications/send', [FinancialController::class, 'sendNotification'])->name('notifications.send');
+        Route::post('/notifications/schedule-batch', [FinancialController::class, 'scheduleBatch'])->name('notifications.schedule-batch');
+        Route::post('/notifications/{id}/resend', [FinancialController::class, 'resendNotification'])->name('notifications.resend');
 
         // Ações AJAX
         Route::post('/generate-boleto/{id}', [FinancialController::class, 'generateBoleto'])->name('generate-boleto');
