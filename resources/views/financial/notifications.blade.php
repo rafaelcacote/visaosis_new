@@ -329,7 +329,7 @@
                                 <input type="text" class="form-control" placeholder="Buscar cliente, telefone..."
                                     id="searchInput">
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <select class="form-select" id="orderBy">
                                     <option value="recente">Mais Recente</option>
                                     <option value="cliente">Cliente</option>
@@ -337,11 +337,7 @@
                                     <option value="status">Status</option>
                                 </select>
                             </div>
-                            <div class="col-md-1">
-                                <button class="btn btn-primary w-100" onclick="applyFilters()">
-                                    <i class="mdi mdi-magnify"></i>
-                                </button>
-                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -367,7 +363,7 @@
                         </div>
                     </div>
                     <div class="card-body p-0">
-                            <div class="list-group list-group-flush">
+                        <div class="list-group list-group-flush" id="historyList">
                             @foreach ($notifications as $notification)
                                 <div class="list-group-item">
                                     <div class="row align-items-center">
@@ -438,6 +434,7 @@
                                                     data-tipo="{{ $notification['tipo'] }}"
                                                     data-status="{{ $notification['status'] }}"
                                                     data-enviado-em="{{ $notification['enviado_em'] ? \Carbon\Carbon::parse($notification['enviado_em'])->format('d/m/Y H:i') : '' }}"
+                                                    data-enviado-iso="{{ $notification['enviado_em'] ? \Carbon\Carbon::parse($notification['enviado_em'])->toIso8601String() : '' }}"
                                                     data-wa-url="{{ $notification['wa_url'] ?? '' }}"
                                                     data-erro="{{ $notification['erro'] ?? '' }}"
                                                     data-mensagem="{{ $notification['mensagem'] }}">
@@ -468,7 +465,8 @@
                     </div>
                     <div class="card-footer">
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Mostrando {{ count($notifications) }} mensagens</small>
+                            <small class="text-muted" id="historyCountLabel">Mostrando {{ count($notifications) }}
+                                mensagens</small>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-outline-success" onclick="scheduleReminders()">
                                     <i class="mdi mdi-calendar-plus me-2"></i>Programar Lembretes
@@ -532,6 +530,70 @@
             </div>
         </div>
 
+        <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmActionModalTitle">Confirmação</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body" id="confirmActionModalBody"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
+                            id="confirmActionModalCancel">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="confirmActionModalConfirm">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="alertModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="alertModalTitle">Aviso</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body" id="alertModalBody"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                            id="alertModalOk">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="editMessageModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Editar Mensagem Programada</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="text-muted small">Cliente</div>
+                                <div class="fw-semibold" id="editMsgCliente">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1" for="editMsgTelefone">Telefone</label>
+                                <input type="text" class="form-control" id="editMsgTelefone" maxlength="40">
+                            </div>
+                        </div>
+
+                        <label class="text-muted small mb-1" for="editMsgMensagem">Mensagem</label>
+                        <textarea class="form-control" id="editMsgMensagem" rows="6"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="editMsgSaveBtn">Salvar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @push('styles')
             <style>
                 .avatar-md {
@@ -559,6 +621,107 @@
         @push('scripts')
             <script>
                 let currentMessageId = null;
+                let currentEditMessageId = null;
+
+                function confirmActionModal(message, options = {}) {
+                    const title = options.title || 'Confirmação';
+                    const confirmText = options.confirmText || 'Confirmar';
+                    const confirmClass = options.confirmClass || 'btn-primary';
+
+                    const modalEl = document.getElementById('confirmActionModal');
+                    if (!modalEl || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                        return Promise.resolve(confirm(message));
+                    }
+
+                    const titleEl = document.getElementById('confirmActionModalTitle');
+                    const bodyEl = document.getElementById('confirmActionModalBody');
+                    const confirmBtn = document.getElementById('confirmActionModalConfirm');
+                    const cancelBtn = document.getElementById('confirmActionModalCancel');
+
+                    if (titleEl) titleEl.textContent = title;
+                    if (bodyEl) bodyEl.textContent = message;
+                    if (confirmBtn) {
+                        confirmBtn.textContent = confirmText;
+                        confirmBtn.className = `btn ${confirmClass}`;
+                    }
+
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+                    return new Promise((resolve) => {
+                        let resolved = false;
+
+                        const cleanup = () => {
+                            confirmBtn?.removeEventListener('click', onConfirm);
+                            cancelBtn?.removeEventListener('click', onCancel);
+                            modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                        };
+
+                        const onConfirm = () => {
+                            if (resolved) return;
+                            resolved = true;
+                            cleanup();
+                            modal.hide();
+                            resolve(true);
+                        };
+
+                        const onCancel = () => {
+                            if (resolved) return;
+                            resolved = true;
+                            cleanup();
+                            modal.hide();
+                            resolve(false);
+                        };
+
+                        const onHidden = () => {
+                            if (resolved) return;
+                            resolved = true;
+                            cleanup();
+                            resolve(false);
+                        };
+
+                        confirmBtn?.addEventListener('click', onConfirm);
+                        cancelBtn?.addEventListener('click', onCancel);
+                        modalEl.addEventListener('hidden.bs.modal', onHidden);
+
+                        modal.show();
+                    });
+                }
+
+                function alertModal(message, options = {}) {
+                    const title = options.title || 'Aviso';
+
+                    const modalEl = document.getElementById('alertModal');
+                    if (!modalEl || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                        alert(message);
+                        return Promise.resolve();
+                    }
+
+                    const titleEl = document.getElementById('alertModalTitle');
+                    const bodyEl = document.getElementById('alertModalBody');
+
+                    if (titleEl) titleEl.textContent = title;
+                    if (bodyEl) bodyEl.textContent = message;
+
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+                    return new Promise((resolve) => {
+                        let resolved = false;
+
+                        const cleanup = () => {
+                            modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                        };
+
+                        const onHidden = () => {
+                            if (resolved) return;
+                            resolved = true;
+                            cleanup();
+                            resolve();
+                        };
+
+                        modalEl.addEventListener('hidden.bs.modal', onHidden);
+                        modal.show();
+                    });
+                }
 
                 function scrollToEligibles(tipo) {
                     const select = document.getElementById('eligibleTipoFilter');
@@ -577,18 +740,130 @@
                 }
 
                 function applyFilters() {
-                    alert('Aplicando filtros...');
+                    applyHistoryFilters();
                 }
 
-                function clearHistory() {
-                    if (confirm('Limpar todo o histórico de mensagens? Esta ação não pode ser desfeita.')) {
-                        alert('Histórico limpo com sucesso!');
+                async function clearHistory() {
+                    const ok = await confirmActionModal(
+                        'Limpar todo o histórico de mensagens? Esta ação não pode ser desfeita.', {
+                            title: 'Limpar Histórico',
+                            confirmText: 'Limpar',
+                            confirmClass: 'btn-danger'
+                        });
+                    if (ok) {
+                        const res = await fetch('{{ route('financial.notifications.clear-history') }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        const data = await res.json();
+                        if (!res.ok) {
+                            alertModal(data.message || 'Erro ao limpar histórico.', {
+                                title: 'Erro'
+                            });
+                            return;
+                        }
+
+                        await alertModal(`Histórico limpo com sucesso! (${data.deleted ?? 0} mensagem(ns))`, {
+                            title: 'Sucesso'
+                        });
                         location.reload();
                     }
                 }
 
-                function exportHistory() {
-                    alert('Exportando histórico de mensagens...');
+                async function exportHistory() {
+                    const visibleItems = historyItems.filter((item) => !item.classList.contains('d-none'));
+                    if (!visibleItems.length) {
+                        await alertModal('Nenhuma mensagem para exportar com os filtros atuais.', {
+                            title: 'Aviso'
+                        });
+                        return;
+                    }
+
+                    const rows = visibleItems.map(function(item) {
+                        const btn = item.querySelector('[data-view-message]');
+                        return {
+                            id: btn?.getAttribute('data-id') || '',
+                            cliente: btn?.getAttribute('data-cliente') || '',
+                            telefone: btn?.getAttribute('data-telefone') || '',
+                            tipo: btn?.getAttribute('data-tipo') || '',
+                            status: btn?.getAttribute('data-status') || '',
+                            enviado_em: btn?.getAttribute('data-enviado-em') || '',
+                            mensagem: btn?.getAttribute('data-mensagem') || '',
+                            wa_url: btn?.getAttribute('data-wa-url') || '',
+                            erro: btn?.getAttribute('data-erro') || '',
+                        };
+                    });
+
+                    const headers = [{
+                            key: 'id',
+                            label: 'ID'
+                        },
+                        {
+                            key: 'cliente',
+                            label: 'Cliente'
+                        },
+                        {
+                            key: 'telefone',
+                            label: 'Telefone'
+                        },
+                        {
+                            key: 'tipo',
+                            label: 'Tipo'
+                        },
+                        {
+                            key: 'status',
+                            label: 'Status'
+                        },
+                        {
+                            key: 'enviado_em',
+                            label: 'Enviado em'
+                        },
+                        {
+                            key: 'mensagem',
+                            label: 'Mensagem'
+                        },
+                        {
+                            key: 'wa_url',
+                            label: 'WhatsApp URL'
+                        },
+                        {
+                            key: 'erro',
+                            label: 'Erro'
+                        },
+                    ];
+
+                    const escapeCsv = (value) => {
+                        const v = (value ?? '').toString();
+                        return `"${v.replace(/"/g, '""')}"`;
+                    };
+
+                    const csvLines = [];
+                    csvLines.push(headers.map((h) => escapeCsv(h.label)).join(';'));
+                    rows.forEach(function(r) {
+                        csvLines.push(headers.map((h) => escapeCsv(r[h.key])).join(';'));
+                    });
+
+                    const now = new Date();
+                    const pad2 = (n) => String(n).padStart(2, '0');
+                    const fileName =
+                        `historico_mensagens_${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}_${pad2(now.getHours())}${pad2(now.getMinutes())}.csv`;
+
+                    const blob = new Blob(["\uFEFF" + csvLines.join('\n')], {
+                        type: 'text/csv;charset=utf-8;'
+                    });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
                 }
 
                 const viewMessageModalEl = document.getElementById('viewMessageModal');
@@ -638,8 +913,13 @@
                     });
                 }
 
-                function resendMessage(id) {
-                    if (!confirm(`Reenviar mensagem ${id}?`)) {
+                async function resendMessage(id) {
+                    const ok = await confirmActionModal(`Reenviar mensagem ${id}?`, {
+                        title: 'Reenviar Mensagem',
+                        confirmText: 'Reenviar',
+                        confirmClass: 'btn-primary'
+                    });
+                    if (!ok) {
                         return;
                     }
 
@@ -653,7 +933,9 @@
                     }).then(async (res) => {
                         const data = await res.json();
                         if (!res.ok) {
-                            alert(data.message || 'Erro ao reenviar mensagem.');
+                            alertModal(data.message || 'Erro ao reenviar mensagem.', {
+                                title: 'Erro'
+                            });
                             return;
                         }
 
@@ -662,32 +944,276 @@
                         }
                         location.reload();
                     }).catch(() => {
-                        alert('Erro ao reenviar mensagem.');
+                        alertModal('Erro ao reenviar mensagem.', {
+                            title: 'Erro'
+                        });
                     });
                 }
 
                 function editMessage(id) {
-                    alert(`Editando mensagem programada ${id}...`);
+                    const src = document.querySelector(`[data-view-message][data-id="${id}"]`);
+                    if (!src) {
+                        alertModal('Mensagem não encontrada na tela.', {
+                            title: 'Erro'
+                        });
+                        return;
+                    }
+
+                    currentEditMessageId = id;
+
+                    const cliente = src.getAttribute('data-cliente') || '-';
+                    const telefone = src.getAttribute('data-telefone') || '';
+                    const mensagem = src.getAttribute('data-mensagem') || '';
+                    const status = src.getAttribute('data-status') || '';
+
+                    if (status !== 'programado') {
+                        alertModal('Apenas mensagens com status "programado" podem ser editadas.', {
+                            title: 'Aviso'
+                        });
+                        return;
+                    }
+
+                    document.getElementById('editMsgCliente').textContent = cliente;
+                    document.getElementById('editMsgTelefone').value = telefone;
+                    document.getElementById('editMsgMensagem').value = mensagem;
+
+                    const modalEl = document.getElementById('editMessageModal');
+                    if (!modalEl || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                        return;
+                    }
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
                 }
 
-                function cancelMessage(id) {
-                    if (confirm(`Cancelar envio da mensagem ${id}?`)) {
-                        alert(`Mensagem ${id} cancelada com sucesso!`);
+                const editMsgSaveBtn = document.getElementById('editMsgSaveBtn');
+                if (editMsgSaveBtn) {
+                    editMsgSaveBtn.addEventListener('click', async function() {
+                        const id = currentEditMessageId;
+                        if (!id) {
+                            return;
+                        }
+
+                        const mensagem = (document.getElementById('editMsgMensagem').value || '').trim();
+                        const telefone = (document.getElementById('editMsgTelefone').value || '').trim();
+
+                        if (!mensagem) {
+                            alertModal('Mensagem não pode ser vazia.', {
+                                title: 'Aviso'
+                            });
+                            return;
+                        }
+
+                        editMsgSaveBtn.disabled = true;
+
+                        const url = '{{ route('financial.notifications.update', ['id' => '__ID__']) }}'.replace(
+                            '__ID__', id);
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                mensagem,
+                                telefone
+                            })
+                        });
+
+                        const data = await res.json();
+                        if (!res.ok) {
+                            editMsgSaveBtn.disabled = false;
+                            alertModal(data.message || 'Erro ao salvar mensagem.', {
+                                title: 'Erro'
+                            });
+                            return;
+                        }
+
+                        const modalEl = document.getElementById('editMessageModal');
+                        if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                        }
+
+                        await alertModal('Mensagem atualizada com sucesso!', {
+                            title: 'Sucesso'
+                        });
                         location.reload();
+                    });
+                }
+
+                async function cancelMessage(id) {
+                    const ok = await confirmActionModal(`Cancelar envio da mensagem ${id}?`, {
+                        title: 'Cancelar Mensagem',
+                        confirmText: 'Cancelar',
+                        confirmClass: 'btn-danger'
+                    });
+                    if (!ok) {
+                        return;
                     }
+
+                    const url = '{{ route('financial.notifications.cancel', ['id' => '__ID__']) }}'.replace('__ID__', id);
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok) {
+                        alertModal(data.message || 'Erro ao cancelar mensagem.', {
+                            title: 'Erro'
+                        });
+                        return;
+                    }
+
+                    await alertModal(`Mensagem ${id} cancelada com sucesso!`, {
+                        title: 'Sucesso'
+                    });
+                    location.reload();
                 }
 
                 function scheduleReminders() {
-                    alert('Abrindo agendamento de lembretes automáticos...');
+                    alertModal('Abrindo agendamento de lembretes automáticos...');
                 }
 
                 function bulkActions() {
-                    alert('Abrindo ações em lote para mensagens...');
+                    alertModal('Abrindo ações em lote para mensagens...');
                 }
 
-                document.getElementById('searchInput').addEventListener('input', function() {
-                    console.log('Buscando mensagens:', this.value);
+                const historyListEl = document.getElementById('historyList');
+                const historyCountLabelEl = document.getElementById('historyCountLabel');
+                const historyItems = historyListEl ? Array.from(historyListEl.querySelectorAll('.list-group-item')) : [];
+
+                historyItems.forEach(function(item, idx) {
+                    item.dataset.index = String(idx);
+
+                    const btn = item.querySelector('[data-view-message]');
+                    if (btn) {
+                        const status = btn.getAttribute('data-status') || '';
+                        const tipo = btn.getAttribute('data-tipo') || '';
+                        const cliente = btn.getAttribute('data-cliente') || '';
+                        const telefone = btn.getAttribute('data-telefone') || '';
+                        const enviadoIso = btn.getAttribute('data-enviado-iso') || '';
+
+                        item.dataset.status = status;
+                        item.dataset.tipo = tipo;
+                        item.dataset.cliente = cliente.toLowerCase();
+                        item.dataset.telefoneDigits = telefone.replace(/\D+/g, '');
+                        item.dataset.enviadoIso = enviadoIso;
+                    }
+
+                    const rawText = (item.textContent || '').toLowerCase();
+                    const digits = rawText.replace(/\D+/g, '');
+                    item.dataset.search = `${rawText} ${digits}`;
                 });
+
+                function applyHistoryFilters() {
+                    const status = (document.getElementById('statusFilter')?.value || '').trim().toLowerCase();
+                    const tipo = (document.getElementById('tipoFilter')?.value || '').trim().toLowerCase();
+                    const startDate = (document.getElementById('startDate')?.value || '').trim();
+                    const orderBy = (document.getElementById('orderBy')?.value || 'recente').trim().toLowerCase();
+
+                    const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+
+                    const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+                    let visibleCount = 0;
+
+                    historyItems.forEach(function(item) {
+                        const haystack = item.dataset.search || '';
+                        const matchesSearch = tokens.length ? tokens.every((t) => haystack.includes(t)) : true;
+                        const matchesStatus = status ? (item.dataset.status || '') === status : true;
+                        const matchesTipo = tipo ? (item.dataset.tipo || '') === tipo : true;
+
+                        let matchesDate = true;
+                        if (startDate) {
+                            const iso = item.dataset.enviadoIso || '';
+                            if (iso && iso.length >= 10) {
+                                matchesDate = iso.slice(0, 10) >= startDate;
+                            }
+                        }
+
+                        const matches = matchesSearch && matchesStatus && matchesTipo && matchesDate;
+
+                        if (matches) {
+                            item.classList.remove('d-none');
+                            visibleCount++;
+                        } else {
+                            item.classList.add('d-none');
+                        }
+                    });
+
+                    if (historyListEl) {
+                        const sorted = historyItems.slice().sort(function(a, b) {
+                            const ia = parseInt(a.dataset.index || '0', 10);
+                            const ib = parseInt(b.dataset.index || '0', 10);
+
+                            if (orderBy === 'cliente') {
+                                const ca = a.dataset.cliente || '';
+                                const cb = b.dataset.cliente || '';
+                                if (ca !== cb) return ca.localeCompare(cb);
+                                return ia - ib;
+                            }
+
+                            if (orderBy === 'tipo') {
+                                const ta = a.dataset.tipo || '';
+                                const tb = b.dataset.tipo || '';
+                                if (ta !== tb) return ta.localeCompare(tb);
+                                return ia - ib;
+                            }
+
+                            if (orderBy === 'status') {
+                                const sa = a.dataset.status || '';
+                                const sb = b.dataset.status || '';
+                                if (sa !== sb) return sa.localeCompare(sb);
+                                return ia - ib;
+                            }
+
+                            const da = Date.parse(a.dataset.enviadoIso || '');
+                            const db = Date.parse(b.dataset.enviadoIso || '');
+                            const vda = Number.isFinite(da) ? da : -Infinity;
+                            const vdb = Number.isFinite(db) ? db : -Infinity;
+
+                            if (vda !== vdb) return vdb - vda;
+                            return ia - ib;
+                        });
+
+                        sorted.forEach(function(item) {
+                            historyListEl.appendChild(item);
+                        });
+                    }
+
+                    if (historyCountLabelEl) {
+                        historyCountLabelEl.textContent = `Mostrando ${visibleCount} mensagens`;
+                    }
+                }
+
+                const searchInputEl = document.getElementById('searchInput');
+                if (searchInputEl) {
+                    searchInputEl.addEventListener('input', applyHistoryFilters);
+                }
+
+                const statusFilterEl = document.getElementById('statusFilter');
+                if (statusFilterEl) {
+                    statusFilterEl.addEventListener('change', applyHistoryFilters);
+                }
+
+                const tipoFilterEl = document.getElementById('tipoFilter');
+                if (tipoFilterEl) {
+                    tipoFilterEl.addEventListener('change', applyHistoryFilters);
+                }
+
+                const startDateEl = document.getElementById('startDate');
+                if (startDateEl) {
+                    startDateEl.addEventListener('change', applyHistoryFilters);
+                }
+
+                const orderByEl = document.getElementById('orderBy');
+                if (orderByEl) {
+                    orderByEl.addEventListener('change', applyHistoryFilters);
+                }
+
+                applyHistoryFilters();
 
                 const eligibleTipoFilter = document.getElementById('eligibleTipoFilter');
                 if (eligibleTipoFilter) {
@@ -725,7 +1251,9 @@
 
                         const data = await res.json();
                         if (!res.ok) {
-                            alert(data.message || 'Erro ao enviar mensagem.');
+                            alertModal(data.message || 'Erro ao enviar mensagem.', {
+                                title: 'Erro'
+                            });
                             return;
                         }
 
@@ -742,11 +1270,19 @@
                         const buttons = Array.from(document.querySelectorAll(
                             '#eligiblesSection tr[data-eligible-tipo]:not(.d-none) [data-send-eligible]'));
                         if (!buttons.length) {
-                            alert('Nenhum cliente elegível para o filtro atual.');
+                            alertModal('Nenhum cliente elegível para o filtro atual.', {
+                                title: 'Aviso'
+                            });
                             return;
                         }
 
-                        if (!confirm(`Programar envio em lote para ${buttons.length} cliente(s)?`)) {
+                        const ok = await confirmActionModal(
+                            `Programar envio em lote para ${buttons.length} cliente(s)?`, {
+                                title: 'Programar Lote',
+                                confirmText: 'Programar',
+                                confirmClass: 'btn-primary'
+                            });
+                        if (!ok) {
                             return;
                         }
 
@@ -777,11 +1313,16 @@
                         const data = await res.json();
                         if (!res.ok) {
                             scheduleBatchBtn.disabled = false;
-                            alert(data.message || 'Erro ao programar lote.');
+                            alertModal(data.message || 'Erro ao programar lote.', {
+                                title: 'Erro'
+                            });
                             return;
                         }
 
-                        alert(`Programado: ${data.created}. Enfileirado: ${data.queued}. Falhas: ${data.errors}.`);
+                        await alertModal(
+                            `Programado: ${data.created}. Enfileirado: ${data.queued}. Falhas: ${data.errors}.`, {
+                                title: 'Sucesso'
+                            });
                         location.reload();
                     });
                 }

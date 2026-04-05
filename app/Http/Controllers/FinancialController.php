@@ -705,6 +705,153 @@ class FinancialController extends Controller
         ]);
     }
 
+    public function clearNotificationHistory(Request $request)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $deleted = WhatsappNotification::query()
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'deleted' => (int) $deleted,
+        ]);
+    }
+
+    public function updateNotification(Request $request, string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'mensagem' => 'required|string',
+            'telefone' => 'nullable|string|max:40',
+        ], [
+            'required' => 'O campo :attribute é obrigatório.',
+            'string' => 'O campo :attribute deve ser um texto.',
+            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
+        ], [
+            'mensagem' => 'Mensagem',
+            'telefone' => 'Telefone',
+        ]);
+
+        $notification = WhatsappNotification::query()
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $id)
+            ->where('status', 'programado')
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $notification) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mensagem não encontrada ou não está mais programada.',
+            ], 404);
+        }
+
+        $telefone = $validated['telefone'] ?? null;
+        $telefone = is_string($telefone) ? trim($telefone) : null;
+        if ($telefone === '') {
+            $telefone = null;
+        }
+
+        $telefoneNormalized = $telefone ? $this->normalizeWhatsappPhone($telefone) : null;
+        if ($telefone && ! $telefoneNormalized) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Telefone inválido.',
+            ], 422);
+        }
+
+        $notification->mensagem = $validated['mensagem'];
+        if ($telefone !== null) {
+            $notification->telefone = $telefoneNormalized;
+        }
+        $notification->wa_url = null;
+        $notification->erro = null;
+        $notification->save();
+
+        return response()->json([
+            'success' => true,
+            'id' => $notification->id,
+        ]);
+    }
+
+    public function cancelNotification(Request $request, string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $notification = WhatsappNotification::query()
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $id)
+            ->where('status', 'programado')
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $notification) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mensagem não encontrada ou não está mais programada.',
+            ], 404);
+        }
+
+        $notification->status = 'cancelado';
+        $notification->wa_url = null;
+        $notification->erro = null;
+        $notification->save();
+
+        return response()->json([
+            'success' => true,
+            'id' => $notification->id,
+        ]);
+    }
+
     private function buildWhatsappPayload(
         $tenantId,
         $locationId,

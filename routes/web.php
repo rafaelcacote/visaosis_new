@@ -194,6 +194,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/notifications/send', [FinancialController::class, 'sendNotification'])->name('notifications.send');
         Route::post('/notifications/schedule-batch', [FinancialController::class, 'scheduleBatch'])->name('notifications.schedule-batch');
         Route::post('/notifications/{id}/resend', [FinancialController::class, 'resendNotification'])->name('notifications.resend');
+        Route::post('/notifications/clear-history', [FinancialController::class, 'clearNotificationHistory'])->name('notifications.clear-history');
+        Route::post('/notifications/{id}/update', [FinancialController::class, 'updateNotification'])->name('notifications.update');
+        Route::post('/notifications/{id}/cancel', [FinancialController::class, 'cancelNotification'])->name('notifications.cancel');
 
         // Ações AJAX
         Route::post('/generate-boleto/{id}', [FinancialController::class, 'generateBoleto'])->name('generate-boleto');
