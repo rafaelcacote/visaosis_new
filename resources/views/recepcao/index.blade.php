@@ -344,7 +344,7 @@
                                                     @if ($consulta->status == \App\Models\Consulta::STATUS_AGUARDANDO)
                                                         <button class="btn-action"
                                                             style="background-color: #e0f0ff; color: #1d7dd6;"
-                                                            onclick="openStatusModal({{ $consulta->id }}, '{{ addslashes($consulta->paciente->nome ?? 'N/A') }}', 'iniciar')"
+                                                            onclick="openStatusModal({{ $consulta->id }}, '{{ addslashes($consulta->paciente->nome ?? 'N/A') }}', 'iniciar', {{ $consulta->profissional_id ?: 'null' }})"
                                                             data-bs-toggle="modal" data-bs-target="#statusModal"
                                                             title="Iniciar Atendimento">
                                                             <i class="mdi mdi-play"></i>
@@ -534,7 +534,7 @@
             let currentAction = null;
             let currentPacienteNome = null;
 
-            function openStatusModal(consultaId, pacienteNome, action) {
+            function openStatusModal(consultaId, pacienteNome, action, profissionalId = null) {
                 currentConsultaIdModal = consultaId;
                 currentAction = action;
                 currentPacienteNome = pacienteNome;
@@ -566,18 +566,13 @@
                     // Mostrar seleção de profissional
                     profissionalSelection.style.display = 'block';
 
-                    // Buscar profissional atual da consulta e marcar como selecionado
-                    fetch(`/recepcao/consulta/${consultaId}/profissional`)
-                        .then(response => response.json())
-                        .then(data => {
-                            const select = document.getElementById('profissional_id');
-                            if (data.profissional_id) {
-                                select.value = data.profissional_id;
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Erro ao buscar profissional:', error);
-                        });
+                    // Definir profissional selecionado diretamente (sem AJAX)
+                    const select = document.getElementById('profissional_id');
+                    if (profissionalId) {
+                        select.value = profissionalId;
+                    } else {
+                        select.value = '';
+                    }
 
                 } else {
                     // Esconder seleção de profissional para outras ações

@@ -134,7 +134,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/triage', [RecepcaoController::class, 'triage'])->name('triage');
         Route::post('/triage', [RecepcaoController::class, 'storeTriage'])->name('triage.store');
         Route::get('/consulta/{consulta}', [RecepcaoController::class, 'show'])->name('consulta.show');
-        Route::get('/consulta/{consultaId}/profissional', [RecepcaoController::class, 'getConsultaProfissional']);
         Route::post('/checkin', [RecepcaoController::class, 'checkin'])->name('checkin');
         Route::patch('/status/{consulta}', [RecepcaoController::class, 'updateStatus'])->name('updateStatus');
         Route::get('/api/patients/search', [RecepcaoController::class, 'searchPatient'])->name('patients.search');
