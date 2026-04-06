@@ -348,7 +348,7 @@ class RecepcaoController extends Controller
     {
         $request->validate([
             'pessoa_paciente_id' => 'required|exists:pessoas,id',
-            'profissional_id' => 'required|exists:profissionais,id',
+            'profissional_id' => 'required|exists:profissional,id',
             'tipo' => 'required|integer',
             'prioridade' => 'required|integer'
         ]);
@@ -377,28 +377,50 @@ class RecepcaoController extends Controller
 
     public function updateStatus(Request $request, $consulta)
     {
-        $request->validate([
-            'status' => 'required|integer'
-        ]);
+        try {
+            $request->validate([
+                'status' => 'required|integer',
+                'profissional_id' => 'sometimes|nullable|exists:profissional,id'
+            ]);
 
-        $consulta = Consulta::findOrFail($consulta);
-        $consulta->status = $request->status;
+            $consulta = Consulta::findOrFail($consulta);
+            $consulta->status = $request->status;
 
-        // Atualizar timestamp baseado no status
-        if ($request->status == Consulta::STATUS_EM_ATENDIMENTO) {
-            $consulta->atendido_em = now();
-        } elseif ($request->status == Consulta::STATUS_ATENDIDO) {
-            if (!$consulta->atendido_em) {
-                $consulta->atendido_em = now();
+            // Atualizar profissional se fornecido (especialmente para iniciar atendimento)
+            if ($request->has('profissional_id')) {
+                $consulta->profissional_id = $request->profissional_id ?: null;
             }
-        }
 
-        $consulta->save();
+            // Atualizar timestamp baseado no status
+            if ($request->status == Consulta::STATUS_EM_ATENDIMENTO) {
+                $consulta->atendido_em = now();
+            } elseif ($request->status == Consulta::STATUS_ATENDIDO) {
+                if (!$consulta->atendido_em) {
+                    $consulta->atendido_em = now();
+                }
+            }
+
+            $consulta->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status da consulta atualizado com sucesso!',
+                'consulta' => $consulta
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro interno: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getConsultaProfissional($consultaId)
+    {
+        $consulta = Consulta::findOrFail($consultaId);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Status da consulta atualizado com sucesso!',
-            'consulta' => $consulta
+            'profissional_id' => $consulta->profissional_id
         ]);
     }
 

@@ -448,7 +448,22 @@
                         <i class="mdi" id="alertIcon"></i>
                         <span id="alertText"></span>
                     </div>
-                    <p class="mb-0" id="modalDescription"></p>
+                    <p class="mb-3" id="modalDescription"></p>
+
+                    <!-- Seleção de Profissional (apenas para iniciar atendimento) -->
+                    <div id="profissionalSelection" style="display: none;">
+                        <div class="form-group mb-3">
+                            <label for="profissional_id" class="form-label">Profissional <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select" id="profissional_id" name="profissional_id" required>
+                                <option value="">Selecione o profissional...</option>
+                                @foreach ($profissionais as $profissional)
+                                    <option value="{{ $profissional->id }}">{{ $profissional->nome }} -
+                                        {{ $profissional->especialidade->descricao ?? 'Sem especialidade' }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -534,6 +549,7 @@
                 const confirmButton = document.getElementById('confirmButton');
                 const confirmIcon = document.getElementById('confirmIcon');
                 const confirmText = document.getElementById('confirmText');
+                const profissionalSelection = document.getElementById('profissionalSelection');
 
                 if (action === 'iniciar') {
                     modalHeader.className = 'modal-header text-primary';
@@ -546,7 +562,29 @@
                     confirmButton.className = 'btn btn-primary';
                     confirmIcon.className = 'mdi mdi-play-circle me-2';
                     confirmText.textContent = 'Confirmar';
-                } else if (action === 'finalizar') {
+
+                    // Mostrar seleção de profissional
+                    profissionalSelection.style.display = 'block';
+
+                    // Buscar profissional atual da consulta e marcar como selecionado
+                    fetch(`/recepcao/consulta/${consultaId}/profissional`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const select = document.getElementById('profissional_id');
+                            if (data.profissional_id) {
+                                select.value = data.profissional_id;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao buscar profissional:', error);
+                        });
+
+                } else {
+                    // Esconder seleção de profissional para outras ações
+                    profissionalSelection.style.display = 'none';
+                }
+
+                if (action === 'finalizar') {
                     modalHeader.className = 'modal-header text-success';
                     modalIcon.className = 'mdi mdi-check-circle me-2';
                     modalTitle.textContent = 'Finalizar Atendimento';
@@ -575,17 +613,31 @@
             }
 
             function confirmStatusUpdate() {
+                // Validar profissional se estiver iniciando atendimento
+                if (currentAction === 'iniciar') {
+                    const profissionalId = document.getElementById('profissional_id').value;
+                    if (!profissionalId) {
+                        showNotification('Por favor, selecione um profissional antes de iniciar o atendimento.', 'error');
+                        return;
+                    }
+                }
+
                 const modal = bootstrap.Modal.getInstance(document.getElementById('statusModal'));
                 modal.hide();
 
                 let status;
+                let requestBody = {};
+
                 if (currentAction === 'iniciar') {
                     status = {{ \App\Models\Consulta::STATUS_EM_ATENDIMENTO }};
+                    requestBody.profissional_id = document.getElementById('profissional_id').value;
                 } else if (currentAction === 'finalizar') {
                     status = {{ \App\Models\Consulta::STATUS_ATENDIDO }};
                 } else if (currentAction === 'cancelar') {
                     status = {{ \App\Models\Consulta::STATUS_CANCELADO }};
                 }
+
+                requestBody.status = status;
 
                 fetch(`/recepcao/status/${currentConsultaIdModal}`, {
                         method: 'PATCH',
@@ -593,9 +645,7 @@
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
-                        body: JSON.stringify({
-                            status: status
-                        })
+                        body: JSON.stringify(requestBody)
                     })
                     .then(response => response.json())
                     .then(data => {
