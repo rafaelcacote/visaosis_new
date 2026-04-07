@@ -66,7 +66,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <input type="text" class="form-control" id="searchPatient"
                                 value="{{ old('search_term', '') }}"
                                 placeholder="Digite o nome, CPF ou telefone do paciente">
@@ -76,7 +76,7 @@
                                 <i class="mdi mdi-magnify"></i> Buscar
                             </button>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <button class="btn btn-success w-100" onclick="showNewPatientForm()">
                                 <i class="mdi mdi-account-plus"></i> Novo Paciente
                             </button>
@@ -171,7 +171,8 @@
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label class="form-label">Tipo de Atendimento <span class="text-danger">*</span></label>
-                                <select class="form-select @error('tipo') is-invalid @enderror" name="tipo" required>
+                                <select class="form-select form-select-sm @error('tipo') is-invalid @enderror"
+                                    name="tipo" required>
                                     <option value="">Selecione...</option>
                                     <option value="{{ \App\Models\Consulta::TIPO_CONSULTA }}"
                                         {{ old('tipo') == \App\Models\Consulta::TIPO_CONSULTA ? 'selected' : '' }}>Consulta
@@ -189,8 +190,8 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Prioridade <span class="text-danger">*</span></label>
-                                <select class="form-select @error('prioridade') is-invalid @enderror" name="prioridade"
-                                    required>
+                                <select class="form-select form-select-sm @error('prioridade') is-invalid @enderror"
+                                    name="prioridade" required>
                                     <option value="">Selecione...</option>
                                     <option value="{{ \App\Models\Consulta::PRIORIDADE_NORMAL }}"
                                         {{ old('prioridade') == \App\Models\Consulta::PRIORIDADE_NORMAL ? 'selected' : '' }}>
@@ -208,13 +209,14 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Profissional</label>
-                                <select class="form-select @error('profissional_id') is-invalid @enderror"
+                                <select class="form-select form-select-sm @error('profissional_id') is-invalid @enderror"
                                     name="profissional_id">
                                     <option value="">Selecione...</option>
                                     @foreach ($profissionais as $profissional)
                                         <option value="{{ $profissional->id }}"
                                             {{ old('profissional_id') == $profissional->id ? 'selected' : '' }}>
-                                            {{ $profissional->nome }}
+                                            {{ $profissional->nome }} -
+                                            {{ $profissional->especialidade->descricao ?? 'Sem especialidade' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -546,7 +548,7 @@
                     if (form) {
                         form.querySelectorAll(
                             'input[name="nome"], input[name="cpf"], input[name="nascimento_em"], input[name="telefone"], input[name="email"]'
-                            ).forEach(input => {
+                        ).forEach(input => {
                             input.readOnly = true;
                             input.classList.add('bg-light');
                         });
