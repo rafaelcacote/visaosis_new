@@ -26,15 +26,13 @@
         <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
-                    <div class="clearfix">
-                        <div class="float-start">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
                             <i class="mdi mdi-hospital-building text-primary icon-lg"></i>
                         </div>
-                        <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Total Hoje</p>
-                            <div class="fluid-container">
-                                <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $stats['total_today'] }}</h3>
-                            </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="mb-0 text-dark">Total Hoje</p>
+                            <h3 class="font-weight-medium mb-0 text-dark">{{ $stats['total_today'] }}</h3>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
@@ -46,15 +44,13 @@
         <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
-                    <div class="clearfix">
-                        <div class="float-start">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
                             <i class="mdi mdi-clock-outline text-warning icon-lg"></i>
                         </div>
-                        <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Aguardando</p>
-                            <div class="fluid-container">
-                                <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $stats['waiting'] }}</h3>
-                            </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="mb-0 text-dark">Aguardando</p>
+                            <h3 class="font-weight-medium mb-0 text-dark">{{ $stats['waiting'] }}</h3>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
@@ -66,15 +62,13 @@
         <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
-                    <div class="clearfix">
-                        <div class="float-start">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
                             <i class="mdi mdi-account-check text-info icon-lg"></i>
                         </div>
-                        <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Em Atendimento</p>
-                            <div class="fluid-container">
-                                <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $stats['in_service'] }}</h3>
-                            </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="mb-0 text-dark">Atendimento</p>
+                            <h3 class="font-weight-medium mb-0 text-dark">{{ $stats['in_service'] }}</h3>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
@@ -86,15 +80,13 @@
         <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
-                    <div class="clearfix">
-                        <div class="float-start">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
                             <i class="mdi mdi-check-circle text-success icon-lg"></i>
                         </div>
-                        <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Atendidos</p>
-                            <div class="fluid-container">
-                                <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $stats['completed'] }}</h3>
-                            </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="mb-0 text-dark">Atendidos</p>
+                            <h3 class="font-weight-medium mb-0 text-dark">{{ $stats['completed'] }}</h3>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
@@ -106,15 +98,13 @@
         <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
-                    <div class="clearfix">
-                        <div class="float-start">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
                             <i class="mdi mdi-close-circle text-danger icon-lg"></i>
                         </div>
-                        <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Cancelados</p>
-                            <div class="fluid-container">
-                                <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $stats['cancelled'] }}</h3>
-                            </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="mb-0 text-dark">Cancelados</p>
+                            <h3 class="font-weight-medium mb-0 text-dark">{{ $stats['cancelled'] }}</h3>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
@@ -126,15 +116,13 @@
         <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
-                    <div class="clearfix">
-                        <div class="float-start">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
                             <i class="mdi mdi-clock-time-four text-secondary icon-lg"></i>
                         </div>
-                        <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Hora Atual</p>
-                            <div class="fluid-container">
-                                <h3 class="font-weight-medium text-right mb-0 text-dark">{{ now()->format('H:i') }}</h3>
-                            </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="mb-0 text-dark">Hora Atual</p>
+                            <h3 class="font-weight-medium mb-0 text-dark">{{ now()->format('H:i') }}</h3>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
@@ -420,7 +408,7 @@
                                     <span class="badge bg-success">Disponível</span>
                                 @endif
                                 <div class="mt-1">
-                                    <small class="text-muted">{{ $consultasHoje }} consultas hoje</small>
+                                    <small class="text-muted">{{ $consultasHoje }} consultas</small>
                                 </div>
                             </div>
                         </div>
@@ -486,6 +474,32 @@
                 align-items: center;
                 justify-content: center;
                 font-weight: bold;
+            }
+
+            /* Estilos para cards de estatísticas */
+            .card-statistics .card-body {
+                padding: 1.5rem;
+            }
+
+            .card-statistics .flex-shrink-0 {
+                width: 50px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .card-statistics .icon-lg {
+                font-size: 2.5rem;
+            }
+
+            .card-statistics h3 {
+                font-size: 1.75rem;
+                line-height: 1.2;
+            }
+
+            .card-statistics p {
+                font-size: 0.875rem;
+                line-height: 1.3;
             }
 
             tr[data-priority="{{ \App\Models\Consulta::PRIORIDADE_EMERGENCIA }}"] {
