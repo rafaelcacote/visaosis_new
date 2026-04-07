@@ -138,57 +138,28 @@
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title mb-0">
-                            <i class="mdi mdi-format-list-bulleted text-primary me-2"></i>
-                            Fila de Atendimento
-                        </h5>
-                        <small class="text-muted">Consultas agendadas e em andamento para hoje</small>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="refreshQueue()">
+                    <h5 class="card-title mb-0">
+                        <i class="mdi mdi-format-list-bulleted text-primary me-2"></i>
+                        Fila de Atendimento
+                    </h5>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">{{ $consultas->count() }}
+                            pacientes</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshQueue()" style="height: 31px;">
                             <i class="mdi mdi-refresh"></i>
                         </button>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown">
-                                Filtros
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="filterByStatus('all')">
-                                        Todos
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#"
-                                        onclick="filterByStatus('{{ \App\Models\Consulta::STATUS_AGUARDANDO }}')">
-                                        Aguardando
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#"
-                                        onclick="filterByStatus('{{ \App\Models\Consulta::STATUS_EM_ATENDIMENTO }}')">
-                                        Em Atendimento
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#"
-                                        onclick="filterByStatus('{{ \App\Models\Consulta::STATUS_ATENDIDO }}')">
-                                        Atendidos
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#"
-                                        onclick="filterByStatus('{{ \App\Models\Consulta::STATUS_CANCELADO }}')">
-                                        Cancelados
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                        <select class="form-select form-select-sm" id="statusFilter" onchange="filterByStatus(this.value)"
+                            style="width: auto;">
+                            <option value="all">Todos</option>
+                            <option value="{{ \App\Models\Consulta::STATUS_AGUARDANDO }}">Aguardando</option>
+                            <option value="{{ \App\Models\Consulta::STATUS_EM_ATENDIMENTO }}">Em Atendimento</option>
+                            <option value="{{ \App\Models\Consulta::STATUS_ATENDIDO }}">Atendidos</option>
+                            <option value="{{ \App\Models\Consulta::STATUS_CANCELADO }}">Cancelados</option>
+                        </select>
+
                     </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     @if ($consultas->isEmpty())
                         <div class="text-center py-5">
                             <i class="mdi mdi-inbox text-muted" style="font-size: 3rem;"></i>
@@ -203,8 +174,8 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Paciente</th>
                                         <th>Chegada</th>
@@ -220,14 +191,11 @@
                                             data-priority="{{ $consulta->prioridade }}">
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="{{ $consulta->prioridade == \App\Models\Consulta::PRIORIDADE_EMERGENCIA ? 'bg-danger' : ($consulta->prioridade == \App\Models\Consulta::PRIORIDADE ? 'bg-warning' : 'bg-primary') }} text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3"
-                                                        style="width: 40px; height: 40px; font-size: 16px; font-weight: 600;">
-                                                        {{ strtoupper(mb_substr($consulta->paciente->nome ?? 'N/A', 0, 1, 'UTF-8')) }}
-                                                    </div>
+
                                                     <div>
-                                                        <div class="font-weight-medium">
+                                                        <h6 class="mb-1">
                                                             {{ $consulta->paciente->nome ?? 'Paciente não encontrado' }}
-                                                        </div>
+                                                        </h6>
                                                         @if ($consulta->prioridade == \App\Models\Consulta::PRIORIDADE_EMERGENCIA)
                                                             <small class="text-danger d-block mt-1">
                                                                 <i class="mdi mdi-alert me-1"
@@ -245,11 +213,10 @@
                                             </td>
                                             <td>
                                                 <div>
-                                                    <span class="font-weight-medium">
+                                                    <h6 class="mb-1">
                                                         {{ $consulta->chegada_em ? $consulta->chegada_em->format('H:i') : 'N/A' }}
-                                                    </span>
+                                                    </h6>
                                                     @if ($consulta->chegada_em)
-                                                        <br>
                                                         <small class="text-muted">
                                                             {{ $consulta->chegada_em->diffForHumans() }}
                                                         </small>
@@ -319,9 +286,7 @@
                                             </td>
                                             <td>
                                                 <div>
-                                                    <div class="font-weight-medium" style="font-size: 0.875rem;">
-                                                        {{ $consulta->profissional->nome ?? 'N/A' }}
-                                                    </div>
+                                                    <h6 class="mb-1">{{ $consulta->profissional->nome ?? 'N/A' }}</h6>
                                                     <small class="text-muted">
                                                         {{ $consulta->profissional->especialidade->descricao ?? 'Especialidade N/A' }}
                                                     </small>
@@ -502,14 +467,24 @@
                 line-height: 1.3;
             }
 
-            tr[data-priority="{{ \App\Models\Consulta::PRIORIDADE_EMERGENCIA }}"] {
-                background-color: rgba(220, 53, 69, 0.05);
-                border-left: 4px solid #dc3545;
+            /* Estilos para tag de contador de pacientes */
+            .tag {
+                padding: 4px 12px;
+                border-radius: 6px;
+                font-size: 0.875rem;
+                font-weight: 500;
+                white-space: nowrap;
             }
 
-            tr[data-priority="{{ \App\Models\Consulta::PRIORIDADE }}"] {
-                background-color: rgba(255, 193, 7, 0.05);
-                border-left: 4px solid #ffc107;
+            /* Alinhamento dos elementos do cabeçalho da tabela */
+            .card-header .d-flex.align-items-center .btn-sm,
+            .card-header .d-flex.align-items-center .form-select-sm {
+                height: 31px;
+                display: flex;
+                align-items: center;
+            }
+
+            border-left: 4px solid #ffc107;
             }
 
             .card-body .border {
