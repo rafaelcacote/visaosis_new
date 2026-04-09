@@ -10,7 +10,7 @@
                 {{ !empty($templatesPage) ? 'Templates de Mensagens' : 'Central de Notificações WhatsApp' }}
             </h2>
             <p class="text-muted mb-0">
-                {{ !empty($templatesPage) ? 'Cadastro e configuração de templates de mensagens' : 'Automação de lembretes, cobranças e comunicação com clientes' }}
+                {{ !empty($templatesPage) ? 'Cadastro e configuração de templates de mensagens' : 'Alerta de lembretes, cobranças e comunicação com clientes' }}
             </p>
         </div>
         <div class="d-flex gap-2">
@@ -80,89 +80,6 @@
             </div>
         </div>
     @else
-        <!-- Estatísticas de Envio -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card card-statistics">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-start">
-                                <i class="mdi mdi-check-circle text-success icon-lg"></i>
-                            </div>
-                            <div class="float-end">
-                                <p class="mb-0 text-right text-dark">Enviadas</p>
-                                <div class="fluid-container">
-                                    <h3 class="font-weight-medium text-right mb-0 text-dark">
-                                        {{ count(array_filter($notifications, fn($n) => $n['status'] == 'enviado')) }}</h3>
-                                </div>
-                                <small class="text-muted">Hoje</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card card-statistics">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-start">
-                                <i class="mdi mdi-clock-outline text-info icon-lg"></i>
-                            </div>
-                            <div class="float-end">
-                                <p class="mb-0 text-right text-dark">Programadas</p>
-                                <div class="fluid-container">
-                                    <h3 class="font-weight-medium text-right mb-0 text-dark">
-                                        {{ count(array_filter($notifications, fn($n) => $n['status'] == 'programado')) }}
-                                    </h3>
-                                </div>
-                                <small class="text-muted">Próximas horas</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card card-statistics">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-start">
-                                <i class="mdi mdi-eye text-warning icon-lg"></i>
-                            </div>
-                            <div class="float-end">
-                                <p class="mb-0 text-right text-dark">Lidas</p>
-                                <div class="fluid-container">
-                                    <h3 class="font-weight-medium text-right mb-0 text-dark">
-                                        {{ count(array_filter($notifications, fn($n) => $n['lido'])) }}</h3>
-                                </div>
-                                <small class="text-muted">Taxa:
-                                    {{ count($notifications) ? round((count(array_filter($notifications, fn($n) => $n['lido'])) / count($notifications)) * 100) : 0 }}%</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card card-statistics">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-start">
-                                <i class="mdi mdi-reply text-primary icon-lg"></i>
-                            </div>
-                            <div class="float-end">
-                                <p class="mb-0 text-right text-dark">Respondidas</p>
-                                <div class="fluid-container">
-                                    <h3 class="font-weight-medium text-right mb-0 text-dark">
-                                        {{ count(array_filter($notifications, fn($n) => $n['respondido'])) }}</h3>
-                                </div>
-                                <small class="text-muted">Taxa:
-                                    {{ count($notifications) ? round((count(array_filter($notifications, fn($n) => $n['respondido'])) / count($notifications)) * 100) : 0 }}%</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Ações Rápidas -->
         <div class="row mb-4">
             <div class="col-12">
@@ -179,7 +96,7 @@
                                 <button
                                     class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3"
                                     onclick="scrollToEligibles('crediario_vencimento_hoje')">
-                                    <i class="mdi mdi-calendar-clock fs-2 mb-2"></i>
+                                    <i class="mdi mdi-calendar-clock text-warning fs-2 mb-2 icon-lg"></i>
                                     <span>Vencimento Hoje</span>
                                     <small class="text-muted">{{ $eligibleCounts['vencimento_hoje'] ?? 0 }}
                                         clientes</small>
@@ -226,7 +143,7 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">
                             <i class="mdi mdi-account-multiple-check me-2"></i>
-                            Clientes elegíveis para envio automático
+                            Clientes elegíveis para envio de mensagens
                             ({{ is_array($eligibles ?? null) ? count($eligibles) : 0 }})
                         </h6>
                         <div class="d-flex gap-2">
@@ -237,10 +154,7 @@
                                 <option value="crediario_lembrete_amanha">Lembrete Amanhã (Crediário)</option>
                                 <option value="receita_validade">Validade Receita</option>
                             </select>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="scheduleBatchBtn"
-                                {{ empty($eligibles) ? 'disabled' : '' }}>
-                                <i class="mdi mdi-calendar-multiple-check me-1"></i>Programar lote
-                            </button>
+
                         </div>
                     </div>
                     <div class="card-body">
