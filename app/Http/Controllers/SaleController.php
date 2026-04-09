@@ -272,7 +272,7 @@ class SaleController extends Controller
         // Verificar estoque dos produtos
         foreach ($validated['produtos'] as $item) {
             $product = Produto::findOrFail($item['produto_id']);
-            
+
             // Verificar se o produto está ativo
             if (!$product->ativo) {
                 return response()->json([
@@ -393,12 +393,32 @@ class SaleController extends Controller
                     ]);
                 }
             }
+            if (in_array($validated['forma_pagamento'], ['dinheiro', 'cartao_debito', 'cartao_credito', 'pix'], true)) {
+                $tz = 'America/Manaus';
+                $agora = Carbon::now($tz);
+
+                PedidoVendaParcela::updateOrCreate(
+                    [
+                        'tenant_id' => $tenantId,
+                        'pedido_venda_id' => $pedidoVenda->id,
+                        'numero_parcela' => 1,
+                    ],
+                    [
+                        'location_id' => $locationId,
+                        'total_parcelas' => 1,
+                        'valor' => (float) $validated['total'],
+                        'vencimento_em' => $agora->toDateString(),
+                        'pago_em' => $agora,
+                        'status' => 'pago',
+                    ]
+                );
+            }
 
             DB::commit();
 
             // Preparar dados de resposta
             $pedidoVenda->load('itens.produto', 'cliente');
-            
+
             $responseData = [
                 'message' => 'Venda realizada com sucesso!',
                 'pedido_id' => $pedidoVenda->id,
@@ -413,17 +433,16 @@ class SaleController extends Controller
                 return response()->json($responseData, 201);
             }
 
-        return redirect()->route('sales.index')->with('success', 'Venda realizada com sucesso!');
-
+            return redirect()->route('sales.index')->with('success', 'Venda realizada com sucesso!');
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'message' => 'Erro ao processar a venda: ' . $e->getMessage()
                 ], 500);
             }
-            
+
             throw $e;
         }
     }
@@ -434,7 +453,7 @@ class SaleController extends Controller
     public function show(string $id)
     {
         $tenantId = session('tenant_id');
-        
+
         $pedidoVenda = PedidoVenda::with(['cliente', 'itens.produto'])
             ->where('ativo', true);
 
@@ -494,7 +513,7 @@ class SaleController extends Controller
 
         // Forma de pagamento do banco
         $formaPagamento = $pedidoVenda->forma_pagamento ?? 'Não informado';
-        
+
         $sale = [
             'id' => $pedidoVenda->id,
             'numero' => $numero,
@@ -524,7 +543,7 @@ class SaleController extends Controller
     public function print(string $id)
     {
         $tenantId = session('tenant_id');
-        
+
         $pedidoVenda = PedidoVenda::with(['cliente', 'itens.produto'])
             ->where('ativo', true);
 
@@ -586,7 +605,7 @@ class SaleController extends Controller
         $tenant = AuthHelper::tenant();
         $logoUrl = AuthHelper::tenantLogoUrl();
         $logoBase64 = null;
-        
+
         // Converter logo para base64 para garantir que apareça no PDF
         if (!empty($logoUrl)) {
             try {
@@ -594,7 +613,7 @@ class SaleController extends Controller
                 $response = \Illuminate\Support\Facades\Http::timeout(10)
                     ->withOptions(['verify' => false])
                     ->get($logoUrl);
-                
+
                 if ($response->successful()) {
                     $imageContent = $response->body();
                     if (!empty($imageContent)) {
@@ -621,7 +640,7 @@ class SaleController extends Controller
                 ]);
             }
         }
-        
+
         $tenantData = [
             'nome' => $tenant && property_exists($tenant, 'name') ? $tenant->name : 'Empresa',
             'logo_url' => $logoUrl,
@@ -660,23 +679,23 @@ class SaleController extends Controller
 
         // Gerar PDF
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('sales.print', compact('sale', 'tenantData', 'vendedor'));
-        
+
         // Configurar papel A4 em modo retrato
         $pdf->setPaper('A4', 'portrait');
-        
+
         // Configurar opções do DOMPDF
         $pdf->setOption('enable-remote', true);
         $pdf->setOption('enable-local-file-access', true);
         $pdf->setOption('defaultFont', 'DejaVu Sans');
-        
+
         // IMPORTANTE: Configurar margens usando a sintaxe correta do DOMPDF
         $pdf->setOption('margin-top', '15mm');
         $pdf->setOption('margin-bottom', '15mm');
         $pdf->setOption('margin-left', '20mm');
         $pdf->setOption('margin-right', '20mm');
-        
+
         $nomeArquivo = 'venda-' . $numero . '.pdf';
-        
+
         return $pdf->stream($nomeArquivo);
     }
 
@@ -704,7 +723,7 @@ class SaleController extends Controller
     public function destroy(string $id)
     {
         $tenantId = session('tenant_id');
-        
+
         $pedidoVenda = PedidoVenda::where('ativo', true);
         if ($tenantId) {
             $pedidoVenda->where('tenant_id', $tenantId);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendWhatsappNotificationJob;
+use App\Models\PedidoVenda;
 use App\Models\PedidoVendaParcela;
 use App\Models\Pessoa;
 use App\Models\Prescricao;
@@ -16,19 +17,277 @@ class FinancialController extends Controller
 {
     public function index()
     {
-        // Dashboard financeiro principal
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        $tz = 'America/Manaus';
+        $driver = DB::connection()->getDriverName();
+
+        $dbHojeStr = Carbon::now($tz)->toDateString();
+        if ($driver === 'pgsql') {
+            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
+            if ($row && isset($row->d)) {
+                $dbHojeStr = (string) $row->d;
+            }
+        }
+
+        $today = Carbon::parse($dbHojeStr, $tz)->startOfDay();
+        $tomorrow = $today->copy()->addDay();
+        $weekEnd = $today->copy()->addDays(7);
+
+        $closedStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $baseParcelas = PedidoVendaParcela::query()
+            ->whereNull('deleted_at')
+            ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            });
+
+        $unpaidParcelas = (clone $baseParcelas)
+            ->whereNull('pago_em')
+            ->whereNotIn('status', $closedStatuses);
+
+        $totalReceber = (float) (clone $unpaidParcelas)->sum('valor');
+        $vencidasValor = (float) (clone $unpaidParcelas)->where('vencimento_em', '<', $today->toDateString())->sum('valor');
+        $venceHojeValor = (float) (clone $unpaidParcelas)->where('vencimento_em', '=', $today->toDateString())->sum('valor');
+        $venceSemanaValor = (float) (clone $unpaidParcelas)->whereBetween('vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()])->sum('valor');
+
+        $vencidasCount = (int) (clone $unpaidParcelas)->where('vencimento_em', '<', $today->toDateString())->count();
+        $venceHojeCount = (int) (clone $unpaidParcelas)->where('vencimento_em', '=', $today->toDateString())->count();
+        $venceSemanaCount = (int) (clone $unpaidParcelas)->whereBetween('vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()])->count();
+
+        $monthStart = $today->copy()->startOfMonth();
+        $monthEnd = $today->copy()->endOfMonth();
+
+        $recebidoMes = (float) (clone $baseParcelas)
+            ->whereNotNull('pago_em')
+            ->whereBetween('pago_em', [$monthStart->copy()->startOfDay(), $monthEnd->copy()->endOfDay()])
+            ->sum('valor');
+
+        $salesMonthQuery = PedidoVenda::query()
+            ->whereNull('deleted_at')
+            ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->where('status', PedidoVenda::STATUS_FATURADO)
+            ->whereBetween('data_pedido', [$monthStart->copy()->startOfDay(), $monthEnd->copy()->endOfDay()]);
+
+        $vendasMesValor = (float) (clone $salesMonthQuery)->sum('valor_total');
+        $vendasMesCount = (int) (clone $salesMonthQuery)->count();
+        $ticketMedio = (float) (clone $salesMonthQuery)->avg('valor_total');
+
+        $totalClientesCredito = (int) DB::table('pedido_venda_parcela as pvp')
+            ->join('pedido_venda as pv', function ($join) {
+                $join->on('pv.id', '=', 'pvp.pedido_venda_id')
+                    ->on('pv.tenant_id', '=', 'pvp.tenant_id');
+            })
+            ->whereNull('pvp.deleted_at')
+            ->whereNull('pv.deleted_at')
+            ->when($tenantId, fn($q) => $q->where('pvp.tenant_id', $tenantId))
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
+                });
+            })
+            ->whereNull('pvp.pago_em')
+            ->whereNotIn('pvp.status', $closedStatuses)
+            ->whereNotNull('pv.pessoa_cliente_id')
+            ->distinct()
+            ->count('pv.pessoa_cliente_id');
+
+        $inadimplencia = 0.0;
+        if ($totalReceber > 0) {
+            $inadimplencia = round(($vencidasValor / $totalReceber) * 100, 1);
+        }
+
         $financialData = [
-            'total_receber' => 45800.00,
-            'vencidas' => 8900.00,
-            'vence_hoje' => 2400.00,
-            'vence_semana' => 6700.00,
-            'recebido_mes' => 28500.00,
-            'inadimplencia' => 12.5,
-            'ticket_medio' => 850.00,
-            'total_clientes_credito' => 156
+            'total_receber' => $totalReceber,
+            'vencidas' => $vencidasValor,
+            'vence_hoje' => $venceHojeValor,
+            'vence_semana' => $venceSemanaValor,
+            'vendas_mes' => $vendasMesValor,
+            'vendas_mes_count' => $vendasMesCount,
+            'recebido_mes' => $recebidoMes,
+            'inadimplencia' => $inadimplencia,
+            'ticket_medio' => $ticketMedio,
+            'total_clientes_credito' => $totalClientesCredito,
         ];
 
-        return view('financial.index', compact('financialData'));
+        $alertas = [
+            'vencidas' => ['count' => $vencidasCount, 'valor' => $vencidasValor],
+            'vence_hoje' => ['count' => $venceHojeCount, 'valor' => $venceHojeValor],
+            'vence_semana' => ['count' => $venceSemanaCount, 'valor' => $venceSemanaValor],
+        ];
+
+        $chartStart = $today->copy()->startOfMonth()->subMonths(7);
+        $chartEnd = $today->copy()->endOfMonth();
+
+        $chartReceiptsTotalsByKey = collect(
+            DB::table('pedido_venda_parcela as pvp')
+                ->selectRaw(
+                    $driver === 'pgsql'
+                        ? "to_char((pvp.pago_em at time zone 'America/Manaus'), 'YYYY-MM') as m, sum(pvp.valor) as total"
+                        : ($driver === 'mysql'
+                            ? "date_format(pvp.pago_em, '%Y-%m') as m, sum(pvp.valor) as total"
+                            : "strftime('%Y-%m', pvp.pago_em) as m, sum(pvp.valor) as total")
+                )
+                ->whereNull('pvp.deleted_at')
+                ->when($tenantId, fn($q) => $q->where('pvp.tenant_id', $tenantId))
+                ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                    $q->where(function ($q2) use ($locationIds) {
+                        $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
+                    });
+                })
+                ->whereNotNull('pvp.pago_em')
+                ->whereBetween('pvp.pago_em', [$chartStart->copy()->startOfDay(), $chartEnd->copy()->endOfDay()])
+                ->groupBy('m')
+                ->get()
+        )->mapWithKeys(fn($r) => [(string) $r->m => (float) $r->total]);
+
+        $chartSalesTotalsByKey = collect(
+            DB::table('pedido_venda as pv')
+                ->selectRaw(
+                    $driver === 'pgsql'
+                        ? "to_char((pv.data_pedido at time zone 'America/Manaus'), 'YYYY-MM') as m, sum(pv.valor_total) as total"
+                        : ($driver === 'mysql'
+                            ? "date_format(pv.data_pedido, '%Y-%m') as m, sum(pv.valor_total) as total"
+                            : "strftime('%Y-%m', pv.data_pedido) as m, sum(pv.valor_total) as total")
+                )
+                ->whereNull('pv.deleted_at')
+                ->when($tenantId, fn($q) => $q->where('pv.tenant_id', $tenantId))
+                ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                    $q->where(function ($q2) use ($locationIds) {
+                        $q2->whereIn('pv.location_id', $locationIds)->orWhereNull('pv.location_id');
+                    });
+                })
+                ->where('pv.status', PedidoVenda::STATUS_FATURADO)
+                ->whereBetween('pv.data_pedido', [$chartStart->copy()->startOfDay(), $chartEnd->copy()->endOfDay()])
+                ->groupBy('m')
+                ->get()
+        )->mapWithKeys(fn($r) => [(string) $r->m => (float) $r->total]);
+
+        $monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        $salesReceiptsChart = [];
+        $maxChart = 0.0;
+
+        for ($i = 0; $i < 8; $i++) {
+            $m = $chartStart->copy()->addMonths($i);
+            $key = $m->format('Y-m');
+            $salesTotal = (float) ($chartSalesTotalsByKey[$key] ?? 0);
+            $receiptsTotal = (float) ($chartReceiptsTotalsByKey[$key] ?? 0);
+
+            $salesReceiptsChart[] = [
+                'label' => $monthLabels[((int) $m->format('n')) - 1] ?? $m->format('m'),
+                'sales_total' => $salesTotal,
+                'receipts_total' => $receiptsTotal,
+            ];
+
+            $maxChart = max($maxChart, $salesTotal, $receiptsTotal);
+        }
+
+        $salesReceiptsChart = array_map(function ($row) use ($maxChart) {
+            $salesHeight = $maxChart > 0 ? (int) round(($row['sales_total'] / $maxChart) * 100) : 0;
+            $receiptsHeight = $maxChart > 0 ? (int) round(($row['receipts_total'] / $maxChart) * 100) : 0;
+
+            $row['sales_height'] = max(3, $salesHeight);
+            $row['receipts_height'] = max(3, $receiptsHeight);
+            return $row;
+        }, $salesReceiptsChart);
+
+        $installmentsRaw = DB::table('pedido_venda_parcela as pvp')
+            ->join('pedido_venda as pv', function ($join) {
+                $join->on('pv.id', '=', 'pvp.pedido_venda_id')
+                    ->on('pv.tenant_id', '=', 'pvp.tenant_id');
+            })
+            ->leftJoin('pessoa as pe', function ($join) {
+                $join->on('pe.id', '=', 'pv.pessoa_cliente_id')
+                    ->on('pe.tenant_id', '=', 'pv.tenant_id');
+            })
+            ->whereNull('pvp.deleted_at')
+            ->whereNull('pv.deleted_at')
+            ->when($tenantId, fn($q) => $q->where('pvp.tenant_id', $tenantId))
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
+                });
+            })
+            ->groupBy('pvp.pedido_venda_id', 'pv.id', 'pv.valor_total', 'pe.nome')
+            ->selectRaw('pvp.pedido_venda_id as pedido_id')
+            ->selectRaw('pv.valor_total as valor_total')
+            ->selectRaw('coalesce(pe.nome, ?) as cliente', ['Cliente não informado'])
+            ->selectRaw("max(pvp.total_parcelas) as total_parcelas")
+            ->selectRaw("sum(case when pvp.pago_em is not null or lower(pvp.status) in ('pago','paga') then 1 else 0 end) as pagas")
+            ->selectRaw("min(case when pvp.pago_em is null and lower(pvp.status) not in ('pago','paga','cancelado','cancelada') then pvp.vencimento_em else null end) as proximo_vencimento")
+            ->havingRaw("sum(case when pvp.pago_em is null and lower(pvp.status) not in ('pago','paga','cancelado','cancelada') then 1 else 0 end) > 0")
+            ->orderByRaw($driver === 'pgsql' ? 'proximo_vencimento asc nulls last' : 'proximo_vencimento asc')
+            ->limit(15)
+            ->get();
+
+        $installmentSummaries = $installmentsRaw->map(function ($row) use ($today, $tz) {
+            $cliente = (string) ($row->cliente ?? 'Cliente não informado');
+            $initials = collect(preg_split('/\s+/', trim($cliente)))->filter()->take(2)->map(fn($p) => mb_strtoupper(mb_substr($p, 0, 1)))->implode('');
+            if ($initials === '') {
+                $initials = 'CL';
+            }
+
+            $totalParcelas = (int) ($row->total_parcelas ?? 0);
+            $pagas = (int) ($row->pagas ?? 0);
+            $progressPct = $totalParcelas > 0 ? (int) floor(($pagas / $totalParcelas) * 100) : 0;
+
+            $proximoVencStr = $row->proximo_vencimento ? (string) $row->proximo_vencimento : null;
+            $proximoVenc = $proximoVencStr ? Carbon::parse($proximoVencStr, $tz)->startOfDay() : null;
+
+            $statusLabel = 'Em Dia';
+            $badgeClass = 'bg-success';
+            $rowClass = '';
+            $subLabel = 'Em dia';
+
+            if ($proximoVenc) {
+                if ($proximoVenc->lt($today)) {
+                    $dias = $proximoVenc->diffInDays($today);
+                    $statusLabel = 'Em Atraso';
+                    $badgeClass = 'bg-danger';
+                    $rowClass = 'table-danger';
+                    $subLabel = $dias . ' dias atraso';
+                } elseif ($proximoVenc->equalTo($today)) {
+                    $statusLabel = 'Vence Hoje';
+                    $badgeClass = 'bg-warning';
+                    $rowClass = 'table-warning';
+                    $subLabel = 'Vence hoje';
+                }
+            }
+
+            return [
+                'pedido_id' => (int) $row->pedido_id,
+                'cliente' => $cliente,
+                'initials' => $initials,
+                'valor_total' => (float) ($row->valor_total ?? 0),
+                'pagas' => $pagas,
+                'total_parcelas' => $totalParcelas,
+                'progress_pct' => $progressPct,
+                'proximo_vencimento' => $proximoVenc ? $proximoVenc->format('d/m/Y') : '-',
+                'proximo_vencimento_raw' => $proximoVenc ? $proximoVenc->toDateString() : null,
+                'status_label' => $statusLabel,
+                'badge_class' => $badgeClass,
+                'row_class' => $rowClass,
+                'sub_label' => $subLabel,
+            ];
+        })->values()->toArray();
+
+        return view('financial.index', [
+            'financialData' => $financialData,
+            'alertas' => $alertas,
+            'salesReceiptsChart' => $salesReceiptsChart,
+            'installmentSummaries' => $installmentSummaries,
+        ]);
     }
 
     public function receivables()
