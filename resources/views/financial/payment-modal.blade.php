@@ -50,21 +50,24 @@
                                         <label class="form-label">Valor Original</label>
                                         <div class="input-group">
                                             <span class="input-group-text">R$</span>
-                                            <input type="text" class="form-control" id="paymentOriginalValue" readonly>
+                                            <input type="text" class="form-control" id="paymentOriginalValue"
+                                                readonly>
                                         </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Juros/Multa</label>
                                         <div class="input-group">
                                             <span class="input-group-text">R$</span>
-                                            <input type="text" class="form-control text-danger" id="paymentInterest" readonly>
+                                            <input type="text" class="form-control text-danger" id="paymentInterest"
+                                                readonly>
                                         </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label"><strong>Valor Total</strong></label>
                                         <div class="input-group">
                                             <span class="input-group-text">R$</span>
-                                            <input type="text" class="form-control fw-bold text-success" id="paymentTotalValue" readonly>
+                                            <input type="text" class="form-control fw-bold text-success"
+                                                id="paymentTotalValue" readonly>
                                         </div>
                                     </div>
                                 </div>
@@ -83,7 +86,8 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Forma de Pagamento *</label>
-                                <select class="form-select" id="paymentMethod" required onchange="updatePaymentFields()">
+                                <select class="form-select" id="paymentMethod" required
+                                    onchange="updatePaymentFields()">
                                     <option value="">Selecione...</option>
                                     <option value="dinheiro">Dinheiro</option>
                                     <option value="pix">PIX</option>
@@ -115,7 +119,8 @@
                                 <label class="form-label">Valor Recebido *</label>
                                 <div class="input-group">
                                     <span class="input-group-text">R$</span>
-                                    <input type="number" class="form-control" id="paymentReceivedValue" step="0.01" required onchange="calculateChange()">
+                                    <input type="number" class="form-control" id="paymentReceivedValue"
+                                        step="0.01" required onchange="calculateChange()">
                                 </div>
                             </div>
 
@@ -123,7 +128,8 @@
                                 <label class="form-label">Desconto</label>
                                 <div class="input-group">
                                     <span class="input-group-text">R$</span>
-                                    <input type="number" class="form-control" id="paymentDiscount" step="0.01" value="0.00" onchange="calculateChange()">
+                                    <input type="number" class="form-control" id="paymentDiscount" step="0.01"
+                                        value="0.00" onchange="calculateChange()">
                                 </div>
                             </div>
 
@@ -137,7 +143,8 @@
 
                             <div class="mb-3" id="referenceField" style="display: none;">
                                 <label class="form-label">Referência/Comprovante</label>
-                                <input type="text" class="form-control" id="paymentReference" placeholder="Número do comprovante, NSU, etc.">
+                                <input type="text" class="form-control" id="paymentReference"
+                                    placeholder="Número do comprovante, NSU, etc.">
                             </div>
                         </div>
                     </div>
@@ -152,13 +159,17 @@
                         <h6><i class="mdi mdi-check-circle me-2"></i>Resumo do Pagamento</h6>
                         <div class="row">
                             <div class="col-md-6">
-                                <small><strong>Valor da Parcela:</strong> R$ <span id="summaryOriginal">0,00</span></small><br>
-                                <small><strong>Juros/Multa:</strong> R$ <span id="summaryInterest">0,00</span></small><br>
+                                <small><strong>Valor da Parcela:</strong> R$ <span
+                                        id="summaryOriginal">0,00</span></small><br>
+                                <small><strong>Juros/Multa:</strong> R$ <span
+                                        id="summaryInterest">0,00</span></small><br>
                                 <small><strong>Desconto:</strong> R$ <span id="summaryDiscount">0,00</span></small>
                             </div>
                             <div class="col-md-6">
-                                <small><strong>Total a Pagar:</strong> R$ <span id="summaryTotal">0,00</span></small><br>
-                                <small><strong>Valor Recebido:</strong> R$ <span id="summaryReceived">0,00</span></small><br>
+                                <small><strong>Total a Pagar:</strong> R$ <span
+                                        id="summaryTotal">0,00</span></small><br>
+                                <small><strong>Valor Recebido:</strong> R$ <span
+                                        id="summaryReceived">0,00</span></small><br>
                                 <small><strong>Troco:</strong> R$ <span id="summaryChange">0,00</span></small>
                             </div>
                         </div>
@@ -181,125 +192,149 @@
 </div>
 
 <script>
-let currentPaymentData = {};
+    let currentPaymentData = {};
 
-function openPaymentModal(receivableId, clientName, cpf, saleId, originalValue, interest, totalValue) {
-    currentPaymentData = {
-        id: receivableId,
-        client: clientName,
-        cpf: cpf,
-        sale: saleId,
-        originalValue: parseFloat(originalValue),
-        interest: parseFloat(interest),
-        totalValue: parseFloat(totalValue)
-    };
+    function openPaymentModal(receivableId, clientName, cpf, saleId, originalValue, interest, totalValue) {
+        currentPaymentData = {
+            id: receivableId,
+            client: clientName,
+            cpf: cpf,
+            sale: saleId,
+            originalValue: parseFloat(originalValue),
+            interest: parseFloat(interest),
+            totalValue: parseFloat(totalValue)
+        };
 
-    document.getElementById('paymentClient').value = clientName;
-    document.getElementById('paymentCpf').value = cpf;
-    document.getElementById('paymentSale').value = saleId;
-    document.getElementById('paymentOriginalValue').value = originalValue;
-    document.getElementById('paymentInterest').value = interest;
-    document.getElementById('paymentTotalValue').value = totalValue;
-    document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('paymentReceivedValue').value = totalValue;
-    document.getElementById('paymentMethod').value = '';
-    document.getElementById('paymentDiscount').value = '0.00';
-    document.getElementById('paymentNotes').value = '';
+        document.getElementById('paymentClient').value = clientName;
+        document.getElementById('paymentCpf').value = cpf;
+        document.getElementById('paymentSale').value = saleId;
+        document.getElementById('paymentOriginalValue').value = (currentPaymentData.originalValue || 0).toFixed(2)
+            .replace('.', ',');
+        document.getElementById('paymentInterest').value = (currentPaymentData.interest || 0).toFixed(2).replace('.',
+            ',');
+        document.getElementById('paymentTotalValue').value = (currentPaymentData.totalValue || 0).toFixed(2).replace(
+            '.', ',');
+        document.getElementById('paymentDate').value = new Date().toLocaleDateString('en-CA');
+        document.getElementById('paymentReceivedValue').value = (currentPaymentData.totalValue || 0).toFixed(2);
+        document.getElementById('paymentMethod').value = '';
+        document.getElementById('paymentDiscount').value = '0.00';
+        document.getElementById('paymentNotes').value = '';
 
-    calculateChange();
+        updatePaymentFields();
+        calculateChange();
 
-    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
-    modal.show();
-}
-
-function updatePaymentFields() {
-    const method = document.getElementById('paymentMethod').value;
-    const bankField = document.getElementById('bankField');
-    const referenceField = document.getElementById('referenceField');
-    const changeField = document.getElementById('changeField');
-
-    if (method === 'pix' || method === 'transferencia' || method === 'boleto') {
-        bankField.style.display = 'block';
-        referenceField.style.display = 'block';
-    } else {
-        bankField.style.display = 'none';
-        referenceField.style.display = method === 'cartao_debito' || method === 'cartao_credito' ? 'block' : 'none';
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        modal.show();
     }
 
-    if (method === 'dinheiro') {
-        changeField.style.display = 'block';
-    } else {
-        changeField.style.display = 'none';
-        document.getElementById('paymentChange').value = '0,00';
+    function updatePaymentFields() {
+        const method = document.getElementById('paymentMethod').value;
+        const bankField = document.getElementById('bankField');
+        const referenceField = document.getElementById('referenceField');
+        const changeField = document.getElementById('changeField');
+
+        if (method === 'pix' || method === 'transferencia' || method === 'boleto') {
+            bankField.style.display = 'block';
+            referenceField.style.display = 'block';
+        } else {
+            bankField.style.display = 'none';
+            referenceField.style.display = method === 'cartao_debito' || method === 'cartao_credito' ? 'block' : 'none';
+        }
+
+        if (method === 'dinheiro') {
+            changeField.style.display = 'block';
+        } else {
+            changeField.style.display = 'none';
+            document.getElementById('paymentChange').value = '0,00';
+        }
+
+        calculateChange();
     }
 
-    calculateChange();
-}
+    function calculateChange() {
+        const totalValue = currentPaymentData.totalValue || 0;
+        const receivedValue = parseFloat(document.getElementById('paymentReceivedValue').value) || 0;
+        const discount = parseFloat(document.getElementById('paymentDiscount').value) || 0;
 
-function calculateChange() {
-    const totalValue = currentPaymentData.totalValue || 0;
-    const receivedValue = parseFloat(document.getElementById('paymentReceivedValue').value) || 0;
-    const discount = parseFloat(document.getElementById('paymentDiscount').value) || 0;
+        const finalTotal = totalValue - discount;
+        const change = receivedValue - finalTotal;
 
-    const finalTotal = totalValue - discount;
-    const change = receivedValue - finalTotal;
+        document.getElementById('paymentChange').value = Math.max(0, change).toFixed(2).replace('.', ',');
 
-    document.getElementById('paymentChange').value = Math.max(0, change).toFixed(2).replace('.', ',');
-
-    updatePaymentSummary();
-}
-
-function updatePaymentSummary() {
-    const originalValue = currentPaymentData.originalValue || 0;
-    const interest = currentPaymentData.interest || 0;
-    const discount = parseFloat(document.getElementById('paymentDiscount').value) || 0;
-    const receivedValue = parseFloat(document.getElementById('paymentReceivedValue').value) || 0;
-    const totalValue = currentPaymentData.totalValue || 0;
-    const finalTotal = totalValue - discount;
-    const change = Math.max(0, receivedValue - finalTotal);
-
-    document.getElementById('summaryOriginal').textContent = originalValue.toFixed(2).replace('.', ',');
-    document.getElementById('summaryInterest').textContent = interest.toFixed(2).replace('.', ',');
-    document.getElementById('summaryDiscount').textContent = discount.toFixed(2).replace('.', ',');
-    document.getElementById('summaryTotal').textContent = finalTotal.toFixed(2).replace('.', ',');
-    document.getElementById('summaryReceived').textContent = receivedValue.toFixed(2).replace('.', ',');
-    document.getElementById('summaryChange').textContent = change.toFixed(2).replace('.', ',');
-
-    document.getElementById('paymentSummary').style.display = 'block';
-}
-
-function generateReceipt() {
-    alert('Recibo gerado com sucesso!\n\nEm produção, seria aberta uma nova janela com o recibo formatado para impressão.');
-}
-
-function confirmPayment() {
-    const form = document.getElementById('paymentForm');
-
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
+        updatePaymentSummary();
     }
 
-    const paymentData = {
-        receivable_id: currentPaymentData.id,
-        date: document.getElementById('paymentDate').value,
-        method: document.getElementById('paymentMethod').value,
-        bank: document.getElementById('paymentBank').value,
-        reference: document.getElementById('paymentReference').value,
-        original_value: currentPaymentData.originalValue,
-        interest: currentPaymentData.interest,
-        discount: parseFloat(document.getElementById('paymentDiscount').value) || 0,
-        received_value: parseFloat(document.getElementById('paymentReceivedValue').value) || 0,
-        notes: document.getElementById('paymentNotes').value
-    };
+    function updatePaymentSummary() {
+        const originalValue = currentPaymentData.originalValue || 0;
+        const interest = currentPaymentData.interest || 0;
+        const discount = parseFloat(document.getElementById('paymentDiscount').value) || 0;
+        const receivedValue = parseFloat(document.getElementById('paymentReceivedValue').value) || 0;
+        const totalValue = currentPaymentData.totalValue || 0;
+        const finalTotal = totalValue - discount;
+        const change = Math.max(0, receivedValue - finalTotal);
 
-    if (confirm('Confirmar o registro deste pagamento?')) {
-        alert('Pagamento registrado com sucesso!\n\nA parcela foi marcada como paga e o cliente foi notificado via WhatsApp.');
+        document.getElementById('summaryOriginal').textContent = originalValue.toFixed(2).replace('.', ',');
+        document.getElementById('summaryInterest').textContent = interest.toFixed(2).replace('.', ',');
+        document.getElementById('summaryDiscount').textContent = discount.toFixed(2).replace('.', ',');
+        document.getElementById('summaryTotal').textContent = finalTotal.toFixed(2).replace('.', ',');
+        document.getElementById('summaryReceived').textContent = receivedValue.toFixed(2).replace('.', ',');
+        document.getElementById('summaryChange').textContent = change.toFixed(2).replace('.', ',');
 
-        const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
-        modal.hide();
-
-        location.reload();
+        document.getElementById('paymentSummary').style.display = 'block';
     }
-}
+
+    function generateReceipt() {
+        alert(
+            'Recibo gerado com sucesso!\n\nEm produção, seria aberta uma nova janela com o recibo formatado para impressão.');
+    }
+
+    function confirmPayment() {
+        const form = document.getElementById('paymentForm');
+
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const paymentData = {
+            receivable_id: currentPaymentData.id,
+            date: document.getElementById('paymentDate').value,
+            method: document.getElementById('paymentMethod').value,
+            bank: document.getElementById('paymentBank').value,
+            reference: document.getElementById('paymentReference').value,
+            original_value: currentPaymentData.originalValue,
+            interest: currentPaymentData.interest,
+            discount: parseFloat(document.getElementById('paymentDiscount').value) || 0,
+            received_value: parseFloat(document.getElementById('paymentReceivedValue').value) || 0,
+            notes: document.getElementById('paymentNotes').value
+        };
+
+        if (confirm('Confirmar o registro deste pagamento?')) {
+            fetch('{{ route('financial.receive-payment') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(paymentData)
+                })
+                .then(async (res) => {
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        throw new Error(data.message || 'Erro ao registrar pagamento.');
+                    }
+                    return data;
+                })
+                .then(() => {
+                    alert('Pagamento registrado com sucesso!');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+                    modal.hide();
+                    location.reload();
+                })
+                .catch((err) => {
+                    alert(err?.message || 'Erro ao registrar pagamento.');
+                });
+        }
+    }
 </script>

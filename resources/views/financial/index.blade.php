@@ -254,11 +254,13 @@
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <button class="btn btn-outline-secondary" title="WhatsApp"
-                                                    onclick="sendReminders()">
+                                                    onclick='@if (!empty($row['proxima_parcela_id'])) sendParcelBoleto({{ $row['proxima_parcela_id'] }}, @json($row['telefone'] ?? null)); @endif'
+                                                    @if (empty($row['proxima_parcela_id']) || empty($row['telefone'])) disabled @endif>
                                                     <i class="mdi mdi-whatsapp"></i>
                                                 </button>
                                                 <button class="btn btn-outline-primary" title="Boleto"
-                                                    onclick="generateBoletos()">
+                                                    onclick="@if (!empty($row['proxima_parcela_id'])) window.open('{{ route('financial.boleto-pdf', $row['proxima_parcela_id']) }}', '_blank'); @endif"
+                                                    @if (empty($row['proxima_parcela_id'])) disabled @endif>
                                                     <i class="mdi mdi-file-document"></i>
                                                 </button>
                                             </div>
@@ -346,7 +348,61 @@
             }
 
             function generateBoletos() {
-                alert('Gerando boletos em lote...');
+                fetch('{{ route('financial.boletos.generate-week') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({})
+                    })
+                    .then(async (res) => {
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                            throw new Error(data.message || 'Erro ao gerar boletos.');
+                        }
+                        return data;
+                    })
+                    .then((data) => {
+                        const boletos = Array.isArray(data.boletos) ? data.boletos : [];
+                        if (!boletos.length) {
+                            alert('Nenhuma parcela encontrada para gerar boleto nesta semana.');
+                            return;
+                        }
+                        boletos.forEach((b) => {
+                            if (b && b.pdf_url) {
+                                window.open(b.pdf_url, '_blank');
+                            }
+                        });
+                    })
+                    .catch((err) => {
+                        alert(err?.message || 'Erro ao gerar boletos.');
+                    });
+            }
+
+            function sendParcelBoleto(parcelaId, telefone) {
+                if (!parcelaId) {
+                    alert('Parcela inválida.');
+                    return;
+                }
+                const digits = (telefone || '').toString().replace(/\D+/g, '');
+                let waPhone = digits;
+                if (!waPhone) {
+                    alert('Telefone do cliente não informado.');
+                    return;
+                }
+                if (!waPhone.startsWith('55') && (waPhone.length === 10 || waPhone.length === 11)) {
+                    waPhone = '55' + waPhone;
+                }
+                const base = @json(route('financial.boleto-pdf', ['id' => 0]));
+                const pdfUrl = base.replace(/0$/, String(parcelaId));
+                const message = 'Segue o boleto da sua parcela: ' + pdfUrl;
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const waUrl = isMobile ?
+                    ('https://wa.me/' + waPhone + '?text=' + encodeURIComponent(message)) :
+                    ('https://web.whatsapp.com/send?phone=' + waPhone + '&text=' + encodeURIComponent(message));
+                window.open(waUrl, 'whatsapp_web');
             }
 
             document.querySelectorAll('.bar-financial').forEach(bar => {

@@ -240,11 +240,10 @@
                 <!-- Beneficiário -->
                 <div class="beneficiario">
                     <div class="label">BENEFICIÁRIO</div>
-                    <div class="valor">ÓTICA VISÃO CLARA LTDA</div>
-                    <div>CNPJ: 12.345.678/0001-90</div>
-                    <div>Rua das Flores, 123 - Centro</div>
-                    <div>São Paulo/SP - CEP: 01234-567</div>
-                    <div>Tel: (11) 3333-4444</div>
+                    <div class="valor">{{ $boleto['beneficiario'] ?? 'Beneficiário' }}</div>
+                    @if(!empty($boleto['beneficiario_cpf_cnpj']))
+                        <div>CPF/CNPJ: {{ $boleto['beneficiario_cpf_cnpj'] }}</div>
+                    @endif
                 </div>
                 
                 <!-- Pagador -->
@@ -319,9 +318,15 @@
             <div class="label">INSTRUÇÕES (TEXTO DE RESPONSABILIDADE DO BENEFICIÁRIO)</div>
             <div style="margin-top: 10px; line-height: 1.4;">
                 <strong>INSTRUÇÕES DE PAGAMENTO:</strong><br>
+                @if(!empty($boleto['pix_key']) && !empty($boleto['pix_payload']))
+                    - PIX (copia e cola):<br>
+                    <div style="margin: 6px 0; padding: 8px; border: 1px solid #000; background: #fff; font-family: 'Courier New', monospace; font-size: 9px; word-break: break-all;">
+                        {{ $boleto['pix_payload'] }}
+                    </div>
+                    - Chave PIX do beneficiário: {{ $boleto['pix_key'] }}<br>
+                @endif
                 - Pagável em qualquer banco até o vencimento<br>
                 - Após o vencimento, sujeito a juros de 1% ao mês e multa de 2%<br>
-                - Em caso de dúvidas, entre em contato: (11) 3333-4444<br>
                 - Referente à {{ $boleto['descricao'] ?? 'Venda #VND-2024-001 - Parcela 1/3' }}<br>
                 @if(isset($boleto['observacoes']))
                 - {{ $boleto['observacoes'] }}

@@ -21,6 +21,7 @@ class PedidoVendaParcela extends Model
         'vencimento_em',
         'pago_em',
         'status',
+        'forma_pagamento',
     ];
 
     protected $casts = [
@@ -37,4 +38,3 @@ class PedidoVendaParcela extends Model
         return $this->belongsTo(PedidoVenda::class, 'pedido_venda_id');
     }
 }
-

@@ -219,10 +219,11 @@ class FinancialController extends Controller
                     $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
                 });
             })
-            ->groupBy('pvp.pedido_venda_id', 'pv.id', 'pv.valor_total', 'pe.nome')
+            ->groupBy('pvp.pedido_venda_id', 'pv.id', 'pv.valor_total', 'pe.nome', 'pe.telefone')
             ->selectRaw('pvp.pedido_venda_id as pedido_id')
             ->selectRaw('pv.valor_total as valor_total')
             ->selectRaw('coalesce(pe.nome, ?) as cliente', ['Cliente não informado'])
+            ->selectRaw('pe.telefone as telefone')
             ->selectRaw("max(pvp.total_parcelas) as total_parcelas")
             ->selectRaw("sum(case when pvp.pago_em is not null or lower(pvp.status) in ('pago','paga') then 1 else 0 end) as pagas")
             ->selectRaw("min(case when pvp.pago_em is null and lower(pvp.status) not in ('pago','paga','cancelado','cancelada') then pvp.vencimento_em else null end) as proximo_vencimento")
@@ -231,12 +232,41 @@ class FinancialController extends Controller
             ->limit(15)
             ->get();
 
-        $installmentSummaries = $installmentsRaw->map(function ($row) use ($today, $tz) {
+        $paidStatusSet = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $pedidoIds = $installmentsRaw->pluck('pedido_id')->filter()->map(fn($v) => (int) $v)->values()->all();
+        $nextParcelas = [];
+        if (! empty($pedidoIds)) {
+            $nextParcelas = PedidoVendaParcela::query()
+                ->whereNull('deleted_at')
+                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+                ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                    $q->where(function ($q2) use ($locationIds) {
+                        $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                    });
+                })
+                ->whereIn('pedido_venda_id', $pedidoIds)
+                ->whereNull('pago_em')
+                ->where(function ($q) use ($paidStatusSet) {
+                    $q->whereNull('status')->orWhereNotIn(DB::raw('lower(status)'), $paidStatusSet);
+                })
+                ->orderBy('pedido_venda_id')
+                ->orderBy('vencimento_em')
+                ->orderBy('numero_parcela')
+                ->orderBy('id')
+                ->get(['id', 'pedido_venda_id'])
+                ->groupBy('pedido_venda_id')
+                ->map(fn($rows) => (int) $rows->first()->id)
+                ->toArray();
+        }
+
+        $installmentSummaries = $installmentsRaw->map(function ($row) use ($today, $tz, $nextParcelas) {
             $cliente = (string) ($row->cliente ?? 'Cliente não informado');
             $initials = collect(preg_split('/\s+/', trim($cliente)))->filter()->take(2)->map(fn($p) => mb_strtoupper(mb_substr($p, 0, 1)))->implode('');
             if ($initials === '') {
                 $initials = 'CL';
             }
+            $telefone = $row->telefone ? (string) $row->telefone : null;
 
             $totalParcelas = (int) ($row->total_parcelas ?? 0);
             $pagas = (int) ($row->pagas ?? 0);
@@ -267,8 +297,10 @@ class FinancialController extends Controller
 
             return [
                 'pedido_id' => (int) $row->pedido_id,
+                'proxima_parcela_id' => isset($nextParcelas[(int) $row->pedido_id]) ? (int) $nextParcelas[(int) $row->pedido_id] : null,
                 'cliente' => $cliente,
                 'initials' => $initials,
+                'telefone' => $telefone,
                 'valor_total' => (float) ($row->valor_total ?? 0),
                 'pagas' => $pagas,
                 'total_parcelas' => $totalParcelas,
@@ -1427,59 +1459,267 @@ class FinancialController extends Controller
         };
     }
 
-    public function generateBoleto($id)
+    public function generateBoletosWeek(Request $request)
     {
-        // Simula geração de boleto para uma parcela específica
-        $boleto = [
-            'id' => 'BOL-2024-' . str_pad($id, 3, '0', STR_PAD_LEFT),
-            'nosso_numero' => '00000' . $id . '508',
-            'linha_digitavel' => '34191.09008 61207.954566 00000.142508 1 95470000014962',
-            'codigo_barras' => '34191954700000149620000061207954560000014250',
-            'cliente' => 'Maria Silva Santos',
-            'cpf' => '123.456.789-00',
-            'endereco' => 'Rua das Palmeiras, 456 - Jardim América',
-            'cidade' => 'São Paulo/SP - CEP: 04567-890',
-            'telefone' => '(11) 99999-9999',
-            'vencimento' => now()->addDays(30)->format('Y-m-d'),
-            'valor' => 142.50,
-            'juros' => 7.12,
-            'valor_total' => 149.62,
-            'gerado_em' => now()->format('Y-m-d H:i:s'),
-            'descricao' => 'Venda #VND-2024-001 - Parcela 1/3',
-            'observacoes' => 'Cliente preferencial - desconto aplicado'
-        ];
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $tz = 'America/Manaus';
+        $driver = DB::connection()->getDriverName();
+
+        $dbHojeStr = Carbon::now($tz)->toDateString();
+        if ($driver === 'pgsql') {
+            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
+            if ($row && isset($row->d)) {
+                $dbHojeStr = (string) $row->d;
+            }
+        }
+
+        $today = Carbon::parse($dbHojeStr, $tz)->startOfDay();
+        $weekEnd = $today->copy()->addDays(7);
+
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $parcelas = PedidoVendaParcela::query()
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->whereNull('pago_em')
+            ->where(function ($q) use ($paidStatuses) {
+                $q->whereNull('status')->orWhereNotIn(DB::raw('lower(status)'), $paidStatuses);
+            })
+            ->whereBetween('vencimento_em', [$today->toDateString(), $weekEnd->toDateString()])
+            ->orderBy('vencimento_em')
+            ->limit(50)
+            ->get();
+
+        $boletos = $parcelas->map(function (PedidoVendaParcela $p) {
+            return [
+                'parcela_id' => $p->id,
+                'pdf_url' => route('financial.boleto-pdf', $p->id),
+            ];
+        })->values()->toArray();
 
         return response()->json([
             'success' => true,
-            'message' => 'Boleto gerado com sucesso!',
+            'boletos' => $boletos,
+        ]);
+    }
+
+    public function generateBoleto($id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $parcela = PedidoVendaParcela::query()
+            ->with('pedido.cliente')
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $parcela) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parcela não encontrada.',
+            ], 404);
+        }
+
+        $boleto = $this->buildBoletoFromParcela($parcela);
+
+        return response()->json([
+            'success' => true,
             'boleto' => $boleto,
-            'pdf_url' => route('financial.boleto-pdf', $boleto['id'])
+            'pdf_url' => route('financial.boleto-pdf', $parcela->id),
         ]);
     }
 
     public function boletoPdf($id)
     {
-        // Busca dados do boleto (simulado)
-        $boleto = [
-            'id' => $id,
-            'nosso_numero' => '00000142508',
-            'linha_digitavel' => '34191.09008 61207.954566 00000.142508 1 95470000014962',
-            'codigo_barras' => '34191954700000149620000061207954560000014250',
-            'cliente' => 'Maria Silva Santos',
-            'cpf' => '123.456.789-00',
-            'endereco' => 'Rua das Palmeiras, 456 - Jardim América',
-            'cidade' => 'São Paulo/SP - CEP: 04567-890',
-            'telefone' => '(11) 99999-9999',
-            'vencimento' => '2024-08-30',
-            'valor' => 142.50,
-            'juros' => 7.12,
-            'valor_total' => 149.62,
-            'gerado_em' => now()->format('Y-m-d H:i:s'),
-            'descricao' => 'Venda #VND-2024-001 - Parcela 1/3',
-            'observacoes' => 'Cliente preferencial - desconto aplicado'
-        ];
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            abort(403, 'Tenant não informado na sessão.');
+        }
+
+        $parcela = PedidoVendaParcela::query()
+            ->with('pedido.cliente')
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->firstOrFail();
+
+        $boleto = $this->buildBoletoFromParcela($parcela);
 
         return view('financial.boleto-pdf', compact('boleto'));
+    }
+
+    private function buildBoletoFromParcela(PedidoVendaParcela $parcela): array
+    {
+        $tenant = session('tenant');
+        $tenantName = null;
+        $tenantCpfCnpj = null;
+
+        if (is_array($tenant)) {
+            $tenantName = $tenant['trade_name'] ?? $tenant['name'] ?? null;
+            $tenantCpfCnpj = $tenant['cpf_cnpj'] ?? null;
+        } elseif (is_object($tenant)) {
+            $tenantName = $tenant->trade_name ?? $tenant->name ?? null;
+            $tenantCpfCnpj = $tenant->cpf_cnpj ?? null;
+        }
+
+        $pixKey = $this->normalizeCpfCnpj($tenantCpfCnpj);
+        $merchantName = $this->sanitizePixText($tenantName ?: config('app.name', 'VISAOSIS'), 25);
+        $merchantCity = $this->sanitizePixText('MANAUS', 15);
+
+        $pedido = $parcela->pedido;
+        $cliente = $pedido?->cliente;
+
+        $clienteNome = $cliente?->nome ?? 'Cliente não informado';
+        $clienteCpf = $cliente?->cpf ?? '';
+        $clienteTelefone = $cliente?->telefone_formatado ?? $cliente?->telefone ?? '';
+
+        $valor = (float) ($parcela->valor ?? 0);
+        $txid = $this->sanitizePixText('PV' . $parcela->pedido_venda_id . 'P' . $parcela->numero_parcela, 25);
+        $pixPayload = $pixKey ? $this->buildPixPayload($pixKey, $merchantName, $merchantCity, $valor, $txid) : '';
+
+        $vencimento = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em)->toDateString() : now()->toDateString();
+
+        return [
+            'id' => 'BOL-' . $parcela->id,
+            'nosso_numero' => str_pad((string) $parcela->id, 11, '0', STR_PAD_LEFT),
+            'linha_digitavel' => '34191.09008 61207.954566 00000.142508 1 95470000014962',
+            'codigo_barras' => '34191954700000149620000061207954560000014250',
+            'beneficiario' => $tenantName ?: 'Beneficiário não informado',
+            'beneficiario_cpf_cnpj' => $tenantCpfCnpj ?: '',
+            'pix_key' => $pixKey ?: '',
+            'pix_payload' => $pixPayload,
+            'cliente' => $clienteNome,
+            'cpf' => $clienteCpf ?: '',
+            'endereco' => '',
+            'cidade' => '',
+            'telefone' => $clienteTelefone ?: '',
+            'vencimento' => $vencimento,
+            'valor' => $valor,
+            'juros' => 0.0,
+            'valor_total' => $valor,
+            'gerado_em' => now()->format('Y-m-d H:i:s'),
+            'descricao' => 'Venda #' . (int) $parcela->pedido_venda_id . ' - Parcela ' . (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
+            'observacoes' => null,
+        ];
+    }
+
+    private function normalizeCpfCnpj(?string $raw): ?string
+    {
+        if (! $raw) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $raw);
+        if (! $digits) {
+            return null;
+        }
+
+        return $digits;
+    }
+
+    private function sanitizePixText(string $text, int $maxLen): string
+    {
+        $t = trim($text);
+        $t = preg_replace('/\s+/', ' ', $t);
+        $t = preg_replace('/[^A-Za-z0-9 \-\.]/u', '', $t);
+        $t = strtoupper($t);
+
+        if (mb_strlen($t) > $maxLen) {
+            $t = mb_substr($t, 0, $maxLen);
+        }
+
+        return $t;
+    }
+
+    private function buildPixPayload(string $pixKey, string $merchantName, string $merchantCity, float $amount, string $txid): string
+    {
+        $amountStr = number_format($amount, 2, '.', '');
+
+        $gui = $this->emv('00', 'br.gov.bcb.pix');
+        $key = $this->emv('01', $pixKey);
+        $merchantAccountInfo = $this->emv('26', $gui . $key);
+
+        $payload = '';
+        $payload .= $this->emv('00', '01');
+        $payload .= $merchantAccountInfo;
+        $payload .= $this->emv('52', '0000');
+        $payload .= $this->emv('53', '986');
+        $payload .= $this->emv('54', $amountStr);
+        $payload .= $this->emv('58', 'BR');
+        $payload .= $this->emv('59', $merchantName);
+        $payload .= $this->emv('60', $merchantCity);
+        $payload .= $this->emv('62', $this->emv('05', $txid));
+
+        $payloadToCrc = $payload . '6304';
+        $crc = $this->crc16($payloadToCrc);
+
+        return $payloadToCrc . $crc;
+    }
+
+    private function emv(string $id, string $value): string
+    {
+        $len = str_pad((string) strlen($value), 2, '0', STR_PAD_LEFT);
+        return $id . $len . $value;
+    }
+
+    private function crc16(string $payload): string
+    {
+        $crc = 0xFFFF;
+        $length = strlen($payload);
+
+        for ($i = 0; $i < $length; $i++) {
+            $crc ^= (ord($payload[$i]) << 8);
+            for ($j = 0; $j < 8; $j++) {
+                if (($crc & 0x8000) !== 0) {
+                    $crc = (($crc << 1) ^ 0x1021) & 0xFFFF;
+                } else {
+                    $crc = ($crc << 1) & 0xFFFF;
+                }
+            }
+        }
+
+        return strtoupper(str_pad(dechex($crc), 4, '0', STR_PAD_LEFT));
     }
 
     public function sendWhatsApp($id)

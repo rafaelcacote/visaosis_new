@@ -18,9 +18,6 @@
         <button class="btn btn-warning" onclick="sendBulkReminders()">
             <i class="mdi mdi-whatsapp me-2"></i>Enviar Lembretes
         </button>
-        <button class="btn btn-success" onclick="registerPaymentModal()">
-            <i class="mdi mdi-plus me-2"></i>Registrar Pagamento
-        </button>
     </div>
 </div>
 
@@ -36,9 +33,9 @@
                     <div class="float-end">
                         <p class="mb-0 text-right text-dark">Parcelas Vencidas</p>
                         <div class="fluid-container">
-                            <h3 class="font-weight-medium text-right mb-0 text-dark">23</h3>
+                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ (int) ($summary['vencidas']['count'] ?? 0) }}</h3>
                         </div>
-                        <small class="text-danger">R$ 8.900,00</small>
+                        <small class="text-danger">R$ {{ number_format((float) ($summary['vencidas']['valor'] ?? 0), 2, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
@@ -54,9 +51,9 @@
                     <div class="float-end">
                         <p class="mb-0 text-right text-dark">Vencem Hoje</p>
                         <div class="fluid-container">
-                            <h3 class="font-weight-medium text-right mb-0 text-dark">8</h3>
+                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ (int) ($summary['vence_hoje']['count'] ?? 0) }}</h3>
                         </div>
-                        <small class="text-warning">R$ 2.400,00</small>
+                        <small class="text-warning">R$ {{ number_format((float) ($summary['vence_hoje']['valor'] ?? 0), 2, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
@@ -72,9 +69,9 @@
                     <div class="float-end">
                         <p class="mb-0 text-right text-dark">Vencem Esta Semana</p>
                         <div class="fluid-container">
-                            <h3 class="font-weight-medium text-right mb-0 text-dark">15</h3>
+                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ (int) ($summary['vence_semana']['count'] ?? 0) }}</h3>
                         </div>
-                        <small class="text-info">R$ 6.700,00</small>
+                        <small class="text-info">R$ {{ number_format((float) ($summary['vence_semana']['valor'] ?? 0), 2, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
@@ -90,9 +87,9 @@
                     <div class="float-end">
                         <p class="mb-0 text-right text-dark">Em Dia</p>
                         <div class="fluid-container">
-                            <h3 class="font-weight-medium text-right mb-0 text-dark">89</h3>
+                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ (int) ($summary['em_dia']['count'] ?? 0) }}</h3>
                         </div>
-                        <small class="text-success">R$ 28.700,00</small>
+                        <small class="text-success">R$ {{ number_format((float) ($summary['em_dia']['valor'] ?? 0), 2, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
@@ -111,27 +108,31 @@
                 </h6>
             </div>
             <div class="card-body">
-                <div class="row g-3">
+                <form class="row g-3" id="filtersForm" method="GET" action="{{ route('financial.receivables') }}">
                     <div class="col-md-2">
-                        <select class="form-select" id="statusFilter">
+                        <select class="form-select" id="statusFilter" name="status">
                             <option value="">Todos Status</option>
                             <option value="vencida">Vencidas</option>
                             <option value="vence_hoje">Vence Hoje</option>
                             <option value="vence_semana">Vence na Semana</option>
                             <option value="em_dia">Em Dia</option>
+                            <option value="paga">Pagas</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <input type="date" class="form-control" id="startDate" placeholder="Data Inicial">
+                        <input type="date" class="form-control" id="startDate" name="start_date"
+                            placeholder="Data Inicial" value="{{ $filters['start_date'] ?? '' }}">
                     </div>
                     <div class="col-md-2">
-                        <input type="date" class="form-control" id="endDate" placeholder="Data Final">
+                        <input type="date" class="form-control" id="endDate" name="end_date" placeholder="Data Final"
+                            value="{{ $filters['end_date'] ?? '' }}">
                     </div>
                     <div class="col-md-3">
-                        <input type="text" class="form-control" placeholder="Buscar cliente, venda..." id="searchInput">
+                        <input type="text" class="form-control" placeholder="Buscar cliente, venda..." id="searchInput"
+                            name="q" value="{{ $filters['q'] ?? '' }}">
                     </div>
                     <div class="col-md-2">
-                        <select class="form-select" id="orderBy">
+                        <select class="form-select" id="orderBy" name="order_by">
                             <option value="vencimento">Vencimento</option>
                             <option value="valor">Valor</option>
                             <option value="cliente">Cliente</option>
@@ -139,11 +140,11 @@
                         </select>
                     </div>
                     <div class="col-md-1">
-                        <button class="btn btn-primary w-100" onclick="applyFilters()">
+                        <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
                             <i class="mdi mdi-magnify"></i>
                         </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -156,7 +157,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">
                     <i class="mdi mdi-format-list-bulleted me-2"></i>
-                    Parcelas a Receber ({{ count($receivables) }} de 135)
+                    Parcelas ({{ $receivablesPaginator->count() }} de {{ $receivablesPaginator->total() }})
                 </h6>
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-outline-primary" onclick="selectAll()">
@@ -186,14 +187,14 @@
                         </thead>
                         <tbody>
                             @foreach ($receivables as $receivable)
-                                <tr class="@if ($receivable['status'] == 'vencida') table-danger @elseif($receivable['status'] == 'vence_hoje') table-warning @elseif($receivable['status'] == 'vence_semana') table-info @endif">
+                                <tr class="@if ($receivable['status'] == 'vencida') table-danger @elseif($receivable['status'] == 'vence_hoje') table-warning @elseif($receivable['status'] == 'vence_semana') table-info @elseif($receivable['status'] == 'paga') table-success @endif">
                                     <td>
                                         <input type="checkbox" class="form-check-input receivable-checkbox" value="{{ $receivable['id'] }}">
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar-sm @if ($receivable['status'] == 'vencida') bg-danger @elseif($receivable['status'] == 'vence_hoje') bg-warning @elseif($receivable['status'] == 'vence_semana') bg-info @else bg-success @endif text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
-                                                {{ substr($receivable['cliente'], 0, 2) }}
+                                            <div class="avatar-sm @if ($receivable['status'] == 'vencida') bg-danger @elseif($receivable['status'] == 'vence_hoje') bg-warning @elseif($receivable['status'] == 'vence_semana') bg-info @elseif($receivable['status'] == 'paga') bg-success @else bg-success @endif text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                                {{ mb_substr($receivable['cliente'], 0, 2) }}
                                             </div>
                                             <div>
                                                 <strong>{{ $receivable['cliente'] }}</strong>
@@ -239,6 +240,10 @@
                                             <span class="badge bg-info">
                                                 <i class="mdi mdi-calendar-week me-1"></i>Vence na Semana
                                             </span>
+                                        @elseif($receivable['status'] == 'paga')
+                                            <span class="badge bg-success">
+                                                <i class="mdi mdi-check-circle me-1"></i>Paga
+                                            </span>
                                         @else
                                             <span class="badge bg-success">
                                                 <i class="mdi mdi-check-circle me-1"></i>Em Dia
@@ -247,7 +252,11 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            @if ($receivable['status'] == 'vencida')
+                                            @if ($receivable['status'] == 'paga')
+                                                <button class="btn btn-outline-success" title="Pagamento confirmado" disabled>
+                                                    <i class="mdi mdi-check"></i>
+                                                </button>
+                                            @elseif ($receivable['status'] == 'vencida')
                                                 <button class="btn btn-danger" title="Cobrar Urgente" onclick="sendUrgentReminder({{ $receivable['id'] }})">
                                                     <i class="mdi mdi-phone"></i>
                                                 </button>
@@ -259,9 +268,11 @@
                                             <button class="btn btn-outline-primary" title="Gerar Boleto" onclick="generateBoleto({{ $receivable['id'] }})">
                                                 <i class="mdi mdi-file-document-outline"></i>
                                             </button>
-                                            <button class="btn btn-outline-success btn-sm" title="Receber Pagamento" onclick="openPaymentModal({{ $receivable['id'] }}, '{{ $receivable['cliente'] }}', '{{ $receivable['cpf'] ?? 'N/A' }}', '{{ $receivable['venda_id'] }}', {{ $receivable['valor_parcela'] }}, {{ $receivable['juros'] }}, {{ $receivable['valor_atualizado'] }})">
-                                                <i class="mdi mdi-cash"></i>
-                                            </button>
+                                            @if ($receivable['status'] !== 'paga')
+                                                <button class="btn btn-outline-success btn-sm" title="Dar baixa / Receber Pagamento" onclick="openPaymentModal({{ $receivable['id'] }}, '{{ $receivable['cliente'] }}', '{{ $receivable['cpf'] ?? '' }}', '{{ $receivable['venda_id'] }}', {{ (float) $receivable['valor_parcela'] }}, {{ (float) $receivable['juros'] }}, {{ (float) $receivable['valor_atualizado'] }})">
+                                                    <i class="mdi mdi-cash"></i>
+                                                </button>
+                                            @endif
                                             <div class="btn-group btn-group-sm">
                                                 <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                                                     <i class="mdi mdi-dots-vertical"></i>
@@ -289,20 +300,8 @@
             </div>
             <div class="card-footer">
                 <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">Mostrando {{ count($receivables) }} de 135 parcelas</small>
-                    <nav>
-                        <ul class="pagination pagination-sm mb-0">
-                            <li class="page-item active">
-                                <span class="page-link">1</span>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">2</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">3</a>
-                            </li>
-                        </ul>
-                    </nav>
+                    <small class="text-muted">Mostrando {{ $receivablesPaginator->count() }} de {{ $receivablesPaginator->total() }} parcelas</small>
+                    {{ $receivablesPaginator->links('pagination::bootstrap-5') }}
                 </div>
             </div>
         </div>
@@ -343,12 +342,8 @@ function sendBulkReminders() {
     alert(`Enviando lembretes para ${selected.length} clientes via WhatsApp...`);
 }
 
-function registerPaymentModal() {
-    openPaymentModal(1, 'Maria Silva Santos', '123.456.789-00', 1, 'R$ 149,62', 'R$0,00', 'R$ 149,62');
-}
-
 function applyFilters() {
-    alert('Aplicando filtros...');
+    document.getElementById('filtersForm')?.submit();
 }
 
 function selectAll() {
@@ -394,9 +389,8 @@ function renegotiate(id) {
 
 document.getElementById('selectAllCheckbox').addEventListener('change', selectAll);
 
-document.getElementById('searchInput').addEventListener('input', function() {
-    console.log('Buscando:', this.value);
-});
+document.getElementById('statusFilter').value = "{{ $filters['status'] ?? '' }}";
+document.getElementById('orderBy').value = "{{ $filters['order_by'] ?? 'vencimento' }}";
 </script>
 @endpush
 @endsection
