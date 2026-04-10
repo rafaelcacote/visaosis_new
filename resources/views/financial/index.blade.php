@@ -109,9 +109,9 @@
     <div class="row mb-4">
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="mdi mdi-chart-bar me-2"></i>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="mdi mdi-chart-bar text-success me-2"></i>
                         Vendas x Recebimentos dos Últimos 8 Meses
                     </h5>
                 </div>
@@ -153,11 +153,11 @@
 
         <div class="col-lg-4">
             <div class="card border-danger">
-                <div class="card-header bg-danger text-white">
-                    <h6 class="mb-0">
-                        <i class="mdi mdi-alert-circle me-2"></i>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="mdi mdi-alert-circle text-danger me-2"></i>
                         Alertas Críticos
-                    </h6>
+                    </h5>
                 </div>
                 <div class="card-body p-3">
                     <div class="alert alert-danger d-flex align-items-center mb-2 py-2">
@@ -195,55 +195,6 @@
         </div>
     </div>
 
-    <!-- Ações Rápidas -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="mdi mdi-lightning-bolt me-2"></i>
-                        Ações Rápidas
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <a href="{{ route('financial.receivables') }}"
-                                class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
-                                <i class="mdi mdi-currency-usd fs-2 mb-2"></i>
-                                <span>Contas a Receber</span>
-                                <small class="text-muted">Gestão completa</small>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('financial.boletos') }}"
-                                class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
-                                <i class="mdi mdi-file-document-outline fs-2 mb-2"></i>
-                                <span>Boletos</span>
-                                <small class="text-muted">Gerar e enviar</small>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('financial.notifications') }}"
-                                class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
-                                <i class="mdi mdi-whatsapp fs-2 mb-2"></i>
-                                <span>WhatsApp</span>
-                                <small class="text-muted">Notificações</small>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('financial.index') }}"
-                                class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
-                                <i class="mdi mdi-chart-line fs-2 mb-2"></i>
-                                <span>Relatórios</span>
-                                <small class="text-muted">Análises</small>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Resumo de Parcelamentos -->
     <div class="row">
