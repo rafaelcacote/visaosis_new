@@ -20,7 +20,7 @@
                 </div>
                 <div class="card-body">
                     <form id="reportForm" method="GET">
-                        <div class="row">
+                        <div class="row align-items-end">
                             <div class="col-md-3 mb-3">
                                 <label for="start_date" class="form-label">Data Início</label>
                                 <input type="date" class="form-control" id="start_date" name="start_date"
@@ -33,7 +33,7 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="professional_id" class="form-label">Profissional</label>
-                                <select class="form-select" id="professional_id" name="professional_id">
+                                <select class="form-select form-select-sm" id="professional_id" name="professional_id">
                                     <option value="">Todos os Profissionais</option>
                                     @foreach ($profissionais as $profissional)
                                         <option value="{{ $profissional->id }}">
