@@ -71,21 +71,29 @@
             <div class="card">
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3 text-center border-end">
-                            <h2 class="mb-1">{{ $stats['total'] }}</h2>
-                            <p class="text-muted mb-0">Total de Atendimentos</p>
+                        <div class="col-md-2 text-center border-end">
+                            <h2 class="mb-1">{{ $stats['scheduled'] }}</h2>
+                            <p class="text-muted mb-0">Agendados</p>
                         </div>
-                        <div class="col-md-3 text-center border-end">
+                        <div class="col-md-2 text-center border-end">
+                            <h2 class="mb-1">{{ $stats['attended'] }}</h2>
+                            <p class="text-muted mb-0">Atendidos</p>
+                        </div>
+                        <div class="col-md-2 text-center border-end">
                             <h2 class="mb-1">{{ $stats['cancelled'] }}</h2>
                             <p class="text-muted mb-0">Cancelados</p>
                         </div>
-                        <div class="col-md-3 text-center border-end">
+                        <div class="col-md-2 text-center border-end">
                             <h2 class="mb-1">{{ $stats['returns'] }}</h2>
                             <p class="text-muted mb-0">Retornos</p>
                         </div>
-                        <div class="col-md-3 text-center">
+                        <div class="col-md-2 text-center border-end">
                             <h2 class="mb-1">{{ $stats['referrals'] }}</h2>
                             <p class="text-muted mb-0">Encaminhamentos</p>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <h2 class="mb-1">{{ $stats['priority_patients'] }}</h2>
+                            <p class="text-muted mb-0">Prioritários</p>
                         </div>
                     </div>
                 </div>
@@ -121,7 +129,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Profissional</th>
-
+                                        <th>Agendados</th>
                                         <th>Atendidos</th>
                                         <th>Retornos</th>
                                         <th>Encaminhados</th>
@@ -140,6 +148,17 @@
                                                         <h6 class="mb-1">{{ $prof['name'] }}</h6>
                                                         <small class="text-muted">{{ $prof['specialty'] }}</small>
                                                     </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <h6 class="mb-1">{{ $prof['scheduled'] }}</h6>
+                                                    @if ($prof['scheduled'] > 0)
+                                                        <small class="text-primary">
+                                                            <i class="mdi mdi-calendar"></i>
+                                                            Agendados
+                                                        </small>
+                                                    @endif
                                                 </div>
                                             </td>
 

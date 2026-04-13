@@ -26,6 +26,12 @@ class ReportController extends Controller
             ->whereDate('agendado_em', $date)
             ->count();
 
+        $attendedCount = Consulta::where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->whereDate('agendado_em', $date)
+            ->where('status', Consulta::STATUS_ATENDIDO)
+            ->count();
+
         $cancelledCount = Consulta::where('tenant_id', $tenantId)
             ->where('location_id', $locationId)
             ->whereDate('agendado_em', $date)
@@ -38,16 +44,18 @@ class ReportController extends Controller
             ->where('tipo', Consulta::TIPO_RETORNO)
             ->count();
 
+        // Encaminhamentos - verificar se tem relacionamento com tabela encaminhamento
         $referralsCount = Consulta::where('tenant_id', $tenantId)
             ->where('location_id', $locationId)
             ->whereDate('agendado_em', $date)
-            ->where('status', Consulta::STATUS_ENCAMINHADO)
+            ->whereHas('encaminhamento')
             ->count();
 
+        // Prioritários - incluir tanto prioridade alta quanto emergência
         $priorityCount = Consulta::where('tenant_id', $tenantId)
             ->where('location_id', $locationId)
             ->whereDate('agendado_em', $date)
-            ->where('prioridade', Consulta::PRIORIDADE_EMERGENCIA)
+            ->whereIn('prioridade', [Consulta::PRIORIDADE, Consulta::PRIORIDADE_EMERGENCIA])
             ->count();
 
         // Para primeira consulta, vamos considerar o tipo CONSULTA (não retorno)
@@ -62,7 +70,8 @@ class ReportController extends Controller
         $avgServiceTime = $this->calculateAverageServiceTime($date, $tenantId, $locationId);
 
         $stats = [
-            'total' => $totalConsultas,
+            'scheduled' => $totalConsultas,
+            'attended' => $attendedCount,
             'cancelled' => $cancelledCount,
             'returns' => $returnsCount,
             'referrals' => $referralsCount,
@@ -83,6 +92,7 @@ class ReportController extends Controller
         $profissionais = Profissional::with('especialidade')
             ->where('location_id', $locationId)
             ->where('ativo', true)
+            ->orderBy('nome', 'desc')
             ->get();
 
         return $profissionais->map(function ($profissional) use ($date, $tenantId, $locationId) {
@@ -90,6 +100,8 @@ class ReportController extends Controller
                 ->where('location_id', $locationId)
                 ->where('profissional_id', $profissional->id)
                 ->whereDate('agendado_em', $date);
+
+            $scheduledCount = (clone $consultasQuery)->count();
 
             $attendedCount = (clone $consultasQuery)
                 ->where('status', Consulta::STATUS_ATENDIDO)
@@ -100,7 +112,7 @@ class ReportController extends Controller
                 ->count();
 
             $referralsCount = (clone $consultasQuery)
-                ->where('status', Consulta::STATUS_ENCAMINHADO)
+                ->whereHas('encaminhamento')
                 ->count();
 
             $totalCount = (clone $consultasQuery)->count();
@@ -108,6 +120,7 @@ class ReportController extends Controller
             return [
                 'name' => $profissional->nome,
                 'specialty' => $profissional->especialidade->descricao ?? 'Não informada',
+                'scheduled' => $scheduledCount,
                 'attended' => $attendedCount,
                 'returns' => $returnsCount,
                 'referrals' => $referralsCount,
