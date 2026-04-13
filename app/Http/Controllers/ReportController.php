@@ -10,6 +10,78 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
+    public function dashboard()
+    {
+        try {
+            // Obter valores do tenant e location da sessão atual
+            $tenantId = session('tenant_id', 1);
+            $locationId = session('location_id', 1);
+
+            // Log para debug
+            \Log::info('Dashboard Reports - Tenant: ' . $tenantId . ', Location: ' . $locationId);
+
+            // Buscar profissionais para o filtro com tratamento de erro
+            $profissionais = collect(); // Inicializar como coleção vazia
+
+            try {
+                $profissionais = Profissional::with('especialidade')
+                    ->where('location_id', $locationId)
+                    ->where('ativo', true)
+                    ->orderBy('nome')
+                    ->get();
+
+                \Log::info('Profissionais encontrados: ' . $profissionais->count());
+            } catch (\Exception $e) {
+                \Log::error('Erro ao buscar profissionais: ' . $e->getMessage());
+                $profissionais = collect(); // Manter coleção vazia em caso de erro
+            }
+
+            // Estatísticas rápidas do dia com tratamento de erro
+            $quickStats = [
+                'consultas_hoje' => 0,
+                'atendimentos' => 0,
+                'aguardando' => 0,
+                'profissionais_ativos' => 0
+            ];
+
+            try {
+                $hoje = now()->format('Y-m-d');
+
+                $quickStats['consultas_hoje'] = Consulta::where('tenant_id', $tenantId)
+                    ->where('location_id', $locationId)
+                    ->whereDate('agendado_em', $hoje)
+                    ->count();
+
+                $quickStats['atendimentos'] = Consulta::where('tenant_id', $tenantId)
+                    ->where('location_id', $locationId)
+                    ->whereDate('agendado_em', $hoje)
+                    ->where('status', Consulta::STATUS_ATENDIDO)
+                    ->count();
+
+                $quickStats['aguardando'] = Consulta::where('tenant_id', $tenantId)
+                    ->where('location_id', $locationId)
+                    ->whereDate('agendado_em', $hoje)
+                    ->where('status', Consulta::STATUS_AGUARDANDO)
+                    ->count();
+
+                $quickStats['profissionais_ativos'] = Profissional::where('location_id', $locationId)
+                    ->where('ativo', true)
+                    ->count();
+
+                \Log::info('Quick Stats calculadas: ', $quickStats);
+            } catch (\Exception $e) {
+                \Log::error('Erro ao calcular estatísticas rápidas: ' . $e->getMessage());
+            }
+
+            return view('reports.dashboard', compact('profissionais', 'quickStats'));
+        } catch (\Exception $e) {
+            \Log::error('Erro no dashboard de relatórios: ' . $e->getMessage());
+
+            // Em caso de erro, redirecionar com mensagem
+            return redirect()->back()->with('error', 'Erro ao carregar dashboard de relatórios: ' . $e->getMessage());
+        }
+    }
+
     public function attendance(Request $request)
     {
         // Obter valores do tenant e location da sessão atual
@@ -18,53 +90,75 @@ class ReportController extends Controller
 
         // Obter data da query string ou usar data atual
         $selectedDate = $request->get('date', now()->format('Y-m-d'));
+        $startDate = $request->get('start_date', $selectedDate);
+        $endDate = $request->get('end_date', $selectedDate);
+        $selectedProfessional = $request->get('professional_id', null);
+
         $date = Carbon::parse($selectedDate);
+        $dateStart = Carbon::parse($startDate);
+        $dateEnd = Carbon::parse($endDate);
 
-        // Estatísticas gerais do dia
-        $totalConsultas = Consulta::where('tenant_id', $tenantId)
-            ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
-            ->count();
+        // Estatísticas gerais do período (pode ser um dia ou intervalo)
+        $baseQuery = Consulta::where('tenant_id', $tenantId)
+            ->where('location_id', $locationId);
 
-        $attendedCount = Consulta::where('tenant_id', $tenantId)
-            ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
+        // Aplicar filtro de data (período ou data única)
+        if ($startDate === $endDate) {
+            $baseQuery->whereDate('agendado_em', $date);
+        } else {
+            $baseQuery->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
+        }
+
+        // Aplicar filtro de profissional se selecionado
+        if ($selectedProfessional) {
+            $baseQuery->where('profissional_id', $selectedProfessional);
+        }
+
+        $totalConsultas = (clone $baseQuery)->count();
+
+        $attendedCount = (clone $baseQuery)
             ->where('status', Consulta::STATUS_ATENDIDO)
             ->count();
 
-        $cancelledCount = Consulta::where('tenant_id', $tenantId)
-            ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
+        $cancelledCount = (clone $baseQuery)
             ->where('status', Consulta::STATUS_CANCELADO)
             ->count();
 
-        $returnsCount = Consulta::where('tenant_id', $tenantId)
-            ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
+        $returnsCount = (clone $baseQuery)
             ->where('tipo', Consulta::TIPO_RETORNO)
             ->count();
 
         // Encaminhamentos - verificar se tem relacionamento com tabela encaminhamento
-        $referralsCount = Consulta::where('tenant_id', $tenantId)
-            ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
+        $referralsCount = (clone $baseQuery)
             ->whereHas('encaminhamento')
             ->count();
 
         // Prioritários - incluir tanto prioridade alta quanto emergência
-        $priorityCount = Consulta::where('tenant_id', $tenantId)
-            ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
+        $priorityCount = (clone $baseQuery)
             ->whereIn('prioridade', [Consulta::PRIORIDADE, Consulta::PRIORIDADE_EMERGENCIA])
             ->count();
 
         // Para primeira consulta - verificar se é a primeira consulta do paciente no sistema
+        $dateCondition = $startDate === $endDate
+            ? "DATE(c1.agendado_em) = ?"
+            : "c1.agendado_em BETWEEN ? AND ?";
+
+        $dateParams = $startDate === $endDate
+            ? [$tenantId, $locationId, $date->format('Y-m-d'), Consulta::STATUS_CANCELADO]
+            : [$tenantId, $locationId, $dateStart->format('Y-m-d H:i:s'), $dateEnd->format('Y-m-d H:i:s'), Consulta::STATUS_CANCELADO];
+
+        $professionalCondition = $selectedProfessional ? "AND c1.profissional_id = ?" : "";
+        if ($selectedProfessional) {
+            $dateParams[] = $selectedProfessional;
+        }
+
         $firstTimeCount = DB::select("
             SELECT COUNT(*) as count FROM consulta c1
             WHERE c1.tenant_id = ?
             AND c1.location_id = ?
-            AND DATE(c1.agendado_em) = ?
+            AND $dateCondition
             AND c1.status != ?
+            $professionalCondition
             AND NOT EXISTS (
                 SELECT 1 FROM consulta c2
                 WHERE c2.pessoa_paciente_id = c1.pessoa_paciente_id
@@ -74,11 +168,10 @@ class ReportController extends Controller
                 AND c2.deleted_at IS NULL
             )
             AND c1.deleted_at IS NULL
-        ", [$tenantId, $locationId, $date->format('Y-m-d'), Consulta::STATUS_CANCELADO])[0]->count ?? 0;
-
+        ", $dateParams)[0]->count ?? 0;
         // Cálculo de tempos médios
-        $avgWaitTime = $this->calculateAverageWaitTime($date, $tenantId, $locationId);
-        $avgServiceTime = $this->calculateAverageServiceTime($date, $tenantId, $locationId);
+        $avgWaitTime = $this->calculateAverageWaitTime($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional);
+        $avgServiceTime = $this->calculateAverageServiceTime($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional);
 
         $stats = [
             'scheduled' => $totalConsultas,
@@ -93,24 +186,40 @@ class ReportController extends Controller
         ];
 
         // Estatísticas por profissional
-        $professionalStats = $this->getProfessionalStatistics($date, $tenantId, $locationId);
+        $professionalStats = $this->getProfessionalStatistics($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional);
 
-        return view('reports.attendance', compact('stats', 'professionalStats', 'selectedDate'));
+        // Buscar profissionais para o filtro
+        $profissionais = Profissional::with('especialidade')
+            ->where('location_id', $locationId)
+            ->where('ativo', true)
+            ->orderBy('nome')
+            ->get();
+
+        return view('reports.attendance', compact('stats', 'professionalStats', 'selectedDate', 'startDate', 'endDate', 'selectedProfessional', 'profissionais'));
     }
 
-    private function getProfessionalStatistics($date, $tenantId, $locationId)
+    private function getProfessionalStatistics($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional = null)
     {
         $profissionais = Profissional::with('especialidade')
             ->where('location_id', $locationId)
             ->where('ativo', true)
             ->orderBy('nome', 'desc')
+            ->when($selectedProfessional, function ($query, $professionalId) {
+                return $query->where('id', $professionalId);
+            })
             ->get();
 
-        return $profissionais->map(function ($profissional) use ($date, $tenantId, $locationId) {
+        return $profissionais->map(function ($profissional) use ($dateStart, $dateEnd, $tenantId, $locationId) {
             $consultasQuery = Consulta::where('tenant_id', $tenantId)
                 ->where('location_id', $locationId)
-                ->where('profissional_id', $profissional->id)
-                ->whereDate('agendado_em', $date);
+                ->where('profissional_id', $profissional->id);
+
+            // Aplicar filtro de período
+            if ($dateStart->format('Y-m-d') === $dateEnd->format('Y-m-d')) {
+                $consultasQuery->whereDate('agendado_em', $dateStart);
+            } else {
+                $consultasQuery->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
+            }
 
             $scheduledCount = (clone $consultasQuery)->count();
 
@@ -140,14 +249,24 @@ class ReportController extends Controller
         })->toArray();
     }
 
-    private function calculateAverageWaitTime($date, $tenantId, $locationId)
+    private function calculateAverageWaitTime($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional = null)
     {
         $consultas = Consulta::where('tenant_id', $tenantId)
             ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
             ->whereNotNull('atendido_em')
             ->whereNotNull('chegada_em')
-            ->get();
+            ->when($selectedProfessional, function ($query, $professionalId) {
+                return $query->where('profissional_id', $professionalId);
+            });
+
+        // Aplicar filtro de período
+        if ($dateStart->format('Y-m-d') === $dateEnd->format('Y-m-d')) {
+            $consultas->whereDate('agendado_em', $dateStart);
+        } else {
+            $consultas->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
+        }
+
+        $consultas = $consultas->get();
 
         if ($consultas->isEmpty()) {
             return 0;
@@ -167,15 +286,25 @@ class ReportController extends Controller
         return $validConsultas->count() > 0 ? round($totalMinutes / $validConsultas->count()) : 0;
     }
 
-    private function calculateAverageServiceTime($date, $tenantId, $locationId)
+    private function calculateAverageServiceTime($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional = null)
     {
         $consultas = Consulta::where('tenant_id', $tenantId)
             ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
             ->where('status', Consulta::STATUS_ATENDIDO)
             ->whereNotNull('atendido_em')
             ->whereNotNull('chegada_em')
-            ->get();
+            ->when($selectedProfessional, function ($query, $professionalId) {
+                return $query->where('profissional_id', $professionalId);
+            });
+
+        // Aplicar filtro de período
+        if ($dateStart->format('Y-m-d') === $dateEnd->format('Y-m-d')) {
+            $consultas->whereDate('agendado_em', $dateStart);
+        } else {
+            $consultas->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
+        }
+
+        $consultas = $consultas->get();
 
         if ($consultas->isEmpty()) {
             return 0;

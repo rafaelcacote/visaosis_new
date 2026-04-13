@@ -208,6 +208,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Relatórios
     Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/dashboard', [ReportController::class, 'dashboard'])->name('index');
         Route::get('/financial', [ReportController::class, 'financial'])->name('financial');
         Route::get('/attendance', [ReportController::class, 'attendance'])->name('attendance');
         Route::get('/attendance/export', [ReportController::class, 'exportAttendance'])->name('attendance.export');
