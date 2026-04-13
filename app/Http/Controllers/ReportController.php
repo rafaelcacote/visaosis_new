@@ -58,12 +58,23 @@ class ReportController extends Controller
             ->whereIn('prioridade', [Consulta::PRIORIDADE, Consulta::PRIORIDADE_EMERGENCIA])
             ->count();
 
-        // Para primeira consulta, vamos considerar o tipo CONSULTA (não retorno)
-        $firstTimeCount = Consulta::where('tenant_id', $tenantId)
-            ->where('location_id', $locationId)
-            ->whereDate('agendado_em', $date)
-            ->where('tipo', Consulta::TIPO_CONSULTA)
-            ->count();
+        // Para primeira consulta - verificar se é a primeira consulta do paciente no sistema
+        $firstTimeCount = DB::select("
+            SELECT COUNT(*) as count FROM consulta c1
+            WHERE c1.tenant_id = ?
+            AND c1.location_id = ?
+            AND DATE(c1.agendado_em) = ?
+            AND c1.status != ?
+            AND NOT EXISTS (
+                SELECT 1 FROM consulta c2
+                WHERE c2.pessoa_paciente_id = c1.pessoa_paciente_id
+                AND c2.tenant_id = c1.tenant_id
+                AND c2.location_id = c1.location_id
+                AND c2.agendado_em < c1.agendado_em
+                AND c2.deleted_at IS NULL
+            )
+            AND c1.deleted_at IS NULL
+        ", [$tenantId, $locationId, $date->format('Y-m-d'), Consulta::STATUS_CANCELADO])[0]->count ?? 0;
 
         // Cálculo de tempos médios
         $avgWaitTime = $this->calculateAverageWaitTime($date, $tenantId, $locationId);
@@ -163,25 +174,24 @@ class ReportController extends Controller
             ->whereDate('agendado_em', $date)
             ->where('status', Consulta::STATUS_ATENDIDO)
             ->whereNotNull('atendido_em')
+            ->whereNotNull('chegada_em')
             ->get();
 
         if ($consultas->isEmpty()) {
             return 0;
         }
 
-        // Calcular o tempo baseado na diferença entre agendado_em e atendido_em
+        // Calcular o tempo de atendimento: da chegada até ser atendido + tempo estimado de consulta (30min padrão)
         $totalMinutes = $consultas->sum(function ($consulta) {
-            if ($consulta->atendido_em && $consulta->agendado_em) {
-                return $consulta->agendado_em->diffInMinutes($consulta->atendido_em);
+            if ($consulta->atendido_em && $consulta->chegada_em) {
+                // Tempo de espera + tempo de consulta estimado
+                $waitTime = $consulta->chegada_em->diffInMinutes($consulta->atendido_em);
+                return $waitTime + 30; // 30 minutos é o tempo médio de uma consulta
             }
-            return 0;
+            return 30; // Se não tem chegada_em, considera apenas o tempo de consulta
         });
 
-        $validConsultas = $consultas->filter(function ($consulta) {
-            return $consulta->atendido_em && $consulta->agendado_em;
-        });
-
-        return $validConsultas->count() > 0 ? round($totalMinutes / $validConsultas->count()) : 0;
+        return round($totalMinutes / $consultas->count());
     }
 
     public function exportAttendance(Request $request)

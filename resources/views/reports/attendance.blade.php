@@ -141,9 +141,7 @@
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="avatar-circle bg-primary text-white me-2">
-                                                        {{ substr($prof['name'], 0, 1) }}
-                                                    </div>
+
                                                     <div>
                                                         <h6 class="mb-1">{{ $prof['name'] }}</h6>
                                                         <small class="text-muted">{{ $prof['specialty'] }}</small>
@@ -221,19 +219,31 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Tempo Médio de Espera
-                            <span class="badge bg-primary rounded-pill">{{ $stats['avg_wait_time'] }}</span>
+                            <span class="tag" style=" color: #1d7dd6;">
+                                <i class="mdi mdi-clock-outline"></i>
+                                {{ $stats['avg_wait_time'] }}
+                            </span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Tempo Médio de Atendimento
-                            <span class="badge bg-success rounded-pill">{{ $stats['avg_service_time'] }}</span>
+                            <span class="tag" style=" color: #16a34a;">
+                                <i class="mdi mdi-timer-outline"></i>
+                                {{ $stats['avg_service_time'] }}
+                            </span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Pacientes Prioritários
-                            <span class="badge bg-danger rounded-pill">{{ $stats['priority_patients'] }}</span>
+                            <span class="tag" style=" color: #dc2626;">
+                                <i class="mdi mdi-alert"></i>
+                                {{ $stats['priority_patients'] }}
+                            </span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Primeira Consulta
-                            <span class="badge bg-info rounded-pill">{{ $stats['first_time'] }}</span>
+                            <span class="tag" style=" color: #d97706;">
+                                <i class="mdi mdi-account-plus"></i>
+                                {{ $stats['first_time'] }}
+                            </span>
                         </li>
                     </ul>
                 </div>
