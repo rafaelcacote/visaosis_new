@@ -19,36 +19,38 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form id="reportForm" method="GET">
-                        <div class="row align-items-end">
-                            <div class="col-md-3 mb-3">
-                                <label for="start_date" class="form-label">Data Início</label>
-                                <input type="date" class="form-control" id="start_date" name="start_date"
-                                    value="{{ now()->format('Y-m-d') }}">
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="end_date" class="form-label">Data Fim</label>
-                                <input type="date" class="form-control" id="end_date" name="end_date"
-                                    value="{{ now()->format('Y-m-d') }}">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="professional_id" class="form-label">Profissional</label>
-                                <select class="form-select form-select-sm" id="professional_id" name="professional_id">
-                                    <option value="">Todos os Profissionais</option>
-                                    @foreach ($profissionais as $profissional)
-                                        <option value="{{ $profissional->id }}">
-                                            {{ $profissional->nome }} -
-                                            {{ $profissional->especialidade->descricao ?? 'N/A' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-2 mb-3 d-flex align-items-end">
-                                <button type="button" class="btn btn-outline-primary" onclick="clearFilters()">
-                                    <i class="mdi mdi-filter-off me-1"></i>
-                                    Limpar
-                                </button>
-                            </div>
+                    <form id="reportForm" method="GET" class="row g-3 align-items-end">
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label for="start_date" class="form-label">Data Início</label>
+                            <input type="date" class="form-control form-control-sm" id="start_date" name="start_date"
+                                value="{{ now()->format('Y-m-d') }}">
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label for="end_date" class="form-label">Data Fim</label>
+                            <input type="date" class="form-control form-control-sm" id="end_date" name="end_date"
+                                value="{{ now()->format('Y-m-d') }}">
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-4">
+                            <label for="professional_id" class="form-label">Profissional</label>
+                            <select class="form-select form-select-sm" id="professional_id" name="professional_id">
+                                <option value="">Todos os Profissionais</option>
+                                @foreach ($profissionais as $profissional)
+                                    <option value="{{ $profissional->id }}">
+                                        {{ $profissional->nome }} -
+                                        {{ $profissional->especialidade->descricao ?? 'N/A' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+
+                        <div class="col-12 col-sm-6 col-md-2">
+
+                            <button type="button" class="btn btn-outline-primary" onclick="clearFilters()">
+                                <i class="mdi mdi-filter-off me-1"></i>
+                                Limpar
+                            </button>
+
                         </div>
                     </form>
                 </div>
