@@ -286,9 +286,9 @@
                                             </td>
                                             <td>
                                                 <div>
-                                                    <h6 class="mb-1">{{ $consulta->profissional->nome ?? 'N/A' }}</h6>
+                                                    <h6 class="mb-1">{{ $consulta->profissional->nome ?? '' }}</h6>
                                                     <small class="text-muted">
-                                                        {{ $consulta->profissional->especialidade->descricao ?? 'Especialidade N/A' }}
+                                                        {{ $consulta->profissional->especialidade->descricao ?? '' }}
                                                     </small>
                                                 </div>
                                             </td>
