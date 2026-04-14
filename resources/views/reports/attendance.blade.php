@@ -10,15 +10,10 @@
 @section('page-actions')
     <div class="d-flex gap-2">
         <a href="{{ route('reports.index') }}" class="btn btn-outline-secondary">
-            <i class="mdi mdi-view-dashboard me-2"></i>
-            Dashboard
+            <i class="mdi mdi-arrow-left me-2"></i>
+            Voltar
         </a>
-        @if(request('start_date') || request('end_date') || request('professional_id'))
-            <a href="{{ route('reports.attendance') }}" class="btn btn-outline-warning">
-                <i class="mdi mdi-filter-off me-2"></i>
-                Limpar Filtros
-            </a>
-        @endif
+
     </div>
 @endsection
 
@@ -33,16 +28,20 @@
                             <div class="d-flex align-items-center">
                                 <i class="mdi mdi-calendar text-primary me-2" style="font-size: 1.5rem;"></i>
                                 <div>
-                                    @if(isset($startDate) && isset($endDate) && $startDate !== $endDate)
-                                        <h5 class="mb-0">{{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</h5>
-                                        <small class="text-muted">Período de {{ \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1 }} dias</small>
+                                    @if (isset($startDate) && isset($endDate) && $startDate !== $endDate)
+                                        <h5 class="mb-0">{{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} -
+                                            {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</h5>
+                                        <small class="text-muted">Período de
+                                            {{ \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1 }}
+                                            dias</small>
                                     @else
                                         <h5 class="mb-0">{{ \Carbon\Carbon::parse($selectedDate)->format('d/m/Y') }}</h5>
-                                        <small class="text-muted">{{ \Carbon\Carbon::parse($selectedDate)->locale('pt-BR')->isoFormat('dddd') }}</small>
+                                        <small
+                                            class="text-muted">{{ \Carbon\Carbon::parse($selectedDate)->locale('pt-BR')->isoFormat('dddd') }}</small>
                                     @endif
                                 </div>
                             </div>
-                            @if(isset($selectedProfessional) && $selectedProfessional)
+                            @if (isset($selectedProfessional) && $selectedProfessional)
                                 @php
                                     $prof = $profissionais->where('id', $selectedProfessional)->first();
                                 @endphp
@@ -51,19 +50,23 @@
                                     {{ $prof->nome ?? 'Profissional' }}
                                 </span>
                             @endif
-                            @if(!(isset($startDate) && isset($endDate) && $startDate !== $endDate) && !\Carbon\Carbon::parse($selectedDate)->isToday())
+                            @if (
+                                !(isset($startDate) && isset($endDate) && $startDate !== $endDate) &&
+                                    !\Carbon\Carbon::parse($selectedDate)->isToday())
                                 <span class="tag" style="background-color: #fff8e6; color: #d97706;">
                                     <i class="mdi mdi-history"></i>
                                     Data Anterior
                                 </span>
-                            @elseif(!(isset($startDate) && isset($endDate) && $startDate !== $endDate) && \Carbon\Carbon::parse($selectedDate)->isToday())
+                            @elseif(
+                                !(isset($startDate) && isset($endDate) && $startDate !== $endDate) &&
+                                    \Carbon\Carbon::parse($selectedDate)->isToday())
                                 <span class="tag tag-status tag-status-ativo">
                                     <i class="mdi mdi-clock"></i>
                                     Hoje
                                 </span>
                             @endif
                         </div>
-                        @if(!(isset($startDate) && isset($endDate) && $startDate !== $endDate))
+                        @if (!(isset($startDate) && isset($endDate) && $startDate !== $endDate))
                             <div class="d-flex gap-2">
                                 <button class="btn btn-outline-primary btn-sm" onclick="changeDate('previous')"
                                     title="Dia Anterior">
@@ -74,8 +77,8 @@
                                     <i class="mdi mdi-calendar-today"></i>
                                     Hoje
                                 </button>
-                                <button class="btn btn-outline-primary btn-sm" onclick="changeDate('next')" title="Próximo Dia"
-                                    @if (\Carbon\Carbon::parse($selectedDate)->isToday()) disabled @endif>
+                                <button class="btn btn-outline-primary btn-sm" onclick="changeDate('next')"
+                                    title="Próximo Dia" @if (\Carbon\Carbon::parse($selectedDate)->isToday()) disabled @endif>
                                     Próximo
                                     <i class="mdi mdi-chevron-right"></i>
                                 </button>

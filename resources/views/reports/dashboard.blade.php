@@ -230,7 +230,7 @@
                     return;
             }
 
-            window.open(url, '_blank');
+            window.location.href = url;
         }
 
         function clearFilters() {
