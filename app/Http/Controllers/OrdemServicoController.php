@@ -12,6 +12,7 @@ use App\Models\Prescricao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrdemServicoController extends Controller
 {
@@ -461,5 +462,37 @@ class OrdemServicoController extends Controller
         $ordemServico->delete();
         return redirect()->route('ordens-servico.index')
             ->with('success', 'Ordem de serviço excluída com sucesso!');
+    }
+
+    public function pdf(OrdemServico $ordemServico)
+    {
+        // Carrega relacionamentos necessários
+        $ordemServico->load([
+            'pedido.cliente',
+            'fornecedor',
+            'user',
+            'prescricao.paciente',
+            'itensOrdem.item.produto.categoria'
+        ]);
+
+        // Preparar status para o PDF
+        $currentStatus = [
+            'text' => $ordemServico->status_label,
+            'class' => match ($ordemServico->status) {
+                'pendente' => 'warning',
+                'enviado' => 'info',
+                'em_producao' => 'primary',
+                'pronto' => 'success',
+                'entregue' => 'success',
+                'cancelado' => 'danger',
+                default => 'secondary'
+            }
+        ];
+
+        $pdf = Pdf::loadView('ordens-servico.pdf', compact('ordemServico', 'currentStatus'));
+
+        $filename = 'ordem_servico_' . str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) . '.pdf';
+
+        return $pdf->stream($filename);
     }
 }

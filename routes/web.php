@@ -179,6 +179,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('ordens-servico', OrdemServicoController::class)->parameters([
         'ordens-servico' => 'ordemServico',
     ]);
+    Route::get('/ordens-servico/{ordemServico}/pdf', [OrdemServicoController::class, 'pdf'])->name('ordens-servico.pdf');
     Route::get('/ordens-servico/api/buscar-clientes', [OrdemServicoController::class, 'buscarClientes'])->name('ordens-servico.buscar-clientes');
     Route::get('/ordens-servico/api/buscar-vendas-cliente', [OrdemServicoController::class, 'buscarVendasCliente'])->name('ordens-servico.buscar-vendas-cliente');
     Route::get('/ordens-servico/api/buscar-prescricoes', [OrdemServicoController::class, 'buscarPrescricoes'])->name('ordens-servico.buscar-prescricoes');
