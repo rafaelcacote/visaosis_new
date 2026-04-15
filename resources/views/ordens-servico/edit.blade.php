@@ -129,10 +129,162 @@
                             <i class="mdi mdi-glasses text-info me-2"></i>
                             Prescrição
                         </h5>
-                        <p class="mb-1">Prescrição #{{ $ordemServico->prescricao->id }}</p>
-                        <p class="text-muted small mb-0">
-                            Paciente: {{ $ordemServico->prescricao->paciente->nome ?? '—' }}
-                        </p>
+
+                        <!-- Dados básicos -->
+                        <div class="mb-3">
+                            <h6 class="mb-2">
+                                <i class="mdi mdi-file-document-outline text-info me-1"></i>
+                                Prescrição #{{ $ordemServico->prescricao->id }}
+                            </h6>
+                            <small class="text-muted d-block">
+                                Criada em:
+                                {{ $ordemServico->prescricao->created_at ? $ordemServico->prescricao->created_at->format('d/m/Y H:i') : 'N/A' }}
+                            </small>
+                            <small class="text-muted d-block">
+                                Paciente: {{ $ordemServico->prescricao->paciente->nome ?? '—' }}
+                            </small>
+                            @if ($ordemServico->prescricao->paciente && $ordemServico->prescricao->paciente->cpf)
+                                <small class="text-muted d-block">
+                                    CPF: {{ $ordemServico->prescricao->paciente->cpf_formatado }}
+                                </small>
+                            @endif
+                        </div>
+
+                        <hr class="my-3">
+
+                        <!-- Graduação -->
+                        <div class="mb-3">
+                            <h6 class="mb-2">
+                                <i class="mdi mdi-eye-settings text-primary me-1"></i>
+                                Graduação
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong class="text-primary">Olho Direito (OD)</strong>
+                                    <div class="mt-1">
+                                        <small class="text-muted d-block">Esfera:
+                                            <span
+                                                class="fw-medium">{{ $ordemServico->prescricao->esfera_od ?? '0.00' }}</span>
+                                        </small>
+                                        <small class="text-muted d-block">Cilindro:
+                                            <span
+                                                class="fw-medium">{{ $ordemServico->prescricao->cilindro_od ?? '0.00' }}</span>
+                                        </small>
+                                        <small class="text-muted d-block">Eixo:
+                                            <span class="fw-medium">{{ $ordemServico->prescricao->eixo_od ?? '0' }}°</span>
+                                        </small>
+                                        @if ($ordemServico->prescricao->dnp_od)
+                                            <small class="text-muted d-block">DNP:
+                                                <span class="fw-medium">{{ $ordemServico->prescricao->dnp_od }}</span>
+                                            </small>
+                                        @endif
+                                        @if ($ordemServico->prescricao->altura_od)
+                                            <small class="text-muted d-block">Altura:
+                                                <span class="fw-medium">{{ $ordemServico->prescricao->altura_od }}</span>
+                                            </small>
+                                        @endif
+                                        @if ($ordemServico->prescricao->adicao_od)
+                                            <small class="text-muted d-block">Adição:
+                                                <span class="fw-medium">{{ $ordemServico->prescricao->adicao_od }}</span>
+                                            </small>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong class="text-success">Olho Esquerdo (OE)</strong>
+                                    <div class="mt-1">
+                                        <small class="text-muted d-block">Esfera:
+                                            <span
+                                                class="fw-medium">{{ $ordemServico->prescricao->esfera_oe ?? '0.00' }}</span>
+                                        </small>
+                                        <small class="text-muted d-block">Cilindro:
+                                            <span
+                                                class="fw-medium">{{ $ordemServico->prescricao->cilindro_oe ?? '0.00' }}</span>
+                                        </small>
+                                        <small class="text-muted d-block">Eixo:
+                                            <span class="fw-medium">{{ $ordemServico->prescricao->eixo_oe ?? '0' }}°</span>
+                                        </small>
+                                        @if ($ordemServico->prescricao->dnp_oe)
+                                            <small class="text-muted d-block">DNP:
+                                                <span class="fw-medium">{{ $ordemServico->prescricao->dnp_oe }}</span>
+                                            </small>
+                                        @endif
+                                        @if ($ordemServico->prescricao->altura_oe)
+                                            <small class="text-muted d-block">Altura:
+                                                <span class="fw-medium">{{ $ordemServico->prescricao->altura_oe }}</span>
+                                            </small>
+                                        @endif
+                                        @if ($ordemServico->prescricao->adicao_oe)
+                                            <small class="text-muted d-block">Adição:
+                                                <span class="fw-medium">{{ $ordemServico->prescricao->adicao_oe }}</span>
+                                            </small>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informações adicionais -->
+                        @if (
+                            $ordemServico->prescricao->tipo_lente ||
+                                $ordemServico->prescricao->validade_dias ||
+                                $ordemServico->prescricao->especialista_externo)
+                            <hr class="my-3">
+                            <div class="mb-3">
+                                <h6 class="mb-2">
+                                    <i class="mdi mdi-information-outline text-secondary me-1"></i>
+                                    Informações Adicionais
+                                </h6>
+                                @if ($ordemServico->prescricao->tipo_lente)
+                                    <small class="text-muted d-block">Tipo de Lente:
+                                        <span class="fw-medium">{{ $ordemServico->prescricao->tipo_lente }}</span>
+                                    </small>
+                                @endif
+                                @if ($ordemServico->prescricao->validade_dias)
+                                    <small class="text-muted d-block">Validade:
+                                        <span class="fw-medium">{{ $ordemServico->prescricao->validade_dias }} dias</span>
+                                    </small>
+                                @endif
+                                @if ($ordemServico->prescricao->especialista_externo)
+                                    <small class="text-muted d-block">Especialista:
+                                        <span
+                                            class="fw-medium">{{ $ordemServico->prescricao->especialista_externo }}</span>
+                                    </small>
+                                @endif
+                            </div>
+                        @endif
+
+                        <!-- Diagnóstico e observações -->
+                        @if (
+                            $ordemServico->prescricao->diagnostico ||
+                                $ordemServico->prescricao->observacoes ||
+                                $ordemServico->prescricao->recomendacoes)
+                            <hr class="my-3">
+                            <div>
+                                <h6 class="mb-2">
+                                    <i class="mdi mdi-note-text-outline text-warning me-1"></i>
+                                    Observações Clínicas
+                                </h6>
+                                @if ($ordemServico->prescricao->diagnostico)
+                                    <div class="mb-2">
+                                        <small class="text-muted d-block">Diagnóstico:</small>
+                                        <small class="fw-medium">{{ $ordemServico->prescricao->diagnostico }}</small>
+                                    </div>
+                                @endif
+                                @if ($ordemServico->prescricao->recomendacoes)
+                                    <div class="mb-2">
+                                        <small class="text-muted d-block">Recomendações:</small>
+                                        <small class="fw-medium">{{ $ordemServico->prescricao->recomendacoes }}</small>
+                                    </div>
+                                @endif
+                                @if ($ordemServico->prescricao->observacoes)
+                                    <div class="mb-2">
+                                        <small class="text-muted d-block">Observações:</small>
+                                        <small class="fw-medium">{{ $ordemServico->prescricao->observacoes }}</small>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -185,7 +337,8 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('ordens-servico.update', $ordemServico) }}" method="POST" id="formEditOrdem">
+                    <form action="{{ route('ordens-servico.update', $ordemServico) }}" method="POST"
+                        id="formEditOrdem">
                         @csrf
                         @method('PUT')
 
@@ -194,8 +347,8 @@
                                 <label for="fornecedor_id" class="form-label">
                                     Fornecedor / Laboratório <span class="text-danger">*</span>
                                 </label>
-                                <select class="form-select @error('fornecedor_id') is-invalid @enderror" id="fornecedor_id"
-                                    name="fornecedor_id" required>
+                                <select class="form-select @error('fornecedor_id') is-invalid @enderror"
+                                    id="fornecedor_id" name="fornecedor_id" required>
                                     <option value="">Selecione</option>
                                     @foreach ($fornecedores as $fornecedor)
                                         <option value="{{ $fornecedor->id }}"
