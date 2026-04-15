@@ -215,6 +215,31 @@
                                     @enderror
                                 </div>
                             </div>
+                            <!-- Prioridade -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="prioridade" class="form-label">
+                                        Prioridade <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select form-select-sm @error('prioridade') is-invalid @enderror"
+                                        id="prioridade" name="prioridade" required>
+                                        <option value="normal" {{ old('prioridade') == 'normal' ? 'selected' : '' }}>
+                                            Normal
+                                        </option>
+                                        <option value="urgente" {{ old('prioridade') == 'urgente' ? 'selected' : '' }}>
+                                            Urgente
+                                        </option>
+                                        <option value="expressa" {{ old('prioridade') == 'expressa' ? 'selected' : '' }}>
+                                            Expressa</option>
+                                    </select>
+                                    @error('prioridade')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+
                             <!-- Preço Unitário -->
                             <div class="col-md-4">
                                 <div class="form-group">
@@ -249,16 +274,6 @@
                                     @enderror
                                 </div>
                             </div>
-
-
-
-                        </div>
-
-                        <div class="row mt-3">
-
-
-
-
                             <!-- Total -->
                             <div class="col-md-4">
                                 <div class="form-group">
@@ -269,31 +284,12 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Prioridade -->
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="prioridade" class="form-label">
-                                        Prioridade <span class="text-danger">*</span>
-                                    </label>
-                                    <select class="form-select form-select-sm @error('prioridade') is-invalid @enderror"
-                                        id="prioridade" name="prioridade" required>
-                                        <option value="normal" {{ old('prioridade') == 'normal' ? 'selected' : '' }}>
-                                            Normal
-                                        </option>
-                                        <option value="urgente" {{ old('prioridade') == 'urgente' ? 'selected' : '' }}>
-                                            Urgente
-                                        </option>
-                                        <option value="expressa" {{ old('prioridade') == 'expressa' ? 'selected' : '' }}>
-                                            Expressa</option>
-                                    </select>
-                                    @error('prioridade')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <!-- Data de Entrega -->
-                            <div class="col-md-4">
+
+                        <div class="row mt-3">
+                            <!-- Observações -->
+                            <div class="col-md-12">
                                 <div class="form-group">
                                     <label for="entrega_em" class="form-label">Data de Entrega</label>
                                     <input type="datetime-local"
@@ -306,7 +302,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="row mt-3">
                             <!-- Observações -->
                             <div class="col-md-12">
@@ -881,8 +876,8 @@
                                 </small>
                                 <div class="itens-preview" style="max-height: 60px; overflow-y: auto; font-size: 0.8em;">
                                     ${venda.itens.slice(0, 3).map(item => `
-                                                                                                    <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
-                                                                                                `).join('')}
+                                                                                                                    <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
+                                                                                                                `).join('')}
                                     ${venda.itens.length > 3 ? `<div class="text-muted">... e mais ${venda.itens.length - 3} produto(s)</div>` : ''}
                                 </div>
                             </div>
@@ -936,25 +931,25 @@
                     </h6>
                     <div style="max-height: 300px; overflow-y: auto;">
                         ${venda.itens.map(item => `
-                                                                                    <div class="form-check border rounded p-3 mb-2 item-checkbox">
-                                                                                        <input class="form-check-input" type="checkbox" name="itens_selecionados[]"
-                                                                                               value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()">
-                                                                                        <label class="form-check-label w-100" for="item_${item.id}">
-                                                                                            <div class="d-flex justify-content-between align-items-start">
-                                                                                                <div>
-                                                                                                    <strong>${item.produto_nome}</strong><br>
-                                                                                                    <small class="text-muted">
-                                                                                                        Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
-                                                                                                        ${item.desconto_raw > 0 ? `• Desc: ${item.desconto}` : ''}
-                                                                                                    </small>
-                                                                                                </div>
-                                                                                                <div class="text-end">
-                                                                                                    <strong>${item.total_linha}</strong>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </label>
-                                                                                    </div>
-                                                                                `).join('')}
+                                                                                                    <div class="form-check border rounded p-3 mb-2 item-checkbox">
+                                                                                                        <input class="form-check-input" type="checkbox" name="itens_selecionados[]"
+                                                                                                               value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()">
+                                                                                                        <label class="form-check-label w-100" for="item_${item.id}">
+                                                                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                                                                <div>
+                                                                                                                    <strong>${item.produto_nome}</strong><br>
+                                                                                                                    <small class="text-muted">
+                                                                                                                        Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
+                                                                                                                        ${item.desconto_raw > 0 ? `• Desc: ${item.desconto}` : ''}
+                                                                                                                    </small>
+                                                                                                                </div>
+                                                                                                                <div class="text-end">
+                                                                                                                    <strong>${item.total_linha}</strong>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </label>
+                                                                                                    </div>
+                                                                                                `).join('')}
                     </div>
                     <div class="mt-3 text-center">
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllItems()">
@@ -966,11 +961,11 @@
                     </div>
                 </div>
                 ${venda.observacoes ? `
-                                                                            <div class="mt-3">
-                                                                                <h6 class="mb-1">Observações da Venda:</h6>
-                                                                                <p class="mb-0 text-muted small">${venda.observacoes}</p>
-                                                                            </div>
-                                                                        ` : ''}
+                                                                                            <div class="mt-3">
+                                                                                                <h6 class="mb-1">Observações da Venda:</h6>
+                                                                                                <p class="mb-0 text-muted small">${venda.observacoes}</p>
+                                                                                            </div>
+                                                                                        ` : ''}
             `;
             document.getElementById('venda_selecionada').style.display = 'block';
             document.getElementById('btnSalvar').disabled = false;
