@@ -483,7 +483,7 @@
                                     <th class="text-center">Produto</th>
                                     <th class="text-center">Qtd</th>
                                     <th class="text-center">Especificações</th>
-                                    <th class="text-center">Observações</th>
+                                    <th class="text-center">Marca</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -495,7 +495,7 @@
                                                 </td>
                                                 <td class="text-center">{{ $itemOrdem->item->quantidade ?? 0 }}</td>
                                                 <td>{{ $itemOrdem->item->produto->categoria->descricao ?? '-' }}</td>
-                                                <td>{{ $ordemServico->observacoes ?? '-' }}</td>
+                                                <td>{{ $itemOrdem->item->produto->marca ?? '-' }}</td>
                                             </tr>
                                         @endif
                                     @endforeach
@@ -504,7 +504,7 @@
                                         <td><strong>Ordem de Serviço Geral</strong></td>
                                         <td class="text-center">{{ $ordemServico->quantidade ?? 1 }}</td>
                                         <td>{{ $ordemServico->preco_unit_formatado ?? 'N/A' }}</td>
-                                        <td>{{ $ordemServico->observacoes ?? '-' }}</td>
+                                        <td>-</td>
                                     </tr>
                                 @endif
                             </tbody>
