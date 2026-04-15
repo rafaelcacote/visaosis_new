@@ -17,7 +17,7 @@
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('ordens-servico.pdf', $ordemServico) }}" class="btn btn-danger" target="_blank">
+            <a href="{{ route('ordens-servico.pdf', $ordemServico) }}" class="btn btn-success" target="_blank">
                 <i class="mdi mdi-file-pdf me-2"></i>
                 Gerar PDF
             </a>
