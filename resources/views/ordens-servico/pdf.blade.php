@@ -308,46 +308,83 @@
         </div>
         <div class="card-body">
             <!-- Cabeçalho -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <h6>DADOS DO CLIENTE</h6>
-                    @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
-                        <strong>{{ $ordemServico->pedido->cliente->nome }}</strong><br>
-                        CPF: {{ $ordemServico->pedido->cliente->cpf_formatado ?? 'N/A' }}<br>
-                        Telefone: {{ $ordemServico->pedido->cliente->telefone_formatado ?? 'N/A' }}<br>
-                        @if ($ordemServico->pedido->cliente->endereco_completo)
-                            Endereço: {{ $ordemServico->pedido->cliente->endereco_completo }}
-                        @endif
-                    @else
-                        <em class="text-muted">Cliente não informado</em>
-                    @endif
+
+            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
+
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <h6>DADOS DO CLIENTE</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>DADOS DA ORDEM</h6>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <h6>DADOS DA ORDEM</h6>
-                    <strong>Número:</strong> #{{ str_pad($ordemServico->id ?? 0, 6, '0', STR_PAD_LEFT) }}<br>
-                    <strong>Data Criação:</strong>
-                    {{ $ordemServico->created_at ? $ordemServico->created_at->format('d/m/Y H:i') : 'N/A' }}<br>
-                    <strong>Venda:</strong>
-                    @if ($ordemServico->pedido_id && $ordemServico->pedido)
-                        #{{ str_pad($ordemServico->pedido->id, 6, '0', STR_PAD_LEFT) }}
-                    @else
-                        N/A
-                    @endif
-                    <br>
-                    @if ($ordemServico->entrega_em)
-                        <strong>Data Entrega:</strong> {{ $ordemServico->entrega_em->format('d/m/Y H:i') }}<br>
-                    @endif
-                    <strong>Prioridade:</strong>
-                    <span class="badge bg-{{ $ordemServico->prioridade_class ?? 'secondary' }}">
-                        {{ $ordemServico->prioridade_label ?? 'N/A' }}
-                    </span><br>
-                    <strong>Status:</strong>
-                    <span class="badge bg-{{ $currentStatus['class'] }}">
-                        {{ $currentStatus['text'] }}
-                    </span>
+
+                <div class="p-3">
+
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
+                                <strong>{{ $ordemServico->pedido->cliente->nome }}</strong><br>
+                            @endif
+
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Número:</strong> #{{ str_pad($ordemServico->id ?? 0, 6, '0', STR_PAD_LEFT) }}<br>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
+                                <strong>CPF:</strong> {{ $ordemServico->pedido->cliente->cpf_formatado ?? 'N/A' }}<br>
+                            @endif
+
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Data Criação:</strong>
+                            {{ $ordemServico->created_at ? $ordemServico->created_at->format('d/m/Y H:i') : 'N/A' }}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
+                                <strong>Telefone:</strong>
+                                {{ $ordemServico->pedido->cliente->telefone_formatado ?? '-' }}
+                            @endif
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Venda:</strong>
+                            @if ($ordemServico->pedido_id && $ordemServico->pedido)
+                                #{{ str_pad($ordemServico->pedido->id, 6, '0', STR_PAD_LEFT) }}
+                            @else
+                                N/A
+                            @endif
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
+                                @if ($ordemServico->pedido->cliente->endereco_completo)
+                                    <strong>Endereço:</strong> {{ $ordemServico->pedido->cliente->endereco_completo }}
+                                @endif
+                            @endif
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Prioridade:</strong>
+                            <span class="badge bg-{{ $ordemServico->prioridade_class ?? 'secondary' }}">
+                                {{ $ordemServico->prioridade_label ?? 'N/A' }}
+                            </span>
+                            &nbsp;&nbsp;&nbsp;
+                            <strong>Status:</strong>
+                            <span class="badge bg-{{ $currentStatus['class'] }}">
+                                {{ $currentStatus['text'] }}
+                            </span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-
             <!-- Fornecedor -->
             <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
                 <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
