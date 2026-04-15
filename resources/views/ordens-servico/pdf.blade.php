@@ -353,7 +353,7 @@
                 <div class="supplier-section">
                     <div class="col-12">
                         <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
-                        <div class="border p-3 rounded">
+                        <div class="p-3">
                             <strong>{{ $ordemServico->fornecedor->razao_social ?? 'N/A' }}</strong>
                             @if ($ordemServico->fornecedor->nome_fantasia)
                                 <br><em>{{ $ordemServico->fornecedor->nome_fantasia }}</em>
@@ -391,10 +391,10 @@
                     <table class="table table-bordered">
                         <thead class="table-light">
                             <tr>
-                                <th>Produto</th>
-                                <th>Qtd</th>
-                                <th>Especificações</th>
-                                <th>Observações</th>
+                                <th class="text-center">Produto</th>
+                                <th class="text-center">Qtd</th>
+                                <th class="text-center">Especificações</th>
+                                <th class="text-center">Observações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -426,9 +426,9 @@
             <!-- Receita Médica -->
             @if (isset($ordemServico->prescricao) && $ordemServico->prescricao)
                 <div class="prescription-section">
-                    <div class="col-12">
+                    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
                         <h6>PRESCRIÇÃO MÉDICA</h6>
-                        <div class="border p-3 rounded">
+                        <div class="p-3">
                             <div class="row mb-2">
                                 <div class="col-md-6">
                                     <strong>Prescrição:</strong>
@@ -464,69 +464,69 @@
 
                             <!-- Graduação Principal -->
                             <div class="table-responsive">
-                                <table class="table table-sm table-bordered">
+                                <table class="table table-bordered">
                                     <thead class="table-light">
                                         <tr>
-                                            <th style="width: 15%;">Olho</th>
-                                            <th style="width: 15%;">Esférico</th>
-                                            <th style="width: 15%;">Cilíndrico</th>
-                                            <th style="width: 15%;">Eixo</th>
-                                            <th style="width: 15%;">DNP</th>
-                                            <th style="width: 15%;">Adição</th>
-                                            <th style="width: 15%;">Altura</th>
+                                            <th style="width: 14.28%;" class="text-center">Olho</th>
+                                            <th style="width: 14.28%;" class="text-center">Esférico</th>
+                                            <th style="width: 14.28%;" class="text-center">Cilíndrico</th>
+                                            <th style="width: 14.28%;" class="text-center">Eixo</th>
+                                            <th style="width: 14.28%;" class="text-center">DNP</th>
+                                            <th style="width: 14.28%;" class="text-center">Adição</th>
+                                            <th style="width: 14.28%;" class="text-center">Altura</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td><strong>OD</strong><br><small>(Olho Direito)</small></td>
-                                            <td>{{ $ordemServico->prescricao->esfera_od ?? '0.00' }}</td>
-                                            <td>{{ $ordemServico->prescricao->cilindro_od ?? '0.00' }}</td>
-                                            <td>{{ $ordemServico->prescricao->eixo_od ?? '0' }}°</td>
-                                            <td>{{ $ordemServico->prescricao->dnp_od ? $ordemServico->prescricao->dnp_od . 'mm' : '-' }}
-                                            </td>
-                                            <td>{{ $ordemServico->prescricao->adicao_od ?? '-' }}</td>
-                                            <td>{{ $ordemServico->prescricao->altura_od ?? '-' }}</td>
+                                            <td class="text-center"><strong>OD</strong><br><small>(Olho Direito)</small></td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->esfera_od ?? '0.00' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->cilindro_od ?? '0.00' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->eixo_od ?? '0' }}°</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->dnp_od ? $ordemServico->prescricao->dnp_od . 'mm' : '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_od ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->altura_od ?? '-' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>OE</strong><br><small>(Olho Esquerdo)</small></td>
-                                            <td>{{ $ordemServico->prescricao->esfera_oe ?? '0.00' }}</td>
-                                            <td>{{ $ordemServico->prescricao->cilindro_oe ?? '0.00' }}</td>
-                                            <td>{{ $ordemServico->prescricao->eixo_oe ?? '0' }}°</td>
-                                            <td>{{ $ordemServico->prescricao->dnp_oe ? $ordemServico->prescricao->dnp_oe . 'mm' : '-' }}
-                                            </td>
-                                            <td>{{ $ordemServico->prescricao->adicao_oe ?? '-' }}</td>
-                                            <td>{{ $ordemServico->prescricao->altura_oe ?? '-' }}</td>
+                                            <td class="text-center"><strong>OE</strong><br><small>(Olho Esquerdo)</small></td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->esfera_oe ?? '0.00' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->cilindro_oe ?? '0.00' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->eixo_oe ?? '0' }}°</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->dnp_oe ? $ordemServico->prescricao->dnp_oe . 'mm' : '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_oe ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->altura_oe ?? '-' }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
 
                             <!-- Informações Adicionais -->
-                            @if ($ordemServico->prescricao->tipo_lente)
-                                <div class="mt-2">
-                                    <strong>Tipo de Lente:</strong> {{ $ordemServico->prescricao->tipo_lente }}
+                            <div class="row mb-2">
+                                @if ($ordemServico->prescricao->tipo_lente)
+                                    <div class="col-md-6">
+                                        <strong>Tipo de Lente:</strong> {{ $ordemServico->prescricao->tipo_lente }}
+                                    </div>
+                                @endif
+                                <div class="col-md-6">
+                                    <strong>Validade:</strong> {{ $ordemServico->prescricao->validade_dias }} dias
                                 </div>
-                            @endif
-                            @if ($ordemServico->prescricao->diagnostico)
-                                <div class="mt-2">
-                                    <strong>Diagnóstico:</strong> {{ $ordemServico->prescricao->diagnostico }}
-                                </div>
-                            @endif
-                            @if ($ordemServico->prescricao->recomendacoes)
-                                <div class="mt-2">
+                            </div>
+
+                            <div class="row mb-2">
+                                @if ($ordemServico->prescricao->diagnostico)
+                                    <div class="col-md-6">
+                                        <strong>Diagnóstico:</strong> {{ $ordemServico->prescricao->diagnostico }}
+                                    </div>
+                                @endif
+                                <div class="col-md-6">
                                     <strong>Recomendações:</strong> {{ $ordemServico->prescricao->recomendacoes }}
                                 </div>
-                            @endif
+                            </div>
                             @if ($ordemServico->prescricao->observacoes)
                                 <div class="mt-2">
                                     <strong>Observações:</strong> {{ $ordemServico->prescricao->observacoes }}
                                 </div>
                             @endif
-                            @if ($ordemServico->prescricao->validade_dias)
-                                <div class="mt-2">
-                                    <strong>Validade:</strong> {{ $ordemServico->prescricao->validade_dias }} dias
-                                </div>
-                            @endif
+
                         </div>
                     </div>
                 </div>
