@@ -17,7 +17,7 @@
             color: #212529;
             background: white;
             margin: 0;
-            padding: 8px;
+            padding: 4px;
         }
 
         .card {
@@ -47,7 +47,7 @@
 
         .card-body {
             flex: 1 1 auto;
-            padding: 0.4rem;
+            padding: 0.3rem;
             border: none;
         }
 
@@ -140,7 +140,7 @@
         }
 
         .p-3 {
-            padding: 0.4rem !important;
+            padding: 0.2rem !important;
         }
 
         .table {
@@ -255,7 +255,7 @@
             display: table !important;
             width: 100% !important;
             table-layout: fixed !important;
-            margin-bottom: 2px !important;
+            margin-bottom: 1px !important;
         }
 
         .col-md-6 {
@@ -269,18 +269,18 @@
         .col-12 {
             display: block !important;
             width: 100% !important;
-            margin-bottom: 3px !important;
+            margin-bottom: 1px !important;
         }
 
         /* Evitar quebras indevidas */
         .prescription-section {
             page-break-inside: avoid;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .supplier-section {
             page-break-inside: avoid;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         /* Print styles */
@@ -354,7 +354,7 @@
         <div class="card-body">
             <!-- Cabeçalho -->
 
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
+            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
 
                 <div class="row mb-2">
                     <div class="col-md-6">
@@ -431,7 +431,7 @@
                 </div>
             </div>
             <!-- Fornecedor -->
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
+            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
                 <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
                 <div class="p-3">
 
@@ -473,7 +473,7 @@
 
 
             <!-- Produtos -->
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
+            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
                 <h6>PRODUTOS E ESPECIFICAÇÕES</h6>
                 <div class="p-3">
                     <div class="table-responsive">
@@ -516,7 +516,7 @@
             <!-- Receita Médica -->
             @if (isset($ordemServico->prescricao) && $ordemServico->prescricao)
                 <div class="prescription-section">
-                    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
+                    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
                         <h6>PRESCRIÇÃO MÉDICA</h6>
                         <div class="p-3">
                             <div class="row mb-2">
@@ -641,7 +641,7 @@
 
             <!-- Observações -->
             @if ($ordemServico->observacoes)
-                <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
+                <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
                     <h6>OBSERVAÇÕES GERAIS</h6>
                     <div>
                         {{ $ordemServico->observacoes }}
