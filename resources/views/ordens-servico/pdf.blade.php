@@ -27,7 +27,7 @@
         .card-header {
             padding: 0.2rem 1rem;
             margin-bottom: 0;
-            background-color: #0d6efd;
+            background-color: #dee2e6;
             border-bottom: 1px solid #dee2e6;
             border-top-left-radius: calc(0.375rem - 1px);
             border-top-right-radius: calc(0.375rem - 1px);
@@ -270,12 +270,12 @@
         /* Evitar quebras indevidas */
         .prescription-section {
             page-break-inside: avoid;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .supplier-section {
             page-break-inside: avoid;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         /* Print styles */
@@ -294,22 +294,26 @@
 <body>
     <!-- Documento da OS -->
     <div class="card">
-        <div class="card-header bg-primary text-white d-print-block">
+        <div class="card-header d-print-block" style="background-color: #f8f9fa; color: #000;">
             <div class="row align-items-center">
-                <div class="col-6">
+                <div class="col-12">
+                    <i class="fas fa-glasses me-2"></i>
+                    <h6 class="mb-0 d-inline">VisaoSis</h6>
+                    <small>Sistema de Gestão Ótica</small>
+
+                </div>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-12 text-center">
                     <h5 class="mb-0">ORDEM DE SERVIÇO</h5>
                     <small>#{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</small>
-                </div>
-                <div class="col-6 text-end">
-                    <h6 class="mb-0">VisaoSis</h6>
-                    <small>Sistema de Gestão Ótica</small>
                 </div>
             </div>
         </div>
         <div class="card-body">
             <!-- Cabeçalho -->
 
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
+            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
 
                 <div class="row mb-2">
                     <div class="col-md-6">
@@ -320,7 +324,7 @@
                     </div>
                 </div>
 
-                <div class="p-3">
+                <div class="p-3 header-data-section">
 
                     <div class="row mb-2">
                         <div class="col-md-6">
@@ -386,7 +390,7 @@
                 </div>
             </div>
             <!-- Fornecedor -->
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
+            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
                 <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
                 <div class="p-3">
                     @if ($ordemServico->fornecedor->cnpj)
@@ -424,7 +428,7 @@
 
 
             <!-- Produtos -->
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
+            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
                 <h6>PRODUTOS E ESPECIFICAÇÕES</h6>
                 <div class="p-3">
                     <div class="table-responsive">
@@ -467,7 +471,7 @@
             <!-- Receita Médica -->
             @if (isset($ordemServico->prescricao) && $ordemServico->prescricao)
                 <div class="prescription-section">
-                    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
+                    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
                         <h6>PRESCRIÇÃO MÉDICA</h6>
                         <div class="p-3">
                             <div class="row mb-2">
@@ -592,7 +596,7 @@
 
             <!-- Observações -->
             @if ($ordemServico->observacoes)
-                <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
+                <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
                     <h6>OBSERVAÇÕES GERAIS</h6>
                     <div>
                         {{ $ordemServico->observacoes }}
