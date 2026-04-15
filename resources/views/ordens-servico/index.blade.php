@@ -244,7 +244,7 @@
                                                     </a>
                                                     <a href="{{ route('ordens-servico.edit', $ordem) }}"
                                                         class="btn-action"
-                                                        style="background-color: #f3f4f6; color: #6b7280;" title="Editar">
+                                                        style="background-color: #fff7ed; color: #ea580c;" title="Editar">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </a>
                                                     <button type="button" class="btn-action"
