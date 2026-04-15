@@ -71,7 +71,7 @@ class OrdemServicoController extends Controller
         $locationId = session('location_id');
 
         $query = Laboratorio::where('ativo', true);
-        
+
         if ($tenantId) {
             $query->where('tenant_id', $tenantId);
         }
@@ -81,7 +81,7 @@ class OrdemServicoController extends Controller
         }
 
         $fornecedores = $query->orderBy('razao_social')->get();
-        
+
         return view('ordens-servico.create', compact('fornecedores'));
     }
 
@@ -338,13 +338,17 @@ class OrdemServicoController extends Controller
 
         if ($search) {
             // Buscar por ID da prescrição ou nome do paciente
-            if (is_numeric($search)) {
-                $query->where('id', $search);
-            } else {
-                $query->whereHas('paciente', function ($q) use ($search) {
-                    $q->where('nome', 'LIKE', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // Se for numérico, buscar por ID também
+                if (is_numeric($search)) {
+                    $q->where('id', $search);
+                }
+
+                // Sempre incluir busca por nome do paciente
+                $q->orWhereHas('paciente', function ($subQ) use ($search) {
+                    $subQ->where('nome', 'ILIKE', "%{$search}%");
                 });
-            }
+            });
         }
 
         $prescricoes = $query->orderBy('created_at', 'desc')
@@ -385,7 +389,7 @@ class OrdemServicoController extends Controller
         $locationId = session('location_id');
 
         $query = Laboratorio::where('ativo', true);
-        
+
         if ($tenantId) {
             $query->where('tenant_id', $tenantId);
         }

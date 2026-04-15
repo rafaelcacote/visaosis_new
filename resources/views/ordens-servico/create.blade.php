@@ -158,6 +158,21 @@
                             @enderror
                         </div>
 
+                        <!-- Prescrição Selecionada -->
+                        <div id="prescricao_selecionada_ordem" style="display: none;" class="mb-4">
+                            <label class="form-label">Prescrição Selecionada</label>
+                            <div class="alert alert-info border d-flex align-items-start">
+                                <i class="mdi mdi-glasses me-2 mt-1"></i>
+                                <div class="flex-grow-1" id="info_prescricao_selecionada">
+                                    <!-- Info da prescrição será exibida aqui -->
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                                    onclick="clearPrescricaoFromOrdem()">
+                                    <i class="mdi mdi-close"></i>
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <!-- Fornecedor -->
                             <div class="col-md-12">
@@ -200,43 +215,6 @@
                                     @enderror
                                 </div>
                             </div>
-
-                            <!-- Prioridade -->
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="prioridade" class="form-label">
-                                        Prioridade <span class="text-danger">*</span>
-                                    </label>
-                                    <select class="form-select form-select-sm @error('prioridade') is-invalid @enderror"
-                                        id="prioridade" name="prioridade" required>
-                                        <option value="normal" {{ old('prioridade') == 'normal' ? 'selected' : '' }}>
-                                            Normal
-                                        </option>
-                                        <option value="urgente" {{ old('prioridade') == 'urgente' ? 'selected' : '' }}>
-                                            Urgente
-                                        </option>
-                                        <option value="expressa" {{ old('prioridade') == 'expressa' ? 'selected' : '' }}>
-                                            Expressa</option>
-                                    </select>
-                                    @error('prioridade')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <!-- Prescrição -->
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="prescricao_id_display" class="form-label">Prescrição</label>
-                                    <input type="text" class="form-control" id="prescricao_id_display" readonly
-                                        placeholder="ID da prescrição">
-                                    <small class="text-muted">Será preenchido automaticamente ao selecionar uma
-                                        prescrição</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mt-3">
                             <!-- Preço Unitário -->
                             <div class="col-md-4">
                                 <div class="form-group">
@@ -272,6 +250,15 @@
                                 </div>
                             </div>
 
+
+
+                        </div>
+
+                        <div class="row mt-3">
+
+
+
+
                             <!-- Total -->
                             <div class="col-md-4">
                                 <div class="form-group">
@@ -282,11 +269,31 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="row mt-3">
+                            <!-- Prioridade -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="prioridade" class="form-label">
+                                        Prioridade <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select form-select-sm @error('prioridade') is-invalid @enderror"
+                                        id="prioridade" name="prioridade" required>
+                                        <option value="normal" {{ old('prioridade') == 'normal' ? 'selected' : '' }}>
+                                            Normal
+                                        </option>
+                                        <option value="urgente" {{ old('prioridade') == 'urgente' ? 'selected' : '' }}>
+                                            Urgente
+                                        </option>
+                                        <option value="expressa" {{ old('prioridade') == 'expressa' ? 'selected' : '' }}>
+                                            Expressa</option>
+                                    </select>
+                                    @error('prioridade')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
                             <!-- Data de Entrega -->
-                            <div class="col-md-12">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="entrega_em" class="form-label">Data de Entrega</label>
                                     <input type="datetime-local"
@@ -798,6 +805,19 @@
             document.getElementById('prescricao_graduacao_info').innerHTML = graduacaoInfo;
             document.getElementById('selected_prescricao').style.display = 'block';
 
+            // Atualizar também o campo no card "Dados da Ordem de Serviço"
+            const prescricaoInfoOrdem = `
+                <strong>Prescrição #${prescricao.id} - ${prescricao.paciente_nome}</strong><br>
+                <small class="text-muted">Data: ${prescricao.data_criacao} • CPF: ${prescricao.paciente_cpf || 'Não informado'}</small><br>
+                <small class="text-info">
+                    OD: ${prescricao.graduacao.od.esfera || '0.00'}/${prescricao.graduacao.od.cilindro || '0.00'}/${prescricao.graduacao.od.eixo || '0'}° •
+                    OE: ${prescricao.graduacao.oe.esfera || '0.00'}/${prescricao.graduacao.oe.cilindro || '0.00'}/${prescricao.graduacao.oe.eixo || '0'}°
+                </small>
+            `;
+
+            document.getElementById('info_prescricao_selecionada').innerHTML = prescricaoInfoOrdem;
+            document.getElementById('prescricao_selecionada_ordem').style.display = 'block';
+
             hidePrescricaoSuggestions();
         }
 
@@ -806,6 +826,14 @@
             document.getElementById('prescricao_search').value = '';
             document.getElementById('selected_prescricao').style.display = 'none';
             document.getElementById('prescricao_id').value = '';
+
+            // Limpar também o campo no card "Dados da Ordem de Serviço"
+            document.getElementById('prescricao_selecionada_ordem').style.display = 'none';
+            document.getElementById('info_prescricao_selecionada').innerHTML = '';
+        }
+
+        function clearPrescricaoFromOrdem() {
+            clearPrescricao();
         }
 
         // Busca vendas do cliente
@@ -853,8 +881,8 @@
                                 </small>
                                 <div class="itens-preview" style="max-height: 60px; overflow-y: auto; font-size: 0.8em;">
                                     ${venda.itens.slice(0, 3).map(item => `
-                                                                    <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
-                                                                `).join('')}
+                                                                                                    <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
+                                                                                                `).join('')}
                                     ${venda.itens.length > 3 ? `<div class="text-muted">... e mais ${venda.itens.length - 3} produto(s)</div>` : ''}
                                 </div>
                             </div>
@@ -908,25 +936,25 @@
                     </h6>
                     <div style="max-height: 300px; overflow-y: auto;">
                         ${venda.itens.map(item => `
-                                                    <div class="form-check border rounded p-3 mb-2 item-checkbox">
-                                                        <input class="form-check-input" type="checkbox" name="itens_selecionados[]"
-                                                               value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()">
-                                                        <label class="form-check-label w-100" for="item_${item.id}">
-                                                            <div class="d-flex justify-content-between align-items-start">
-                                                                <div>
-                                                                    <strong>${item.produto_nome}</strong><br>
-                                                                    <small class="text-muted">
-                                                                        Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
-                                                                        ${item.desconto_raw > 0 ? `• Desc: ${item.desconto}` : ''}
-                                                                    </small>
-                                                                </div>
-                                                                <div class="text-end">
-                                                                    <strong>${item.total_linha}</strong>
-                                                                </div>
-                                                            </div>
-                                                        </label>
-                                                    </div>
-                                                `).join('')}
+                                                                                    <div class="form-check border rounded p-3 mb-2 item-checkbox">
+                                                                                        <input class="form-check-input" type="checkbox" name="itens_selecionados[]"
+                                                                                               value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()">
+                                                                                        <label class="form-check-label w-100" for="item_${item.id}">
+                                                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                                                <div>
+                                                                                                    <strong>${item.produto_nome}</strong><br>
+                                                                                                    <small class="text-muted">
+                                                                                                        Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
+                                                                                                        ${item.desconto_raw > 0 ? `• Desc: ${item.desconto}` : ''}
+                                                                                                    </small>
+                                                                                                </div>
+                                                                                                <div class="text-end">
+                                                                                                    <strong>${item.total_linha}</strong>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </label>
+                                                                                    </div>
+                                                                                `).join('')}
                     </div>
                     <div class="mt-3 text-center">
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllItems()">
@@ -938,11 +966,11 @@
                     </div>
                 </div>
                 ${venda.observacoes ? `
-                                            <div class="mt-3">
-                                                <h6 class="mb-1">Observações da Venda:</h6>
-                                                <p class="mb-0 text-muted small">${venda.observacoes}</p>
-                                            </div>
-                                        ` : ''}
+                                                                            <div class="mt-3">
+                                                                                <h6 class="mb-1">Observações da Venda:</h6>
+                                                                                <p class="mb-0 text-muted small">${venda.observacoes}</p>
+                                                                            </div>
+                                                                        ` : ''}
             `;
             document.getElementById('venda_selecionada').style.display = 'block';
             document.getElementById('btnSalvar').disabled = false;
