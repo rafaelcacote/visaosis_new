@@ -3,46 +3,46 @@
 @section('title', 'Nova Ordem de Serviço - Connect Plus')
 
 @section('content')
-<div class="d-xl-flex justify-content-between align-items-start mb-4">
-    <div>
-        <h2 class="text-dark font-weight-bold mb-2">
-            <i class="mdi mdi-cog-plus me-2"></i>
-            Nova Ordem de Serviço
-        </h2>
-        <p class="text-muted mb-0">Criar uma nova ordem de serviço para produção</p>
+    <div class="d-xl-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="text-dark font-weight-bold mb-2">
+                <i class="mdi mdi-cog-plus me-2"></i>
+                Nova Ordem de Serviço
+            </h2>
+            <p class="text-muted mb-0">Criar uma nova ordem de serviço para produção</p>
+        </div>
+        <a href="{{ route('ordens-servico.index') }}" class="btn btn-outline-secondary">
+            <i class="mdi mdi-arrow-left me-2"></i>
+            Voltar
+        </a>
     </div>
-    <a href="{{ route('ordens-servico.index') }}" class="btn btn-outline-secondary">
-        <i class="mdi mdi-arrow-left me-2"></i>
-        Voltar
-    </a>
-</div>
 
-<div class="row">
-    <!-- Seleção de Cliente e Vendas -->
-    <div class="col-lg-6">
-        <!-- Seleção de Cliente -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title mb-3">
-                    <i class="mdi mdi-account text-primary me-2"></i>
-                    Selecionar Cliente
-                </h5>
-                <div class="form-group">
-                    <label for="client_search" class="form-label">Buscar Cliente ou Venda</label>
-                    <div id="client_search_container" class="position-relative">
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="mdi mdi-magnify"></i>
-                            </span>
-                            <input type="text" class="form-control" id="client_search"
-                                placeholder="Digite nome, CPF, e-mail ou ID da venda..." autocomplete="off">
+    <div class="row">
+        <!-- Seleção de Cliente e Vendas -->
+        <div class="col-lg-6">
+            <!-- Seleção de Cliente -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="mdi mdi-account text-primary me-2"></i>
+                        Selecionar Cliente
+                    </h5>
+                    <div class="form-group">
+                        <label for="client_search" class="form-label">Buscar Cliente ou Venda</label>
+                        <div id="client_search_container" class="position-relative">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="mdi mdi-magnify"></i>
+                                </span>
+                                <input type="text" class="form-control" id="client_search"
+                                    placeholder="Digite nome, CPF, e-mail ou ID da venda..." autocomplete="off">
+                            </div>
+                            <div id="client_suggestions" class="list-group position-absolute w-100 shadow-sm"
+                                style="display: none; z-index: 1000;">
+                            </div>
                         </div>
-                        <div id="client_suggestions" class="list-group position-absolute w-100 shadow-sm"
-                            style="display: none; z-index: 1000;">
-                        </div>
+                        <small class="text-muted">Digite pelo menos 2 caracteres para pesquisar.</small>
                     </div>
-                    <small class="text-muted">Digite pelo menos 2 caracteres para pesquisar.</small>
-                </div>
 
                     <div id="selected_client" class="mt-3" style="display: none;">
                         <div class="alert alert-info d-flex align-items-center">
@@ -71,29 +71,29 @@
                 </div>
             </div>
 
-        <!-- Busca de Prescrições -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title mb-3">
-                    <i class="mdi mdi-glasses text-info me-2"></i>
-                    Buscar Prescrição (opcional)
-                </h5>
-                <div class="form-group">
-                    <label for="prescricao_search" class="form-label">Buscar Prescrição</label>
-                    <div id="prescricao_search_container" class="position-relative">
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="mdi mdi-magnify"></i>
-                            </span>
-                            <input type="text" class="form-control" id="prescricao_search"
-                                placeholder="Digite ID da prescrição ou nome do paciente..." autocomplete="off">
+            <!-- Busca de Prescrições -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="mdi mdi-glasses text-info me-2"></i>
+                        Buscar Prescrição (opcional)
+                    </h5>
+                    <div class="form-group">
+                        <label for="prescricao_search" class="form-label">Buscar Prescrição</label>
+                        <div id="prescricao_search_container" class="position-relative">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="mdi mdi-magnify"></i>
+                                </span>
+                                <input type="text" class="form-control" id="prescricao_search"
+                                    placeholder="Digite ID da prescrição ou nome do paciente..." autocomplete="off">
+                            </div>
+                            <div id="prescricao_suggestions" class="list-group position-absolute w-100 shadow-sm"
+                                style="display: none; z-index: 1000;">
+                            </div>
                         </div>
-                        <div id="prescricao_suggestions" class="list-group position-absolute w-100 shadow-sm"
-                            style="display: none; z-index: 1000;">
-                        </div>
+                        <small class="text-muted">Digite pelo menos 2 caracteres para pesquisar.</small>
                     </div>
-                    <small class="text-muted">Digite pelo menos 2 caracteres para pesquisar.</small>
-                </div>
 
                     <div id="selected_prescricao" class="mt-3" style="display: none;">
                         <div class="alert alert-info d-flex align-items-start">
@@ -118,314 +118,322 @@
             </div>
         </div>
 
-    <!-- Formulário da Ordem -->
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title mb-4">
-                    <i class="mdi mdi-cog text-primary me-2"></i>
-                    Dados da Ordem de Serviço
-                </h5>
+        <!-- Formulário da Ordem -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="mdi mdi-cog text-primary me-2"></i>
+                        Dados da Ordem de Serviço
+                    </h5>
 
-                @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
-                <form action="{{ route('ordens-servico.store') }}" method="POST" id="ordemForm">
-                    @csrf
-                    <input type="hidden" name="pedido_id" id="pedido_id">
-                    <input type="hidden" name="prescricao_id" id="prescricao_id" value="">
+                    <form action="{{ route('ordens-servico.store') }}" method="POST" id="ordemForm">
+                        @csrf
+                        <input type="hidden" name="pedido_id" id="pedido_id">
+                        <input type="hidden" name="prescricao_id" id="prescricao_id" value="">
 
-                    <!-- Venda Selecionada -->
-                    <div id="venda_selecionada" style="display: none;" class="mb-4">
-                        <label class="form-label">Venda Selecionada</label>
-                        <div class="alert alert-light border" id="info_venda_selecionada">
-                            <!-- Info da venda será exibida aqui -->
+                        <!-- Venda Selecionada -->
+                        <div id="venda_selecionada" style="display: none;" class="mb-4">
+                            <label class="form-label">Venda Selecionada</label>
+                            <div class="alert alert-light border" id="info_venda_selecionada">
+                                <!-- Info da venda será exibida aqui -->
+                            </div>
+
+                            <!-- Exibir erros de validação para itens -->
+                            @error('itens_selecionados')
+                                <div class="alert alert-danger">
+                                    <i class="mdi mdi-alert-circle me-2"></i>
+                                    {{ $message }}
+                                </div>
+                            @enderror
                         </div>
 
-                        <!-- Exibir erros de validação para itens -->
-                        @error('itens_selecionados')
-                            <div class="alert alert-danger">
-                                <i class="mdi mdi-alert-circle me-2"></i>
-                                {{ $message }}
+                        <div class="row">
+                            <!-- Fornecedor -->
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="fornecedor_id" class="form-label">
+                                        Fornecedor/Laboratório <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select form-select-sm @error('fornecedor_id') is-invalid @enderror"
+                                        id="fornecedor_id" name="fornecedor_id" required>
+                                        <option value="">Selecione um fornecedor</option>
+                                        @foreach ($fornecedores as $fornecedor)
+                                            <option value="{{ $fornecedor->id }}"
+                                                {{ old('fornecedor_id') == $fornecedor->id ? 'selected' : '' }}>
+                                                {{ $fornecedor->razao_social }}
+                                                @if ($fornecedor->nome_fantasia)
+                                                    ({{ $fornecedor->nome_fantasia }})
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('fornecedor_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
-                        @enderror
-                    </div>
+                        </div>
 
-                    <div class="row">
-                        <!-- Fornecedor -->
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="fornecedor_id" class="form-label">
-                                    Fornecedor/Laboratório <span class="text-danger">*</span>
-                                </label>
-                                <select class="form-select @error('fornecedor_id') is-invalid @enderror"
-                                    id="fornecedor_id" name="fornecedor_id" required>
-                                    <option value="">Selecione um fornecedor</option>
-                                    @foreach ($fornecedores as $fornecedor)
-                                        <option value="{{ $fornecedor->id }}"
-                                            {{ old('fornecedor_id') == $fornecedor->id ? 'selected' : '' }}>
-                                            {{ $fornecedor->razao_social }}
-                                            @if ($fornecedor->nome_fantasia)
-                                                ({{ $fornecedor->nome_fantasia }})
-                                            @endif
+                        <div class="row mt-3">
+                            <!-- Quantidade -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="quantidade" class="form-label">
+                                        Quantidade <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" class="form-control @error('quantidade') is-invalid @enderror"
+                                        id="quantidade" name="quantidade" value="{{ old('quantidade', 1) }}"
+                                        min="1" required>
+                                    @error('quantidade')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Prioridade -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="prioridade" class="form-label">
+                                        Prioridade <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select form-select-sm @error('prioridade') is-invalid @enderror"
+                                        id="prioridade" name="prioridade" required>
+                                        <option value="normal" {{ old('prioridade') == 'normal' ? 'selected' : '' }}>
+                                            Normal
                                         </option>
-                                    @endforeach
-                                </select>
-                                @error('fornecedor_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3">
-                        <!-- Quantidade -->
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="quantidade" class="form-label">
-                                    Quantidade <span class="text-danger">*</span>
-                                </label>
-                                <input type="number" class="form-control @error('quantidade') is-invalid @enderror"
-                                    id="quantidade" name="quantidade" value="{{ old('quantidade', 1) }}" min="1"
-                                    required>
-                                @error('quantidade')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <!-- Prioridade -->
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="prioridade" class="form-label">
-                                    Prioridade <span class="text-danger">*</span>
-                                </label>
-                                <select class="form-select @error('prioridade') is-invalid @enderror" id="prioridade"
-                                    name="prioridade" required>
-                                    <option value="normal" {{ old('prioridade') == 'normal' ? 'selected' : '' }}>Normal
-                                    </option>
-                                    <option value="urgente" {{ old('prioridade') == 'urgente' ? 'selected' : '' }}>Urgente
-                                    </option>
-                                    <option value="expressa" {{ old('prioridade') == 'expressa' ? 'selected' : '' }}>
-                                        Expressa</option>
-                                </select>
-                                @error('prioridade')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <!-- Prescrição -->
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="prescricao_id_display" class="form-label">Prescrição</label>
-                                <input type="text" class="form-control" id="prescricao_id_display" readonly
-                                    placeholder="ID da prescrição">
-                                <small class="text-muted">Será preenchido automaticamente ao selecionar uma
-                                    prescrição</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3">
-                        <!-- Preço Unitário -->
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="preco_unit" class="form-label">
-                                    Preço Unitário <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text">R$</span>
-                                    <input type="number" class="form-control @error('preco_unit') is-invalid @enderror"
-                                        id="preco_unit" name="preco_unit" value="{{ old('preco_unit') }}"
-                                        step="0.01" min="0" required>
+                                        <option value="urgente" {{ old('prioridade') == 'urgente' ? 'selected' : '' }}>
+                                            Urgente
+                                        </option>
+                                        <option value="expressa" {{ old('prioridade') == 'expressa' ? 'selected' : '' }}>
+                                            Expressa</option>
+                                    </select>
+                                    @error('prioridade')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                @error('preco_unit')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
                             </div>
-                        </div>
 
-                        <!-- Desconto -->
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="desconto" class="form-label">Desconto</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">R$</span>
-                                    <input type="number" class="form-control @error('desconto') is-invalid @enderror"
-                                        id="desconto" name="desconto" value="{{ old('desconto', 0) }}" step="0.01"
-                                        min="0">
-                                </div>
-                                @error('desconto')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <!-- Total -->
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="total_linha" class="form-label">Total</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">R$</span>
-                                    <input type="text" class="form-control" id="total_linha" readonly>
+                            <!-- Prescrição -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="prescricao_id_display" class="form-label">Prescrição</label>
+                                    <input type="text" class="form-control" id="prescricao_id_display" readonly
+                                        placeholder="ID da prescrição">
+                                    <small class="text-muted">Será preenchido automaticamente ao selecionar uma
+                                        prescrição</small>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="row mt-3">
-                        <!-- Data de Entrega -->
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="entrega_em" class="form-label">Data de Entrega</label>
-                                <input type="datetime-local"
-                                    class="form-control @error('entrega_em') is-invalid @enderror" id="entrega_em"
-                                    name="entrega_em" value="{{ old('entrega_em') }}" min="{{ date('Y-m-d\TH:i') }}">
-                                @error('entrega_em')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                        <div class="row mt-3">
+                            <!-- Preço Unitário -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="preco_unit" class="form-label">
+                                        Preço Unitário <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="number"
+                                            class="form-control @error('preco_unit') is-invalid @enderror" id="preco_unit"
+                                            name="preco_unit" value="{{ old('preco_unit') }}" step="0.01"
+                                            min="0" required>
+                                    </div>
+                                    @error('preco_unit')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Desconto -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="desconto" class="form-label">Desconto</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="number" class="form-control @error('desconto') is-invalid @enderror"
+                                            id="desconto" name="desconto" value="{{ old('desconto', 0) }}"
+                                            step="0.01" min="0">
+                                    </div>
+                                    @error('desconto')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Total -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="total_linha" class="form-label">Total</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="text" class="form-control" id="total_linha" readonly>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="row mt-3">
-                        <!-- Observações -->
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="observacoes" class="form-label">Observações</label>
-                                <textarea class="form-control @error('observacoes') is-invalid @enderror" id="observacoes" name="observacoes"
-                                    rows="3" placeholder="Observações adicionais sobre a ordem de serviço...">{{ old('observacoes') }}</textarea>
-                                @error('observacoes')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                        <div class="row mt-3">
+                            <!-- Data de Entrega -->
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="entrega_em" class="form-label">Data de Entrega</label>
+                                    <input type="datetime-local"
+                                        class="form-control @error('entrega_em') is-invalid @enderror" id="entrega_em"
+                                        name="entrega_em" value="{{ old('entrega_em') }}"
+                                        min="{{ date('Y-m-d\TH:i') }}">
+                                    @error('entrega_em')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <div class="alert alert-info">
-                                <i class="mdi mdi-information-outline me-2"></i>
-                                <strong>Informação:</strong>
-                                Selecione primeiro um cliente e uma venda para criar a ordem de serviço.
-                                Os campos marcados com <span class="text-danger">*</span> são obrigatórios.
+                        <div class="row mt-3">
+                            <!-- Observações -->
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="observacoes" class="form-label">Observações</label>
+                                    <textarea class="form-control @error('observacoes') is-invalid @enderror" id="observacoes" name="observacoes"
+                                        rows="3" placeholder="Observações adicionais sobre a ordem de serviço...">{{ old('observacoes') }}</textarea>
+                                    @error('observacoes')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="d-flex justify-content-end gap-2">
-                                <a href="{{ route('ordens-servico.index') }}" class="btn btn-secondary">
-                                    <i class="mdi mdi-close-circle me-2"></i>
-                                    Cancelar
-                                </a>
-                                <button type="submit" class="btn btn-primary" id="btnSalvar" disabled>
-                                    <i class="mdi mdi-check-circle me-2"></i>
-                                    Criar Ordem de Serviço
-                                </button>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="mdi mdi-information-outline me-2"></i>
+                                    <strong>Informação:</strong>
+                                    Selecione primeiro um cliente e uma venda para criar a ordem de serviço.
+                                    Os campos marcados com <span class="text-danger">*</span> são obrigatórios.
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Modal de aviso (validação) -->
-<div class="modal fade" id="ordemValidacaoModal" tabindex="-1" aria-labelledby="ordemValidacaoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title text-warning" id="ordemValidacaoModalLabel">
-                    <i class="mdi mdi-alert-circle-outline me-2"></i>
-                    Atenção
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body pt-2">
-                <p class="text-muted mb-0" id="ordemValidacaoModalMessage"></p>
-            </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                    <i class="mdi mdi-check me-1"></i>
-                    Entendi
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de confirmação de criação -->
-<div class="modal fade" id="confirmCriarOrdemModal" tabindex="-1" aria-labelledby="confirmCriarOrdemModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="confirmCriarOrdemModalLabel">
-                    <i class="mdi mdi-check-circle me-2"></i>
-                    Confirmar ordem de serviço
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted mb-3">Revise os dados abaixo antes de criar a ordem de serviço.</p>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <h6 class="text-muted mb-1 small text-uppercase">Cliente</h6>
-                        <p class="mb-0 fw-semibold" id="confirm_os_cliente">—</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-muted mb-1 small text-uppercase">Venda</h6>
-                        <p class="mb-0 fw-semibold" id="confirm_os_venda">—</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-muted mb-1 small text-uppercase">Fornecedor / Laboratório</h6>
-                        <p class="mb-0 fw-semibold" id="confirm_os_fornecedor">—</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-muted mb-1 small text-uppercase">Itens selecionados</h6>
-                        <p class="mb-0 fw-semibold" id="confirm_os_itens">—</p>
-                    </div>
-                    <div class="col-md-4">
-                        <h6 class="text-muted mb-1 small text-uppercase">Quantidade</h6>
-                        <p class="mb-0 fw-semibold" id="confirm_os_quantidade">—</p>
-                    </div>
-                    <div class="col-md-4">
-                        <h6 class="text-muted mb-1 small text-uppercase">Prioridade</h6>
-                        <p class="mb-0 fw-semibold text-capitalize" id="confirm_os_prioridade">—</p>
-                    </div>
-                    <div class="col-md-4">
-                        <h6 class="text-muted mb-1 small text-uppercase">Total (linha)</h6>
-                        <p class="mb-0 fw-semibold text-success" id="confirm_os_total">—</p>
-                    </div>
-                </div>
-                <div class="alert alert-light border mt-3 mb-0">
-                    <i class="mdi mdi-information-outline me-2 text-primary"></i>
-                    <small class="text-muted">Após confirmar, a ordem será registrada e enviada conforme os dados informados.</small>
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ route('ordens-servico.index') }}" class="btn btn-secondary">
+                                        <i class="mdi mdi-close-circle me-2"></i>
+                                        Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary" id="btnSalvar" disabled>
+                                        <i class="mdi mdi-check-circle me-2"></i>
+                                        Criar Ordem de Serviço
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                    <i class="mdi mdi-close-circle me-1"></i>
-                    Cancelar
-                </button>
-                <button type="button" class="btn btn-primary" id="btnConfirmarCriarOrdem">
-                    <i class="mdi mdi-check-circle me-1"></i>
-                    Criar ordem de serviço
-                </button>
+        </div>
+    </div>
+
+    <!-- Modal de aviso (validação) -->
+    <div class="modal fade" id="ordemValidacaoModal" tabindex="-1" aria-labelledby="ordemValidacaoModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-warning" id="ordemValidacaoModalLabel">
+                        <i class="mdi mdi-alert-circle-outline me-2"></i>
+                        Atenção
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <p class="text-muted mb-0" id="ordemValidacaoModalMessage"></p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-check me-1"></i>
+                        Entendi
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Modal de confirmação de criação -->
+    <div class="modal fade" id="confirmCriarOrdemModal" tabindex="-1" aria-labelledby="confirmCriarOrdemModalLabel"
+        aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="confirmCriarOrdemModalLabel">
+                        <i class="mdi mdi-check-circle me-2"></i>
+                        Confirmar ordem de serviço
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Revise os dados abaixo antes de criar a ordem de serviço.</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-1 small text-uppercase">Cliente</h6>
+                            <p class="mb-0 fw-semibold" id="confirm_os_cliente">—</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-1 small text-uppercase">Venda</h6>
+                            <p class="mb-0 fw-semibold" id="confirm_os_venda">—</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-1 small text-uppercase">Fornecedor / Laboratório</h6>
+                            <p class="mb-0 fw-semibold" id="confirm_os_fornecedor">—</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-1 small text-uppercase">Itens selecionados</h6>
+                            <p class="mb-0 fw-semibold" id="confirm_os_itens">—</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-1 small text-uppercase">Quantidade</h6>
+                            <p class="mb-0 fw-semibold" id="confirm_os_quantidade">—</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-1 small text-uppercase">Prioridade</h6>
+                            <p class="mb-0 fw-semibold text-capitalize" id="confirm_os_prioridade">—</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-1 small text-uppercase">Total (linha)</h6>
+                            <p class="mb-0 fw-semibold text-success" id="confirm_os_total">—</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-light border mt-3 mb-0">
+                        <i class="mdi mdi-information-outline me-2 text-primary"></i>
+                        <small class="text-muted">Após confirmar, a ordem será registrada e enviada conforme os dados
+                            informados.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close-circle me-1"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmarCriarOrdem">
+                        <i class="mdi mdi-check-circle me-1"></i>
+                        Criar ordem de serviço
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('styles')
@@ -845,8 +853,8 @@
                                 </small>
                                 <div class="itens-preview" style="max-height: 60px; overflow-y: auto; font-size: 0.8em;">
                                     ${venda.itens.slice(0, 3).map(item => `
-                                                            <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
-                                                        `).join('')}
+                                                                    <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
+                                                                `).join('')}
                                     ${venda.itens.length > 3 ? `<div class="text-muted">... e mais ${venda.itens.length - 3} produto(s)</div>` : ''}
                                 </div>
                             </div>
@@ -900,25 +908,25 @@
                     </h6>
                     <div style="max-height: 300px; overflow-y: auto;">
                         ${venda.itens.map(item => `
-                                            <div class="form-check border rounded p-3 mb-2 item-checkbox">
-                                                <input class="form-check-input" type="checkbox" name="itens_selecionados[]"
-                                                       value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()">
-                                                <label class="form-check-label w-100" for="item_${item.id}">
-                                                    <div class="d-flex justify-content-between align-items-start">
-                                                        <div>
-                                                            <strong>${item.produto_nome}</strong><br>
-                                                            <small class="text-muted">
-                                                                Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
-                                                                ${item.desconto_raw > 0 ? `• Desc: ${item.desconto}` : ''}
-                                                            </small>
-                                                        </div>
-                                                        <div class="text-end">
-                                                            <strong>${item.total_linha}</strong>
-                                                        </div>
+                                                    <div class="form-check border rounded p-3 mb-2 item-checkbox">
+                                                        <input class="form-check-input" type="checkbox" name="itens_selecionados[]"
+                                                               value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()">
+                                                        <label class="form-check-label w-100" for="item_${item.id}">
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <div>
+                                                                    <strong>${item.produto_nome}</strong><br>
+                                                                    <small class="text-muted">
+                                                                        Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
+                                                                        ${item.desconto_raw > 0 ? `• Desc: ${item.desconto}` : ''}
+                                                                    </small>
+                                                                </div>
+                                                                <div class="text-end">
+                                                                    <strong>${item.total_linha}</strong>
+                                                                </div>
+                                                            </div>
+                                                        </label>
                                                     </div>
-                                                </label>
-                                            </div>
-                                        `).join('')}
+                                                `).join('')}
                     </div>
                     <div class="mt-3 text-center">
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllItems()">
@@ -930,11 +938,11 @@
                     </div>
                 </div>
                 ${venda.observacoes ? `
-                                    <div class="mt-3">
-                                        <h6 class="mb-1">Observações da Venda:</h6>
-                                        <p class="mb-0 text-muted small">${venda.observacoes}</p>
-                                    </div>
-                                ` : ''}
+                                            <div class="mt-3">
+                                                <h6 class="mb-1">Observações da Venda:</h6>
+                                                <p class="mb-0 text-muted small">${venda.observacoes}</p>
+                                            </div>
+                                        ` : ''}
             `;
             document.getElementById('venda_selecionada').style.display = 'block';
             document.getElementById('btnSalvar').disabled = false;
