@@ -2,524 +2,165 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\SendWhatsappNotificationJob;
-use App\Models\PedidoVenda;
-use App\Models\PedidoVendaParcela;
-use App\Models\Pessoa;
-use App\Models\Prescricao;
-use App\Models\WhatsappNotification;
-use App\Models\WhatsappTemplate;
-use Carbon\Carbon;
+use App\Models\ContaReceber;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class FinancialController extends Controller
 {
     public function index()
     {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        $tz = 'America/Manaus';
-        $driver = DB::connection()->getDriverName();
-
-        $dbHojeStr = Carbon::now($tz)->toDateString();
-        if ($driver === 'pgsql') {
-            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
-            if ($row && isset($row->d)) {
-                $dbHojeStr = (string) $row->d;
-            }
-        }
-
-        $today = Carbon::parse($dbHojeStr, $tz)->startOfDay();
-        $tomorrow = $today->copy()->addDay();
-        $weekEnd = $today->copy()->addDays(7);
-
-        $closedStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
-
-        $baseParcelas = PedidoVendaParcela::query()
-            ->whereNull('deleted_at')
-            ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            });
-
-        $unpaidParcelas = (clone $baseParcelas)
-            ->whereNull('pago_em')
-            ->whereNotIn('status', $closedStatuses);
-
-        $totalReceber = (float) (clone $unpaidParcelas)->sum('valor');
-        $vencidasValor = (float) (clone $unpaidParcelas)->where('vencimento_em', '<', $today->toDateString())->sum('valor');
-        $venceHojeValor = (float) (clone $unpaidParcelas)->where('vencimento_em', '=', $today->toDateString())->sum('valor');
-        $venceSemanaValor = (float) (clone $unpaidParcelas)->whereBetween('vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()])->sum('valor');
-
-        $vencidasCount = (int) (clone $unpaidParcelas)->where('vencimento_em', '<', $today->toDateString())->count();
-        $venceHojeCount = (int) (clone $unpaidParcelas)->where('vencimento_em', '=', $today->toDateString())->count();
-        $venceSemanaCount = (int) (clone $unpaidParcelas)->whereBetween('vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()])->count();
-
-        $monthStart = $today->copy()->startOfMonth();
-        $monthEnd = $today->copy()->endOfMonth();
-
-        $recebidoMes = (float) (clone $baseParcelas)
-            ->whereNotNull('pago_em')
-            ->whereBetween('pago_em', [$monthStart->copy()->startOfDay(), $monthEnd->copy()->endOfDay()])
-            ->sum('valor');
-
-        $salesMonthQuery = PedidoVenda::query()
-            ->whereNull('deleted_at')
-            ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->where('status', PedidoVenda::STATUS_FATURADO)
-            ->whereBetween('data_pedido', [$monthStart->copy()->startOfDay(), $monthEnd->copy()->endOfDay()]);
-
-        $vendasMesValor = (float) (clone $salesMonthQuery)->sum('valor_total');
-        $vendasMesCount = (int) (clone $salesMonthQuery)->count();
-        $ticketMedio = (float) (clone $salesMonthQuery)->avg('valor_total');
-
-        $totalClientesCredito = (int) DB::table('pedido_venda_parcela as pvp')
-            ->join('pedido_venda as pv', function ($join) {
-                $join->on('pv.id', '=', 'pvp.pedido_venda_id')
-                    ->on('pv.tenant_id', '=', 'pvp.tenant_id');
-            })
-            ->whereNull('pvp.deleted_at')
-            ->whereNull('pv.deleted_at')
-            ->when($tenantId, fn($q) => $q->where('pvp.tenant_id', $tenantId))
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
-                });
-            })
-            ->whereNull('pvp.pago_em')
-            ->whereNotIn('pvp.status', $closedStatuses)
-            ->whereNotNull('pv.pessoa_cliente_id')
-            ->distinct()
-            ->count('pv.pessoa_cliente_id');
-
-        $inadimplencia = 0.0;
-        if ($totalReceber > 0) {
-            $inadimplencia = round(($vencidasValor / $totalReceber) * 100, 1);
-        }
-
+        // Dashboard financeiro principal
         $financialData = [
-            'total_receber' => $totalReceber,
-            'vencidas' => $vencidasValor,
-            'vence_hoje' => $venceHojeValor,
-            'vence_semana' => $venceSemanaValor,
-            'vendas_mes' => $vendasMesValor,
-            'vendas_mes_count' => $vendasMesCount,
-            'recebido_mes' => $recebidoMes,
-            'inadimplencia' => $inadimplencia,
-            'ticket_medio' => $ticketMedio,
-            'total_clientes_credito' => $totalClientesCredito,
+            'total_receber' => 45800.00,
+            'vencidas' => 8900.00,
+            'vence_hoje' => 2400.00,
+            'vence_semana' => 6700.00,
+            'recebido_mes' => 28500.00,
+            'inadimplencia' => 12.5,
+            'ticket_medio' => 850.00,
+            'total_clientes_credito' => 156
         ];
 
-        $alertas = [
-            'vencidas' => ['count' => $vencidasCount, 'valor' => $vencidasValor],
-            'vence_hoje' => ['count' => $venceHojeCount, 'valor' => $venceHojeValor],
-            'vence_semana' => ['count' => $venceSemanaCount, 'valor' => $venceSemanaValor],
-        ];
+        return view('financial.index', compact('financialData'));
+    }
 
-        $chartStart = $today->copy()->startOfMonth()->subMonths(7);
-        $chartEnd = $today->copy()->endOfMonth();
+    public function receivables(Request $request)
+    {
+        $tenantId = session('tenant_id');
+        $statusFilter = $request->get('status');
+        $searchFilter = trim((string) $request->get('search', ''));
+        $startDateFilter = $request->get('start_date');
+        $endDateFilter = $request->get('end_date');
+        $orderByFilter = $request->get('order_by', 'vencimento');
+        $today = now()->startOfDay();
 
-        $chartReceiptsTotalsByKey = collect(
-            DB::table('pedido_venda_parcela as pvp')
-                ->selectRaw(
-                    $driver === 'pgsql'
-                        ? "to_char((pvp.pago_em at time zone 'America/Manaus'), 'YYYY-MM') as m, sum(pvp.valor) as total"
-                        : ($driver === 'mysql'
-                            ? "date_format(pvp.pago_em, '%Y-%m') as m, sum(pvp.valor) as total"
-                            : "strftime('%Y-%m', pvp.pago_em) as m, sum(pvp.valor) as total")
-                )
-                ->whereNull('pvp.deleted_at')
-                ->when($tenantId, fn($q) => $q->where('pvp.tenant_id', $tenantId))
-                ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                    $q->where(function ($q2) use ($locationIds) {
-                        $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
-                    });
-                })
-                ->whereNotNull('pvp.pago_em')
-                ->whereBetween('pvp.pago_em', [$chartStart->copy()->startOfDay(), $chartEnd->copy()->endOfDay()])
-                ->groupBy('m')
-                ->get()
-        )->mapWithKeys(fn($r) => [(string) $r->m => (float) $r->total]);
+        $query = ContaReceber::with(['cliente', 'pedidoVenda'])
+            ->where('ativo', true);
 
-        $chartSalesTotalsByKey = collect(
-            DB::table('pedido_venda as pv')
-                ->selectRaw(
-                    $driver === 'pgsql'
-                        ? "to_char((pv.data_pedido at time zone 'America/Manaus'), 'YYYY-MM') as m, sum(pv.valor_total) as total"
-                        : ($driver === 'mysql'
-                            ? "date_format(pv.data_pedido, '%Y-%m') as m, sum(pv.valor_total) as total"
-                            : "strftime('%Y-%m', pv.data_pedido) as m, sum(pv.valor_total) as total")
-                )
-                ->whereNull('pv.deleted_at')
-                ->when($tenantId, fn($q) => $q->where('pv.tenant_id', $tenantId))
-                ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                    $q->where(function ($q2) use ($locationIds) {
-                        $q2->whereIn('pv.location_id', $locationIds)->orWhereNull('pv.location_id');
-                    });
-                })
-                ->where('pv.status', PedidoVenda::STATUS_FATURADO)
-                ->whereBetween('pv.data_pedido', [$chartStart->copy()->startOfDay(), $chartEnd->copy()->endOfDay()])
-                ->groupBy('m')
-                ->get()
-        )->mapWithKeys(fn($r) => [(string) $r->m => (float) $r->total]);
-
-        $monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        $salesReceiptsChart = [];
-        $maxChart = 0.0;
-
-        for ($i = 0; $i < 8; $i++) {
-            $m = $chartStart->copy()->addMonths($i);
-            $key = $m->format('Y-m');
-            $salesTotal = (float) ($chartSalesTotalsByKey[$key] ?? 0);
-            $receiptsTotal = (float) ($chartReceiptsTotalsByKey[$key] ?? 0);
-
-            $salesReceiptsChart[] = [
-                'label' => $monthLabels[((int) $m->format('n')) - 1] ?? $m->format('m'),
-                'sales_total' => $salesTotal,
-                'receipts_total' => $receiptsTotal,
-            ];
-
-            $maxChart = max($maxChart, $salesTotal, $receiptsTotal);
+        // Por padrão, exibe somente parcelas em aberto.
+        if ($statusFilter === 'pago') {
+            $query->where('status', 'pago');
+        } else {
+            $query->where('status', '!=', 'pago');
         }
 
-        $salesReceiptsChart = array_map(function ($row) use ($maxChart) {
-            $salesHeight = $maxChart > 0 ? (int) round(($row['sales_total'] / $maxChart) * 100) : 0;
-            $receiptsHeight = $maxChart > 0 ? (int) round(($row['receipts_total'] / $maxChart) * 100) : 0;
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
 
-            $row['sales_height'] = max(3, $salesHeight);
-            $row['receipts_height'] = max(3, $receiptsHeight);
-            return $row;
-        }, $salesReceiptsChart);
+        if (!empty($startDateFilter)) {
+            $query->whereDate('data_vencimento', '>=', $startDateFilter);
+        }
 
-        $installmentsRaw = DB::table('pedido_venda_parcela as pvp')
-            ->join('pedido_venda as pv', function ($join) {
-                $join->on('pv.id', '=', 'pvp.pedido_venda_id')
-                    ->on('pv.tenant_id', '=', 'pvp.tenant_id');
+        if (!empty($endDateFilter)) {
+            $query->whereDate('data_vencimento', '<=', $endDateFilter);
+        }
+
+        $receivables = $query
+            ->orderBy('data_vencimento')
+            ->orderBy('numero_parcela')
+            ->get()
+            ->map(function (ContaReceber $receivable) {
+                $today = now()->startOfDay();
+                $dueDate = optional($receivable->data_vencimento)->copy()->startOfDay();
+                $diasAtraso = 0;
+                $status = $receivable->status ?? 'pendente';
+
+                if ($status !== 'pago' && $dueDate) {
+                    if ($dueDate->lt($today)) {
+                        $status = 'vencida';
+                        $diasAtraso = $dueDate->diffInDays($today);
+                    } elseif ($dueDate->isSameDay($today)) {
+                        $status = 'vence_hoje';
+                    } elseif ($dueDate->lte($today->copy()->addDays(7))) {
+                        $status = 'vence_semana';
+                    } else {
+                        $status = 'em_dia';
+                    }
+                }
+
+                $vendaId = $receivable->pedidoVenda
+                    ? 'VD-' . $receivable->pedidoVenda->data_pedido->format('Y') . '-' . str_pad($receivable->pedidoVenda->id, 4, '0', STR_PAD_LEFT)
+                    : 'VD-' . str_pad($receivable->pedido_venda_id, 4, '0', STR_PAD_LEFT);
+
+                return [
+                    'id' => $receivable->id,
+                    'cliente' => optional($receivable->cliente)->nome ?? 'Cliente não informado',
+                    'telefone' => optional($receivable->cliente)->telefone_formatado ?? (optional($receivable->cliente)->telefone ?? '-'),
+                    'cpf' => optional($receivable->cliente)->cpf_formatado ?? (optional($receivable->cliente)->cpf ?? ''),
+                    'venda_id' => $vendaId,
+                    'parcela' => $receivable->numero_parcela . '/' . $receivable->total_parcelas,
+                    'valor_parcela' => (float) $receivable->valor_parcela,
+                    'valor_total' => (float) $receivable->valor_total_venda,
+                    'vencimento' => optional($receivable->data_vencimento)->format('Y-m-d') ?? now()->format('Y-m-d'),
+                    'status' => $status,
+                    'forma_pagamento' => $receivable->forma_pagamento ?? '-',
+                    'data_pagamento' => optional($receivable->data_pagamento)->format('d/m/Y H:i'),
+                    'dias_atraso' => $diasAtraso,
+                    'juros' => 0.00,
+                    'valor_atualizado' => (float) $receivable->valor_parcela,
+                ];
             })
-            ->leftJoin('pessoa as pe', function ($join) {
-                $join->on('pe.id', '=', 'pv.pessoa_cliente_id')
-                    ->on('pe.tenant_id', '=', 'pv.tenant_id');
-            })
-            ->whereNull('pvp.deleted_at')
-            ->whereNull('pv.deleted_at')
-            ->when($tenantId, fn($q) => $q->where('pvp.tenant_id', $tenantId))
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
-                });
-            })
-            ->groupBy('pvp.pedido_venda_id', 'pv.id', 'pv.valor_total', 'pe.nome', 'pe.telefone')
-            ->selectRaw('pvp.pedido_venda_id as pedido_id')
-            ->selectRaw('pv.valor_total as valor_total')
-            ->selectRaw('coalesce(pe.nome, ?) as cliente', ['Cliente não informado'])
-            ->selectRaw('pe.telefone as telefone')
-            ->selectRaw("max(pvp.total_parcelas) as total_parcelas")
-            ->selectRaw("sum(case when pvp.pago_em is not null or lower(pvp.status) in ('pago','paga') then 1 else 0 end) as pagas")
-            ->selectRaw("min(case when pvp.pago_em is null and lower(pvp.status) not in ('pago','paga','cancelado','cancelada') then pvp.vencimento_em else null end) as proximo_vencimento")
-            ->havingRaw("sum(case when pvp.pago_em is null and lower(pvp.status) not in ('pago','paga','cancelado','cancelada') then 1 else 0 end) > 0")
-            ->orderByRaw($driver === 'pgsql' ? 'proximo_vencimento asc nulls last' : 'proximo_vencimento asc')
-            ->limit(15)
-            ->get();
+            ->values()
+            ->toArray();
 
-        $paidStatusSet = ['pago', 'paga', 'cancelado', 'cancelada'];
+        if ($searchFilter !== '') {
+            $normalizedSearch = mb_strtolower($searchFilter, 'UTF-8');
+            $receivables = collect($receivables)
+                ->filter(function (array $item) use ($normalizedSearch) {
+                    $cliente = mb_strtolower((string) ($item['cliente'] ?? ''), 'UTF-8');
+                    $telefone = mb_strtolower((string) ($item['telefone'] ?? ''), 'UTF-8');
+                    $vendaId = mb_strtolower((string) ($item['venda_id'] ?? ''), 'UTF-8');
 
-        $pedidoIds = $installmentsRaw->pluck('pedido_id')->filter()->map(fn($v) => (int) $v)->values()->all();
-        $nextParcelas = [];
-        if (! empty($pedidoIds)) {
-            $nextParcelas = PedidoVendaParcela::query()
-                ->whereNull('deleted_at')
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                    $q->where(function ($q2) use ($locationIds) {
-                        $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                    });
+                    return str_contains($cliente, $normalizedSearch)
+                        || str_contains($telefone, $normalizedSearch)
+                        || str_contains($vendaId, $normalizedSearch);
                 })
-                ->whereIn('pedido_venda_id', $pedidoIds)
-                ->whereNull('pago_em')
-                ->where(function ($q) use ($paidStatusSet) {
-                    $q->whereNull('status')->orWhereNotIn(DB::raw('lower(status)'), $paidStatusSet);
-                })
-                ->orderBy('pedido_venda_id')
-                ->orderBy('vencimento_em')
-                ->orderBy('numero_parcela')
-                ->orderBy('id')
-                ->get(['id', 'pedido_venda_id'])
-                ->groupBy('pedido_venda_id')
-                ->map(fn($rows) => (int) $rows->first()->id)
+                ->values()
                 ->toArray();
         }
 
-        $installmentSummaries = $installmentsRaw->map(function ($row) use ($today, $tz, $nextParcelas) {
-            $cliente = (string) ($row->cliente ?? 'Cliente não informado');
-            $initials = collect(preg_split('/\s+/', trim($cliente)))->filter()->take(2)->map(fn($p) => mb_strtoupper(mb_substr($p, 0, 1)))->implode('');
-            if ($initials === '') {
-                $initials = 'CL';
-            }
-            $telefone = $row->telefone ? (string) $row->telefone : null;
-
-            $totalParcelas = (int) ($row->total_parcelas ?? 0);
-            $pagas = (int) ($row->pagas ?? 0);
-            $progressPct = $totalParcelas > 0 ? (int) floor(($pagas / $totalParcelas) * 100) : 0;
-
-            $proximoVencStr = $row->proximo_vencimento ? (string) $row->proximo_vencimento : null;
-            $proximoVenc = $proximoVencStr ? Carbon::parse($proximoVencStr, $tz)->startOfDay() : null;
-
-            $statusLabel = 'Em Dia';
-            $badgeClass = 'bg-success';
-            $rowClass = '';
-            $subLabel = 'Em dia';
-
-            if ($proximoVenc) {
-                if ($proximoVenc->lt($today)) {
-                    $dias = $proximoVenc->diffInDays($today);
-                    $statusLabel = 'Em Atraso';
-                    $badgeClass = 'bg-danger';
-                    $rowClass = 'table-danger';
-                    $subLabel = $dias . ' dias atraso';
-                } elseif ($proximoVenc->equalTo($today)) {
-                    $statusLabel = 'Vence Hoje';
-                    $badgeClass = 'bg-warning';
-                    $rowClass = 'table-warning';
-                    $subLabel = 'Vence hoje';
-                }
-            }
-
-            return [
-                'pedido_id' => (int) $row->pedido_id,
-                'proxima_parcela_id' => isset($nextParcelas[(int) $row->pedido_id]) ? (int) $nextParcelas[(int) $row->pedido_id] : null,
-                'cliente' => $cliente,
-                'initials' => $initials,
-                'telefone' => $telefone,
-                'valor_total' => (float) ($row->valor_total ?? 0),
-                'pagas' => $pagas,
-                'total_parcelas' => $totalParcelas,
-                'progress_pct' => $progressPct,
-                'proximo_vencimento' => $proximoVenc ? $proximoVenc->format('d/m/Y') : '-',
-                'proximo_vencimento_raw' => $proximoVenc ? $proximoVenc->toDateString() : null,
-                'status_label' => $statusLabel,
-                'badge_class' => $badgeClass,
-                'row_class' => $rowClass,
-                'sub_label' => $subLabel,
-            ];
-        })->values()->toArray();
-
-        return view('financial.index', [
-            'financialData' => $financialData,
-            'alertas' => $alertas,
-            'salesReceiptsChart' => $salesReceiptsChart,
-            'installmentSummaries' => $installmentSummaries,
-        ]);
-    }
-
-    public function receivables()
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        $tz = 'America/Manaus';
-        $driver = DB::connection()->getDriverName();
-
-        $dbHojeStr = Carbon::now($tz)->toDateString();
-        if ($driver === 'pgsql') {
-            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
-            if ($row && isset($row->d)) {
-                $dbHojeStr = (string) $row->d;
-            }
-        }
-
-        $today = Carbon::parse($dbHojeStr, $tz)->startOfDay();
-        $tomorrow = $today->copy()->addDay();
-        $weekEnd = $today->copy()->addDays(7);
-
-        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
-
-        $base = DB::table('pedido_venda_parcela as pvp')
-            ->join('pedido_venda as pv', function ($join) {
-                $join->on('pv.id', '=', 'pvp.pedido_venda_id')
-                    ->on('pv.tenant_id', '=', 'pvp.tenant_id');
-            })
-            ->leftJoin('pessoa as pe', function ($join) {
-                $join->on('pe.id', '=', 'pv.pessoa_cliente_id')
-                    ->on('pe.tenant_id', '=', 'pv.tenant_id');
-            })
-            ->whereNull('pvp.deleted_at')
-            ->whereNull('pv.deleted_at')
-            ->where('pv.ativo', true)
-            ->when($tenantId, fn($q) => $q->where('pvp.tenant_id', $tenantId))
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
-                });
-            });
-
-        $unpaid = (clone $base)
-            ->whereNull('pvp.pago_em')
-            ->where(function ($q) use ($paidStatuses) {
-                $q->whereNull('pvp.status')->orWhereNotIn(DB::raw('lower(pvp.status)'), $paidStatuses);
-            });
-
-        $summary = [
-            'vencidas' => [
-                'count' => (int) (clone $unpaid)->where('pvp.vencimento_em', '<', $today->toDateString())->count(),
-                'valor' => (float) (clone $unpaid)->where('pvp.vencimento_em', '<', $today->toDateString())->sum('pvp.valor'),
-            ],
-            'vence_hoje' => [
-                'count' => (int) (clone $unpaid)->where('pvp.vencimento_em', '=', $today->toDateString())->count(),
-                'valor' => (float) (clone $unpaid)->where('pvp.vencimento_em', '=', $today->toDateString())->sum('pvp.valor'),
-            ],
-            'vence_semana' => [
-                'count' => (int) (clone $unpaid)->whereBetween('pvp.vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()])->count(),
-                'valor' => (float) (clone $unpaid)->whereBetween('pvp.vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()])->sum('pvp.valor'),
-            ],
-            'em_dia' => [
-                'count' => (int) (clone $unpaid)->where('pvp.vencimento_em', '>', $weekEnd->toDateString())->count(),
-                'valor' => (float) (clone $unpaid)->where('pvp.vencimento_em', '>', $weekEnd->toDateString())->sum('pvp.valor'),
-            ],
+        // Dashboard: considera somente parcelas em aberto.
+        $openReceivables = collect($receivables)->where('status', '!=', 'pago');
+        $financialData = [
+            'vencidas_count' => $openReceivables->where('status', 'vencida')->count(),
+            'vencidas_total' => (float) $openReceivables->where('status', 'vencida')->sum('valor_atualizado'),
+            'vence_hoje_count' => $openReceivables->where('status', 'vence_hoje')->count(),
+            'vence_hoje_total' => (float) $openReceivables->where('status', 'vence_hoje')->sum('valor_atualizado'),
+            'vence_semana_count' => $openReceivables->where('status', 'vence_semana')->count(),
+            'vence_semana_total' => (float) $openReceivables->where('status', 'vence_semana')->sum('valor_atualizado'),
+            'em_dia_count' => $openReceivables->where('status', 'em_dia')->count(),
+            'em_dia_total' => (float) $openReceivables->where('status', 'em_dia')->sum('valor_atualizado'),
+            'total_receber' => (float) $openReceivables->sum('valor_atualizado'),
+            'total_registros' => $openReceivables->count(),
+            'updated_at' => $today->format('d/m/Y'),
         ];
 
-        $statusFilter = (string) request()->get('status', '');
-        $startDate = (string) request()->get('start_date', '');
-        $endDate = (string) request()->get('end_date', '');
-        $q = trim((string) request()->get('q', ''));
-        $orderBy = (string) request()->get('order_by', 'vencimento');
-
-        $query = (clone $base)
-            ->select([
-                'pvp.id as parcela_id',
-                'pvp.numero_parcela',
-                'pvp.total_parcelas',
-                'pvp.valor as valor_parcela',
-                'pvp.vencimento_em',
-                'pvp.pago_em',
-                'pvp.status as parcela_status',
-                'pv.id as pedido_id',
-                'pv.valor_total',
-                'pv.data_pedido',
-                'pe.nome as cliente_nome',
-                'pe.telefone as cliente_telefone',
-                'pe.cpf as cliente_cpf',
-            ]);
-
-        if ($statusFilter === 'paga') {
-            $query->where(function ($q) use ($paidStatuses) {
-                $q->whereNotNull('pvp.pago_em')->orWhereIn(DB::raw('lower(pvp.status)'), $paidStatuses);
-            });
-        } else {
-            $query->whereNull('pvp.pago_em')
-                ->where(function ($q) use ($paidStatuses) {
-                    $q->whereNull('pvp.status')->orWhereNotIn(DB::raw('lower(pvp.status)'), $paidStatuses);
-                });
-
-            if ($statusFilter === 'vencida') {
-                $query->where('pvp.vencimento_em', '<', $today->toDateString());
-            } elseif ($statusFilter === 'vence_hoje') {
-                $query->where('pvp.vencimento_em', '=', $today->toDateString());
-            } elseif ($statusFilter === 'vence_semana') {
-                $query->whereBetween('pvp.vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()]);
-            } elseif ($statusFilter === 'em_dia') {
-                $query->where('pvp.vencimento_em', '>', $weekEnd->toDateString());
-            }
+        // Filtros por status derivados de vencimento (aplicados após map).
+        if (in_array($statusFilter, ['vencida', 'vence_hoje', 'vence_semana', 'em_dia'], true)) {
+            $receivables = collect($receivables)
+                ->where('status', $statusFilter)
+                ->values()
+                ->toArray();
         }
 
-        if ($startDate !== '') {
-            $query->where('pvp.vencimento_em', '>=', $startDate);
-        }
-        if ($endDate !== '') {
-            $query->where('pvp.vencimento_em', '<=', $endDate);
-        }
-
-        if ($q !== '') {
-            $like = $driver === 'pgsql' ? 'ilike' : 'like';
-            $query->where(function ($qq) use ($q, $like) {
-                $qq->where('pe.nome', $like, '%' . $q . '%')
-                    ->orWhere('pv.id', $like, '%' . $q . '%');
-            });
-        }
-
-        if ($orderBy === 'valor') {
-            $query->orderByDesc('pvp.valor')->orderBy('pvp.vencimento_em');
-        } elseif ($orderBy === 'cliente') {
-            $query->orderBy('pe.nome')->orderBy('pvp.vencimento_em');
-        } elseif ($orderBy === 'atraso') {
-            $query->orderBy('pvp.vencimento_em');
-        } else {
-            $query->orderBy('pvp.vencimento_em')->orderBy('pvp.id');
-        }
-
-        $rows = $query->paginate(50)->withQueryString();
-
-        $receivables = $rows->through(function ($row) use ($today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
-            $cliente = (string) ($row->cliente_nome ?? 'Cliente não informado');
-            $telefone = $row->cliente_telefone ? (string) $row->cliente_telefone : null;
-            $cpf = $row->cliente_cpf ? (string) $row->cliente_cpf : null;
-
-            $venc = Carbon::parse((string) $row->vencimento_em, $tz)->startOfDay();
-            $isPaid = ! empty($row->pago_em) || in_array(strtolower((string) ($row->parcela_status ?? '')), $paidStatuses, true);
-
-            $status = 'em_dia';
-            if ($isPaid) {
-                $status = 'paga';
-            } elseif ($venc->lt($today)) {
-                $status = 'vencida';
-            } elseif ($venc->equalTo($today)) {
-                $status = 'vence_hoje';
-            } elseif ($venc->gte($tomorrow) && $venc->lte($weekEnd)) {
-                $status = 'vence_semana';
-            }
-
-            $diasAtraso = 0;
-            if (! $isPaid && $venc->lt($today)) {
-                $diasAtraso = $venc->diffInDays($today);
-            }
-
-            $dataPedido = $row->data_pedido ? Carbon::parse((string) $row->data_pedido, $tz) : null;
-            $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
-            $vendaId = 'VD-' . $year . '-' . str_pad((int) $row->pedido_id, 4, '0', STR_PAD_LEFT);
-
-            $valorParcela = (float) ($row->valor_parcela ?? 0);
-            $juros = 0.0;
-
-            return [
-                'id' => (int) $row->parcela_id,
-                'cliente' => $cliente,
-                'telefone' => $telefone,
-                'cpf' => $cpf,
-                'venda_id' => $vendaId,
-                'parcela' => (int) $row->numero_parcela . '/' . (int) $row->total_parcelas,
-                'valor_parcela' => $valorParcela,
-                'valor_total' => (float) ($row->valor_total ?? 0),
-                'vencimento' => $venc->toDateString(),
-                'status' => $status,
-                'dias_atraso' => $diasAtraso,
-                'juros' => $juros,
-                'valor_atualizado' => $valorParcela + $juros,
-                'pago_em' => $row->pago_em,
-            ];
-        });
+        $receivablesCollection = collect($receivables);
+        $receivables = match ($orderByFilter) {
+            'valor' => $receivablesCollection->sortByDesc('valor_atualizado')->values()->toArray(),
+            'cliente' => $receivablesCollection->sortBy('cliente')->values()->toArray(),
+            'atraso' => $receivablesCollection->sortByDesc('dias_atraso')->values()->toArray(),
+            default => $receivablesCollection->sortBy('vencimento')->values()->toArray(),
+        };
 
         return view('financial.receivables', [
             'receivables' => $receivables,
-            'receivablesPaginator' => $rows,
-            'summary' => $summary,
+            'activeStatusFilter' => $statusFilter,
+            'financialData' => $financialData,
             'filters' => [
-                'status' => $statusFilter,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
-                'q' => $q,
-                'order_by' => $orderBy,
+                'search' => $searchFilter,
+                'start_date' => $startDateFilter,
+                'end_date' => $endDateFilter,
+                'order_by' => $orderByFilter,
             ],
         ]);
     }
@@ -567,1159 +208,99 @@ class FinancialController extends Controller
 
     public function notifications()
     {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        $defaultTemplates = [
-            'crediario_vencimento_hoje' => [
-                'titulo' => 'Vencimento Hoje (Crediário)',
-                'mensagem' => 'Olá {cliente}! Sua parcela {parcela} de {total_parcelas} no valor de R$ {valor} vence hoje ({data}). Evite juros pagando até às 23:59h. Qualquer dúvida, estamos à disposição!',
-            ],
-            'crediario_atraso' => [
-                'titulo' => 'Cobrança em Atraso (Crediário)',
-                'mensagem' => '{cliente}, identificamos que sua parcela {parcela} de {total_parcelas} está em atraso há {dias} dias. Valor: R$ {valor}. Regularize para evitar restrições. Dúvidas? Fale conosco.',
-            ],
-            'crediario_lembrete_amanha' => [
-                'titulo' => 'Lembrete Amanhã (Crediário)',
-                'mensagem' => 'Oi {cliente}! Lembrando que sua parcela {parcela} de {total_parcelas} no valor de R$ {valor} vence amanhã ({data}). Se precisar, chame a gente por aqui.',
-            ],
-            'receita_validade' => [
-                'titulo' => 'Validade da Receita',
-                'mensagem' => 'Olá {cliente}! Sua receita emitida em {data_emissao} vence em {data}. Caso precise renovar, agende um atendimento conosco.',
-            ],
-        ];
-
-        $templatesFromDb = collect();
-        if ($tenantId) {
-            $templatesFromDb = WhatsappTemplate::where('tenant_id', $tenantId)
-                ->whereNull('deleted_at')
-                ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                    $q->where(function ($q2) use ($locationIds) {
-                        $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                    });
-                })
-                ->orderByRaw('location_id is null')
-                ->orderBy('id')
-                ->get();
-        }
-
-        $templates = collect($defaultTemplates)->map(function (array $t, string $tipo) use ($templatesFromDb) {
-            $db = $templatesFromDb->firstWhere('tipo', $tipo);
-            if (! $db) {
-                return [
-                    'tipo' => $tipo,
-                    'titulo' => $t['titulo'],
-                    'mensagem' => $t['mensagem'],
-                    'ativo' => true,
-                ];
-            }
-
-            return [
-                'tipo' => $tipo,
-                'titulo' => $db->titulo,
-                'mensagem' => $db->mensagem,
-                'ativo' => (bool) $db->ativo,
-            ];
-        })->values();
-
-        $tz = 'America/Manaus';
-        $driver = DB::connection()->getDriverName();
-        $dbHojeStr = null;
-
-        if ($driver === 'pgsql') {
-            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
-            $dbHojeStr = $row?->d ? (string) $row->d : null;
-        }
-
-        $hoje = $dbHojeStr ? Carbon::parse($dbHojeStr, $tz)->startOfDay() : Carbon::now($tz)->startOfDay();
-        $amanha = $hoje->copy()->addDay();
-        $hojeStr = $hoje->toDateString();
-        $amanhaStr = $amanha->toDateString();
-
-        $parcelasQuery = PedidoVendaParcela::with(['pedido.cliente'])
-            ->whereNull('deleted_at')
-            ->when($tenantId, function ($q) use ($tenantId) {
-                $q->where(function ($q2) use ($tenantId) {
-                    $q2->where('tenant_id', $tenantId)->orWhereNull('tenant_id');
-                });
-            })
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->where(function ($q) {
-                $q->whereNull('status')->orWhereNotIn('status', ['paga', 'pago']);
-            });
-
-        $parcelasVencimentoHojeQuery = (clone $parcelasQuery)->whereDate('vencimento_em', $hojeStr);
-        $parcelasVencemAmanhaQuery = (clone $parcelasQuery)->whereDate('vencimento_em', $amanhaStr);
-        $parcelasAtrasadasQuery = (clone $parcelasQuery)->whereDate('vencimento_em', '<', $hojeStr)->orderBy('vencimento_em');
-
-        $parcelasVencimentoHoje = $parcelasVencimentoHojeQuery->get();
-        $parcelasVencemAmanha = $parcelasVencemAmanhaQuery->get();
-        $parcelasAtrasadas = $parcelasAtrasadasQuery->get();
-        $receitasVencendo = collect();
-        if ($tenantId) {
-            $prescricoes = Prescricao::with('paciente')
-                ->whereNull('deleted_at')
-                ->whereNotNull('validade_dias')
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                    $q->where(function ($q2) use ($locationIds) {
-                        $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                    });
-                })
-                ->orderByDesc('created_at')
-                ->limit(200)
-                ->get();
-
-            $receitasVencendo = $prescricoes->filter(function (Prescricao $p) use ($hoje) {
-                if (! $p->created_at || ! $p->validade_dias) {
-                    return false;
-                }
-
-                $vencimento = $p->created_at->copy()->startOfDay()->addDays((int) $p->validade_dias);
-                $dias = $hoje->diffInDays($vencimento, false);
-
-                return $dias >= 0 && $dias <= 7;
-            })->values();
-        }
-
-        $eligibles = collect();
-
-        $eligibles = $eligibles->concat($parcelasVencimentoHoje->map(function (PedidoVendaParcela $parcela) {
-            $cliente = $parcela->pedido && $parcela->pedido->cliente ? $parcela->pedido->cliente : null;
-
-            return [
+        // Central de notificações WhatsApp
+        $notifications = [
+            [
+                'id' => 1,
+                'cliente' => 'Maria Silva Santos',
+                'telefone' => '(11) 99999-9999',
                 'tipo' => 'vencimento',
-                'template_tipo' => 'crediario_vencimento_hoje',
-                'pessoa_id' => $cliente?->id,
-                'cliente' => $cliente?->nome ?? 'Cliente não informado',
-                'telefone' => $cliente?->telefone_formatado ?? $cliente?->telefone ?? null,
-                'referencia_tipo' => 'parcela',
-                'referencia_id' => $parcela->id,
-                'mensagem_preview' => null,
-            ];
-        }));
-
-        $eligibles = $eligibles->concat($parcelasAtrasadas->map(function (PedidoVendaParcela $parcela) {
-            $cliente = $parcela->pedido && $parcela->pedido->cliente ? $parcela->pedido->cliente : null;
-
-            return [
-                'tipo' => 'atraso',
-                'template_tipo' => 'crediario_atraso',
-                'pessoa_id' => $cliente?->id,
-                'cliente' => $cliente?->nome ?? 'Cliente não informado',
-                'telefone' => $cliente?->telefone_formatado ?? $cliente?->telefone ?? null,
-                'referencia_tipo' => 'parcela',
-                'referencia_id' => $parcela->id,
-                'mensagem_preview' => null,
-            ];
-        }));
-
-        $eligibles = $eligibles->concat($parcelasVencemAmanha->map(function (PedidoVendaParcela $parcela) {
-            $cliente = $parcela->pedido && $parcela->pedido->cliente ? $parcela->pedido->cliente : null;
-
-            return [
+                'mensagem' => 'Olá Maria! Sua parcela de R$ 142,50 vence hoje (30/08). Evite juros pagando até às 23:59h.',
+                'status' => 'enviado',
+                'enviado_em' => '2024-08-30 08:00:00',
+                'lido' => true,
+                'respondido' => false
+            ],
+            [
+                'id' => 2,
+                'cliente' => 'João Silva',
+                'telefone' => '(11) 88888-8888',
                 'tipo' => 'lembrete',
-                'template_tipo' => 'crediario_lembrete_amanha',
-                'pessoa_id' => $cliente?->id,
-                'cliente' => $cliente?->nome ?? 'Cliente não informado',
-                'telefone' => $cliente?->telefone_formatado ?? $cliente?->telefone ?? null,
-                'referencia_tipo' => 'parcela',
-                'referencia_id' => $parcela->id,
-                'mensagem_preview' => null,
-            ];
-        }));
-
-        $eligibles = $eligibles->concat($receitasVencendo->map(function (Prescricao $prescricao) {
-            $paciente = $prescricao->paciente;
-
-            return [
-                'tipo' => 'lembrete',
-                'template_tipo' => 'receita_validade',
-                'pessoa_id' => $paciente?->id,
-                'cliente' => $paciente?->nome ?? 'Cliente não informado',
-                'telefone' => $paciente?->telefone_formatado ?? $paciente?->telefone ?? null,
-                'referencia_tipo' => 'prescricao',
-                'referencia_id' => $prescricao->id,
-                'mensagem_preview' => null,
-            ];
-        }));
-
-        $eligibleCounts = [
-            'vencimento_hoje' => $parcelasVencimentoHoje->count(),
-            'atraso' => $parcelasAtrasadas->count(),
-            'lembrete_amanha' => $parcelasVencemAmanha->count(),
-            'receita_validade' => $receitasVencendo->count(),
-        ];
-
-        $historyQuery = WhatsappNotification::with('pessoa')
-            ->whereNull('deleted_at')
-            ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->orderByDesc('id')
-            ->limit(200);
-
-        $history = $historyQuery->get();
-
-        $notifications = $history->map(function (WhatsappNotification $n) {
-            $pessoa = $n->pessoa;
-            $telefone = $n->telefone ?: ($pessoa?->telefone_formatado ?? $pessoa?->telefone);
-
-            return [
-                'id' => $n->id,
-                'cliente' => $pessoa?->nome ?? 'Cliente não informado',
-                'telefone' => $telefone,
-                'tipo' => $this->mapTipoForView($n->tipo),
-                'mensagem' => $n->mensagem,
-                'status' => $n->status,
-                'enviado_em' => $n->enviado_em,
-                'wa_url' => $n->wa_url,
-                'erro' => $n->erro,
-                'lido' => (bool) $n->lido_em,
-                'respondido' => (bool) $n->respondido_em,
-            ];
-        })->toArray();
-
-        return view('financial.notifications', [
-            'notifications' => $notifications,
-            'eligibles' => $eligibles->values()->toArray(),
-            'eligibleCounts' => $eligibleCounts,
-            'templates' => $templates->toArray(),
-            'templatesPage' => false,
-        ]);
-    }
-
-    public function templates()
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        $defaultTemplates = [
-            'crediario_vencimento_hoje' => [
-                'titulo' => 'Vencimento Hoje (Crediário)',
-                'mensagem' => 'Olá {cliente}! Sua parcela {parcela} de {total_parcelas} no valor de R$ {valor} vence hoje ({data}). Evite juros pagando até às 23:59h. Qualquer dúvida, estamos à disposição!',
-            ],
-            'crediario_atraso' => [
-                'titulo' => 'Cobrança em Atraso (Crediário)',
-                'mensagem' => '{cliente}, identificamos que sua parcela {parcela} de {total_parcelas} está em atraso há {dias} dias. Valor: R$ {valor}. Regularize para evitar restrições. Dúvidas? Fale conosco.',
-            ],
-            'crediario_lembrete_amanha' => [
-                'titulo' => 'Lembrete Amanhã (Crediário)',
-                'mensagem' => 'Oi {cliente}! Lembrando que sua parcela {parcela} de {total_parcelas} no valor de R$ {valor} vence amanhã ({data}). Se precisar, chame a gente por aqui.',
-            ],
-            'receita_validade' => [
-                'titulo' => 'Validade da Receita',
-                'mensagem' => 'Olá {cliente}! Sua receita emitida em {data_emissao} vence em {data}. Caso precise renovar, agende um atendimento conosco.',
-            ],
-        ];
-
-        $templatesFromDb = collect();
-        if ($tenantId) {
-            $templatesFromDb = WhatsappTemplate::where('tenant_id', $tenantId)
-                ->whereNull('deleted_at')
-                ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                    $q->where(function ($q2) use ($locationIds) {
-                        $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                    });
-                })
-                ->orderByRaw('location_id is null')
-                ->orderBy('id')
-                ->get();
-        }
-
-        $templates = collect($defaultTemplates)->map(function (array $t, string $tipo) use ($templatesFromDb) {
-            $db = $templatesFromDb->firstWhere('tipo', $tipo);
-            if (! $db) {
-                return [
-                    'tipo' => $tipo,
-                    'titulo' => $t['titulo'],
-                    'mensagem' => $t['mensagem'],
-                    'ativo' => true,
-                ];
-            }
-
-            return [
-                'tipo' => $tipo,
-                'titulo' => $db->titulo,
-                'mensagem' => $db->mensagem,
-                'ativo' => (bool) $db->ativo,
-            ];
-        })->values();
-
-        return view('financial.notifications', [
-            'notifications' => [],
-            'eligibles' => [],
-            'eligibleCounts' => [],
-            'templates' => $templates->toArray(),
-            'templatesPage' => true,
-        ]);
-    }
-
-    public function saveTemplates(Request $request)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-
-        $validated = $request->validate([
-            'templates' => 'required|array',
-            'templates.*.tipo' => 'required|string|max:50',
-            'templates.*.titulo' => 'required|string|max:120',
-            'templates.*.mensagem' => 'required|string',
-            'templates.*.ativo' => 'nullable|boolean',
-        ], [
-            'required' => 'O campo :attribute é obrigatório.',
-            'string' => 'O campo :attribute deve ser um texto.',
-            'boolean' => 'O campo :attribute deve ser verdadeiro ou falso.',
-            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
-            'array' => 'O campo :attribute deve ser uma lista.',
-        ]);
-
-        foreach ($validated['templates'] as $t) {
-            WhatsappTemplate::updateOrCreate(
-                [
-                    'tenant_id' => $tenantId,
-                    'location_id' => $locationId,
-                    'tipo' => $t['tipo'],
-                ],
-                [
-                    'titulo' => $t['titulo'],
-                    'mensagem' => $t['mensagem'],
-                    'ativo' => array_key_exists('ativo', $t) ? (bool) $t['ativo'] : true,
-                ]
-            );
-        }
-
-        return back()->with('success', 'Templates atualizados com sucesso!');
-    }
-
-    public function scheduleBatch(Request $request)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-
-        $validated = $request->validate([
-            'items' => 'required|array',
-            'items.*.template_tipo' => 'required|string|max:50',
-            'items.*.referencia_tipo' => 'nullable|string|max:50',
-            'items.*.referencia_id' => 'nullable|integer',
-            'items.*.pessoa_id' => 'nullable|integer',
-            'items.*.telefone' => 'nullable|string|max:40',
-        ], [
-            'required' => 'O campo :attribute é obrigatório.',
-            'string' => 'O campo :attribute deve ser um texto.',
-            'integer' => 'O campo :attribute deve ser um número inteiro.',
-            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
-            'array' => 'O campo :attribute deve ser uma lista.',
-        ]);
-
-        $created = 0;
-        $queued = 0;
-        $errors = 0;
-
-        foreach ($validated['items'] as $item) {
-            $payload = $this->buildWhatsappPayload(
-                $tenantId,
-                $locationId,
-                $item['template_tipo'],
-                $item['referencia_tipo'] ?? null,
-                $item['referencia_id'] ?? null,
-                $item['pessoa_id'] ?? null,
-                $item['telefone'] ?? null
-            );
-
-            if (! $payload['ok']) {
-                $errors++;
-
-                WhatsappNotification::create([
-                    'tenant_id' => $tenantId,
-                    'location_id' => $locationId,
-                    'user_id' => auth()->id(),
-                    'pessoa_id' => $payload['pessoa_id'],
-                    'telefone' => $payload['telefone'],
-                    'tipo' => $item['template_tipo'],
-                    'mensagem' => $payload['mensagem'],
-                    'status' => 'falhou',
-                    'erro' => $payload['erro'],
-                    'referencia_tipo' => $item['referencia_tipo'] ?? null,
-                    'referencia_id' => $item['referencia_id'] ?? null,
-                ]);
-
-                continue;
-            }
-
-            $notification = WhatsappNotification::create([
-                'tenant_id' => $tenantId,
-                'location_id' => $locationId,
-                'user_id' => auth()->id(),
-                'pessoa_id' => $payload['pessoa_id'],
-                'telefone' => $payload['telefone'],
-                'tipo' => $item['template_tipo'],
-                'mensagem' => $payload['mensagem'],
+                'mensagem' => 'Oi João! Lembrando que sua parcela de R$ 300,00 vence amanhã (29/08). Link do boleto: bit.ly/bol2024002',
                 'status' => 'programado',
-                'referencia_tipo' => $item['referencia_tipo'] ?? null,
-                'referencia_id' => $item['referencia_id'] ?? null,
-            ]);
-
-            $created++;
-            SendWhatsappNotificationJob::dispatch((int) $notification->id);
-            $queued++;
-        }
-
-        return response()->json([
-            'success' => true,
-            'created' => $created,
-            'queued' => $queued,
-            'errors' => $errors,
-        ]);
-    }
-
-    public function sendNotification(Request $request)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-
-        $validated = $request->validate([
-            'template_tipo' => 'required|string|max:50',
-            'referencia_tipo' => 'nullable|string|max:50',
-            'referencia_id' => 'nullable|integer',
-            'pessoa_id' => 'nullable|integer',
-            'telefone' => 'nullable|string|max:40',
-        ], [
-            'required' => 'O campo :attribute é obrigatório.',
-            'string' => 'O campo :attribute deve ser um texto.',
-            'integer' => 'O campo :attribute deve ser um número inteiro.',
-            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
-        ], [
-            'template_tipo' => 'Template',
-            'referencia_tipo' => 'Referência',
-            'referencia_id' => 'ID da Referência',
-            'pessoa_id' => 'Cliente',
-            'telefone' => 'Telefone',
-        ]);
-
-        $payload = $this->buildWhatsappPayload(
-            $tenantId,
-            $locationId,
-            $validated['template_tipo'],
-            $validated['referencia_tipo'] ?? null,
-            $validated['referencia_id'] ?? null,
-            $validated['pessoa_id'] ?? null,
-            $validated['telefone'] ?? null
-        );
-
-        if (! $payload['ok']) {
-            return response()->json([
-                'success' => false,
-                'message' => $payload['erro'] ?? 'Erro ao montar mensagem.',
-            ], 422);
-        }
-
-        $mensagem = $payload['mensagem'];
-        $waPhone = $payload['telefone'];
-        $waUrl = 'https://wa.me/' . $waPhone . '?text=' . urlencode($mensagem);
-
-        $notification = WhatsappNotification::create([
-            'tenant_id' => $tenantId,
-            'location_id' => $locationId,
-            'user_id' => auth()->id(),
-            'pessoa_id' => $payload['pessoa_id'],
-            'telefone' => $waPhone,
-            'tipo' => $validated['template_tipo'],
-            'mensagem' => $mensagem,
-            'status' => 'enviado',
-            'enviado_em' => now(),
-            'referencia_tipo' => $validated['referencia_tipo'] ?? null,
-            'referencia_id' => $validated['referencia_id'] ?? null,
-            'wa_url' => $waUrl,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'id' => $notification->id,
-            'wa_url' => $waUrl,
-        ]);
-    }
-
-    public function resendNotification(string $id)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-
-        if (! $tenantId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tenant não informado na sessão.',
-            ], 403);
-        }
-
-        $original = WhatsappNotification::with('pessoa')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $id)
-            ->whereNull('deleted_at')
-            ->first();
-
-        if (! $original) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mensagem não encontrada.',
-            ], 404);
-        }
-
-        $telefoneRaw = $original->telefone ?: ($original->pessoa?->telefone_formatado ?? $original->pessoa?->telefone);
-        $waPhone = $this->normalizeWhatsappPhone($telefoneRaw);
-        if (! $waPhone) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Telefone do cliente não informado.',
-            ], 422);
-        }
-
-        $mensagem = (string) ($original->mensagem ?? '');
-        if ($mensagem === '') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mensagem vazia.',
-            ], 422);
-        }
-
-        $waUrl = 'https://wa.me/' . $waPhone . '?text=' . urlencode($mensagem);
-
-        $notification = WhatsappNotification::create([
-            'tenant_id' => $tenantId,
-            'location_id' => $locationId,
-            'user_id' => auth()->id(),
-            'pessoa_id' => $original->pessoa_id,
-            'telefone' => $waPhone,
-            'tipo' => $original->tipo,
-            'mensagem' => $mensagem,
-            'status' => 'enviado',
-            'enviado_em' => now(),
-            'referencia_tipo' => 'whatsapp_notification',
-            'referencia_id' => $original->id,
-            'wa_url' => $waUrl,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'id' => $notification->id,
-            'wa_url' => $waUrl,
-        ]);
-    }
-
-    public function clearNotificationHistory(Request $request)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        if (! $tenantId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tenant não informado na sessão.',
-            ], 403);
-        }
-
-        $deleted = WhatsappNotification::query()
-            ->whereNull('deleted_at')
-            ->where('tenant_id', $tenantId)
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->delete();
-
-        return response()->json([
-            'success' => true,
-            'deleted' => (int) $deleted,
-        ]);
-    }
-
-    public function updateNotification(Request $request, string $id)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        if (! $tenantId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tenant não informado na sessão.',
-            ], 403);
-        }
-
-        $validated = $request->validate([
-            'mensagem' => 'required|string',
-            'telefone' => 'nullable|string|max:40',
-        ], [
-            'required' => 'O campo :attribute é obrigatório.',
-            'string' => 'O campo :attribute deve ser um texto.',
-            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
-        ], [
-            'mensagem' => 'Mensagem',
-            'telefone' => 'Telefone',
-        ]);
-
-        $notification = WhatsappNotification::query()
-            ->whereNull('deleted_at')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $id)
-            ->where('status', 'programado')
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->first();
-
-        if (! $notification) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mensagem não encontrada ou não está mais programada.',
-            ], 404);
-        }
-
-        $telefone = $validated['telefone'] ?? null;
-        $telefone = is_string($telefone) ? trim($telefone) : null;
-        if ($telefone === '') {
-            $telefone = null;
-        }
-
-        $telefoneNormalized = $telefone ? $this->normalizeWhatsappPhone($telefone) : null;
-        if ($telefone && ! $telefoneNormalized) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Telefone inválido.',
-            ], 422);
-        }
-
-        $notification->mensagem = $validated['mensagem'];
-        if ($telefone !== null) {
-            $notification->telefone = $telefoneNormalized;
-        }
-        $notification->wa_url = null;
-        $notification->erro = null;
-        $notification->save();
-
-        return response()->json([
-            'success' => true,
-            'id' => $notification->id,
-        ]);
-    }
-
-    public function cancelNotification(Request $request, string $id)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        if (! $tenantId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tenant não informado na sessão.',
-            ], 403);
-        }
-
-        $notification = WhatsappNotification::query()
-            ->whereNull('deleted_at')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $id)
-            ->where('status', 'programado')
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->first();
-
-        if (! $notification) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mensagem não encontrada ou não está mais programada.',
-            ], 404);
-        }
-
-        $notification->status = 'cancelado';
-        $notification->wa_url = null;
-        $notification->erro = null;
-        $notification->save();
-
-        return response()->json([
-            'success' => true,
-            'id' => $notification->id,
-        ]);
-    }
-
-    private function buildWhatsappPayload(
-        $tenantId,
-        $locationId,
-        string $templateTipo,
-        ?string $referenciaTipo,
-        $referenciaId,
-        $pessoaId,
-        ?string $telefone
-    ): array {
-        $templateText = $this->getTemplateMessage($tenantId, $locationId, $templateTipo);
-
-        $pessoa = null;
-        if (! empty($pessoaId)) {
-            $pessoa = Pessoa::where('tenant_id', $tenantId)->where('id', $pessoaId)->first();
-        }
-
-        $placeholders = [
-            'cliente' => $pessoa?->nome ?? 'Cliente',
+                'enviado_em' => null,
+                'lido' => false,
+                'respondido' => false
+            ],
+            [
+                'id' => 3,
+                'cliente' => 'Ana Paula Costa',
+                'telefone' => '(11) 66666-6666',
+                'tipo' => 'atraso',
+                'mensagem' => 'Ana Paula, sua parcela está em atraso há 10 dias. Valor atualizado: R$ 220,00. Regularize para evitar negativação.',
+                'status' => 'enviado',
+                'enviado_em' => '2024-08-28 14:30:00',
+                'lido' => true,
+                'respondido' => true
+            ]
         ];
 
-        if ($referenciaTipo === 'parcela' && ! empty($referenciaId)) {
-            $parcela = PedidoVendaParcela::with('pedido.cliente')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $referenciaId)
-                ->first();
-
-            $cliente = $parcela?->pedido?->cliente;
-            $pessoa = $pessoa ?: $cliente;
-
-            $diasAtraso = null;
-            if ($parcela && $parcela->vencimento_em) {
-                $diasAtraso = Carbon::parse($parcela->vencimento_em)->startOfDay()->diffInDays(Carbon::today(), false);
-                if ($diasAtraso < 0) {
-                    $diasAtraso = 0;
-                }
-            }
-
-            $placeholders = array_merge($placeholders, [
-                'cliente' => $pessoa?->nome ?? 'Cliente',
-                'valor' => $parcela ? number_format((float) $parcela->valor, 2, ',', '.') : '0,00',
-                'data' => $parcela && $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em)->format('d/m/Y') : '',
-                'parcela' => $parcela?->numero_parcela ?? '',
-                'total_parcelas' => $parcela?->total_parcelas ?? '',
-                'dias' => (string) ($diasAtraso ?? 0),
-            ]);
-        }
-
-        if ($referenciaTipo === 'prescricao' && ! empty($referenciaId)) {
-            $prescricao = Prescricao::with('paciente')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $referenciaId)
-                ->first();
-
-            $pessoa = $pessoa ?: $prescricao?->paciente;
-
-            $dataEmissao = $prescricao?->created_at ? $prescricao->created_at->format('d/m/Y') : '';
-            $dataVenc = '';
-            if ($prescricao?->created_at && $prescricao?->validade_dias) {
-                $dataVenc = $prescricao->created_at->copy()->startOfDay()->addDays((int) $prescricao->validade_dias)->format('d/m/Y');
-            }
-
-            $placeholders = array_merge($placeholders, [
-                'cliente' => $pessoa?->nome ?? 'Cliente',
-                'data_emissao' => $dataEmissao,
-                'data' => $dataVenc,
-            ]);
-        }
-
-        $telefoneFinal = $telefone ?? ($pessoa?->telefone ?? null);
-        $waPhone = $this->normalizeWhatsappPhone($telefoneFinal);
-        $mensagem = $this->renderTemplate($templateText, $placeholders);
-
-        if (! $waPhone) {
-            return [
-                'ok' => false,
-                'pessoa_id' => $pessoa?->id,
-                'telefone' => $telefoneFinal,
-                'mensagem' => $mensagem,
-                'erro' => 'Telefone do cliente não informado.',
-            ];
-        }
-
-        if ($mensagem === '') {
-            return [
-                'ok' => false,
-                'pessoa_id' => $pessoa?->id,
-                'telefone' => $waPhone,
-                'mensagem' => $mensagem,
-                'erro' => 'Mensagem vazia.',
-            ];
-        }
-
-        return [
-            'ok' => true,
-            'pessoa_id' => $pessoa?->id,
-            'telefone' => $waPhone,
-            'mensagem' => $mensagem,
-            'erro' => null,
-        ];
-    }
-
-    private function getTemplateMessage($tenantId, $locationId, string $tipo): string
-    {
-        $template = null;
-        if ($tenantId) {
-            $template = WhatsappTemplate::where('tenant_id', $tenantId)
-                ->where('location_id', $locationId)
-                ->where('tipo', $tipo)
-                ->whereNull('deleted_at')
-                ->first();
-        }
-
-        $defaultMap = [
-            'crediario_vencimento_hoje' => 'Olá {cliente}! Sua parcela {parcela} de {total_parcelas} no valor de R$ {valor} vence hoje ({data}). Evite juros pagando até às 23:59h. Qualquer dúvida, estamos à disposição!',
-            'crediario_atraso' => '{cliente}, identificamos que sua parcela {parcela} de {total_parcelas} está em atraso há {dias} dias. Valor: R$ {valor}. Regularize para evitar restrições. Dúvidas? Fale conosco.',
-            'crediario_lembrete_amanha' => 'Oi {cliente}! Lembrando que sua parcela {parcela} de {total_parcelas} no valor de R$ {valor} vence amanhã ({data}). Se precisar, chame a gente por aqui.',
-            'receita_validade' => 'Olá {cliente}! Sua receita emitida em {data_emissao} vence em {data}. Caso precise renovar, agende um atendimento conosco.',
-        ];
-
-        return $template ? $template->mensagem : ($defaultMap[$tipo] ?? '{cliente}, segue uma mensagem.');
-    }
-
-    private function resolveLocationIdsFromSession($tenantId, $locationId, array $userLocations): array
-    {
-        $ids = [];
-
-        if (! empty($tenantId)) {
-            foreach ($userLocations as $row) {
-                if (! is_array($row)) {
-                    continue;
-                }
-
-                if (($row['tenant_id'] ?? null) != $tenantId) {
-                    continue;
-                }
-
-                $candidate = $row['location_id'] ?? ($row['location']['id'] ?? null);
-                if (! empty($candidate)) {
-                    $ids[] = (int) $candidate;
-                }
-            }
-        }
-
-        if (! empty($locationId)) {
-            $ids[] = (int) $locationId;
-        }
-
-        return array_values(array_unique($ids));
-    }
-
-    private function renderTemplate(string $template, array $data): string
-    {
-        $replaces = [];
-        foreach ($data as $key => $value) {
-            $replaces['{' . $key . '}'] = (string) $value;
-        }
-
-        return strtr($template, $replaces);
-    }
-
-    private function normalizeWhatsappPhone(?string $raw): ?string
-    {
-        if (! $raw) {
-            return null;
-        }
-
-        $digits = preg_replace('/\D+/', '', $raw);
-        if (! $digits) {
-            return null;
-        }
-
-        if (str_starts_with($digits, '55')) {
-            return $digits;
-        }
-
-        if (strlen($digits) === 10 || strlen($digits) === 11) {
-            return '55' . $digits;
-        }
-
-        return $digits;
-    }
-
-    private function mapTipoForView(string $tipo): string
-    {
-        return match ($tipo) {
-            'crediario_vencimento_hoje' => 'vencimento',
-            'crediario_atraso' => 'atraso',
-            'crediario_lembrete_amanha' => 'lembrete',
-            'receita_validade' => 'lembrete',
-            default => 'personalizada',
-        };
-    }
-
-    public function generateBoletosWeek(Request $request)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        if (! $tenantId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tenant não informado na sessão.',
-            ], 403);
-        }
-
-        $tz = 'America/Manaus';
-        $driver = DB::connection()->getDriverName();
-
-        $dbHojeStr = Carbon::now($tz)->toDateString();
-        if ($driver === 'pgsql') {
-            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
-            if ($row && isset($row->d)) {
-                $dbHojeStr = (string) $row->d;
-            }
-        }
-
-        $today = Carbon::parse($dbHojeStr, $tz)->startOfDay();
-        $weekEnd = $today->copy()->addDays(7);
-
-        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
-
-        $parcelas = PedidoVendaParcela::query()
-            ->whereNull('deleted_at')
-            ->where('tenant_id', $tenantId)
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->whereNull('pago_em')
-            ->where(function ($q) use ($paidStatuses) {
-                $q->whereNull('status')->orWhereNotIn(DB::raw('lower(status)'), $paidStatuses);
-            })
-            ->whereBetween('vencimento_em', [$today->toDateString(), $weekEnd->toDateString()])
-            ->orderBy('vencimento_em')
-            ->limit(50)
-            ->get();
-
-        $boletos = $parcelas->map(function (PedidoVendaParcela $p) {
-            return [
-                'parcela_id' => $p->id,
-                'pdf_url' => route('financial.boleto-pdf', $p->id),
-            ];
-        })->values()->toArray();
-
-        return response()->json([
-            'success' => true,
-            'boletos' => $boletos,
-        ]);
+        return view('financial.notifications', compact('notifications'));
     }
 
     public function generateBoleto($id)
     {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        if (! $tenantId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tenant não informado na sessão.',
-            ], 403);
-        }
-
-        $parcela = PedidoVendaParcela::query()
-            ->with('pedido.cliente')
-            ->whereNull('deleted_at')
-            ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->first();
-
-        if (! $parcela) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Parcela não encontrada.',
-            ], 404);
-        }
-
-        $boleto = $this->buildBoletoFromParcela($parcela);
-
-        return response()->json([
-            'success' => true,
-            'boleto' => $boleto,
-            'pdf_url' => route('financial.boleto-pdf', $parcela->id),
-        ]);
-    }
-
-    public function boletoPdf($id)
-    {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        if (! $tenantId) {
-            abort(403, 'Tenant não informado na sessão.');
-        }
-
-        $parcela = PedidoVendaParcela::query()
-            ->with('pedido.cliente')
-            ->whereNull('deleted_at')
-            ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->firstOrFail();
-
-        $boleto = $this->buildBoletoFromParcela($parcela);
-
-        return view('financial.boleto-pdf', compact('boleto'));
-    }
-
-    private function buildBoletoFromParcela(PedidoVendaParcela $parcela): array
-    {
-        $tenant = session('tenant');
-        $tenantName = null;
-        $tenantCpfCnpj = null;
-
-        if (is_array($tenant)) {
-            $tenantName = $tenant['trade_name'] ?? $tenant['name'] ?? null;
-            $tenantCpfCnpj = $tenant['cpf_cnpj'] ?? null;
-        } elseif (is_object($tenant)) {
-            $tenantName = $tenant->trade_name ?? $tenant->name ?? null;
-            $tenantCpfCnpj = $tenant->cpf_cnpj ?? null;
-        }
-
-        $pixKey = $this->normalizeCpfCnpj($tenantCpfCnpj);
-        $merchantName = $this->sanitizePixText($tenantName ?: config('app.name', 'VISAOSIS'), 25);
-        $merchantCity = $this->sanitizePixText('MANAUS', 15);
-
-        $pedido = $parcela->pedido;
-        $cliente = $pedido?->cliente;
-
-        $clienteNome = $cliente?->nome ?? 'Cliente não informado';
-        $clienteCpf = $cliente?->cpf ?? '';
-        $clienteTelefone = $cliente?->telefone_formatado ?? $cliente?->telefone ?? '';
-
-        $valor = (float) ($parcela->valor ?? 0);
-        $txid = $this->sanitizePixText('PV' . $parcela->pedido_venda_id . 'P' . $parcela->numero_parcela, 25);
-        $pixPayload = $pixKey ? $this->buildPixPayload($pixKey, $merchantName, $merchantCity, $valor, $txid) : '';
-
-        $vencimento = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em)->toDateString() : now()->toDateString();
-
-        return [
-            'id' => 'BOL-' . $parcela->id,
-            'nosso_numero' => str_pad((string) $parcela->id, 11, '0', STR_PAD_LEFT),
+        // Simula geração de boleto para uma parcela específica
+        $boleto = [
+            'id' => 'BOL-2024-' . str_pad($id, 3, '0', STR_PAD_LEFT),
+            'nosso_numero' => '00000' . $id . '508',
             'linha_digitavel' => '34191.09008 61207.954566 00000.142508 1 95470000014962',
             'codigo_barras' => '34191954700000149620000061207954560000014250',
-            'beneficiario' => $tenantName ?: 'Beneficiário não informado',
-            'beneficiario_cpf_cnpj' => $tenantCpfCnpj ?: '',
-            'pix_key' => $pixKey ?: '',
-            'pix_payload' => $pixPayload,
-            'cliente' => $clienteNome,
-            'cpf' => $clienteCpf ?: '',
-            'endereco' => '',
-            'cidade' => '',
-            'telefone' => $clienteTelefone ?: '',
-            'vencimento' => $vencimento,
-            'valor' => $valor,
-            'juros' => 0.0,
-            'valor_total' => $valor,
+            'cliente' => 'Maria Silva Santos',
+            'cpf' => '123.456.789-00',
+            'endereco' => 'Rua das Palmeiras, 456 - Jardim América',
+            'cidade' => 'São Paulo/SP - CEP: 04567-890',
+            'telefone' => '(11) 99999-9999',
+            'vencimento' => now()->addDays(30)->format('Y-m-d'),
+            'valor' => 142.50,
+            'juros' => 7.12,
+            'valor_total' => 149.62,
             'gerado_em' => now()->format('Y-m-d H:i:s'),
-            'descricao' => 'Venda #' . (int) $parcela->pedido_venda_id . ' - Parcela ' . (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
-            'observacoes' => null,
+            'descricao' => 'Venda #VND-2024-001 - Parcela 1/3',
+            'observacoes' => 'Cliente preferencial - desconto aplicado'
         ];
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Boleto gerado com sucesso!',
+            'boleto' => $boleto,
+            'pdf_url' => route('financial.boleto-pdf', $boleto['id'])
+        ]);
     }
-
-    private function normalizeCpfCnpj(?string $raw): ?string
+    
+    public function boletoPdf($id)
     {
-        if (! $raw) {
-            return null;
-        }
-
-        $digits = preg_replace('/\D+/', '', $raw);
-        if (! $digits) {
-            return null;
-        }
-
-        return $digits;
-    }
-
-    private function sanitizePixText(string $text, int $maxLen): string
-    {
-        $t = trim($text);
-        $t = preg_replace('/\s+/', ' ', $t);
-        $t = preg_replace('/[^A-Za-z0-9 \-\.]/u', '', $t);
-        $t = strtoupper($t);
-
-        if (mb_strlen($t) > $maxLen) {
-            $t = mb_substr($t, 0, $maxLen);
-        }
-
-        return $t;
-    }
-
-    private function buildPixPayload(string $pixKey, string $merchantName, string $merchantCity, float $amount, string $txid): string
-    {
-        $amountStr = number_format($amount, 2, '.', '');
-
-        $gui = $this->emv('00', 'br.gov.bcb.pix');
-        $key = $this->emv('01', $pixKey);
-        $merchantAccountInfo = $this->emv('26', $gui . $key);
-
-        $payload = '';
-        $payload .= $this->emv('00', '01');
-        $payload .= $merchantAccountInfo;
-        $payload .= $this->emv('52', '0000');
-        $payload .= $this->emv('53', '986');
-        $payload .= $this->emv('54', $amountStr);
-        $payload .= $this->emv('58', 'BR');
-        $payload .= $this->emv('59', $merchantName);
-        $payload .= $this->emv('60', $merchantCity);
-        $payload .= $this->emv('62', $this->emv('05', $txid));
-
-        $payloadToCrc = $payload . '6304';
-        $crc = $this->crc16($payloadToCrc);
-
-        return $payloadToCrc . $crc;
-    }
-
-    private function emv(string $id, string $value): string
-    {
-        $len = str_pad((string) strlen($value), 2, '0', STR_PAD_LEFT);
-        return $id . $len . $value;
-    }
-
-    private function crc16(string $payload): string
-    {
-        $crc = 0xFFFF;
-        $length = strlen($payload);
-
-        for ($i = 0; $i < $length; $i++) {
-            $crc ^= (ord($payload[$i]) << 8);
-            for ($j = 0; $j < 8; $j++) {
-                if (($crc & 0x8000) !== 0) {
-                    $crc = (($crc << 1) ^ 0x1021) & 0xFFFF;
-                } else {
-                    $crc = ($crc << 1) & 0xFFFF;
-                }
-            }
-        }
-
-        return strtoupper(str_pad(dechex($crc), 4, '0', STR_PAD_LEFT));
+        // Busca dados do boleto (simulado)
+        $boleto = [
+            'id' => $id,
+            'nosso_numero' => '00000142508',
+            'linha_digitavel' => '34191.09008 61207.954566 00000.142508 1 95470000014962',
+            'codigo_barras' => '34191954700000149620000061207954560000014250',
+            'cliente' => 'Maria Silva Santos',
+            'cpf' => '123.456.789-00',
+            'endereco' => 'Rua das Palmeiras, 456 - Jardim América',
+            'cidade' => 'São Paulo/SP - CEP: 04567-890',
+            'telefone' => '(11) 99999-9999',
+            'vencimento' => '2024-08-30',
+            'valor' => 142.50,
+            'juros' => 7.12,
+            'valor_total' => 149.62,
+            'gerado_em' => now()->format('Y-m-d H:i:s'),
+            'descricao' => 'Venda #VND-2024-001 - Parcela 1/3',
+            'observacoes' => 'Cliente preferencial - desconto aplicado'
+        ];
+        
+        return view('financial.boleto-pdf', compact('boleto'));
     }
 
     public function sendWhatsApp($id)
@@ -1734,69 +315,31 @@ class FinancialController extends Controller
 
     public function receivePayment(Request $request)
     {
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-        $userLocations = session('user_locations', []);
-        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
-
-        if (! $tenantId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tenant não informado na sessão.',
-            ], 403);
-        }
-
         $validated = $request->validate([
             'receivable_id' => 'required|integer',
-            'date' => 'required|date_format:Y-m-d',
-            'method' => 'nullable|string|max:50',
-            'bank' => 'nullable|string|max:50',
-            'reference' => 'nullable|string|max:100',
-            'discount' => 'nullable|numeric|min:0',
-            'received_value' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string|max:1000',
-        ], [
-            'required' => 'O campo :attribute é obrigatório.',
-            'integer' => 'O campo :attribute deve ser um número inteiro.',
-            'date_format' => 'O campo :attribute deve estar no formato YYYY-MM-DD.',
-            'numeric' => 'O campo :attribute deve ser numérico.',
-            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
-        ], [
-            'receivable_id' => 'Parcela',
-            'date' => 'Data do pagamento',
+            'valor' => 'nullable|numeric|min:0',
         ]);
 
-        $parcela = PedidoVendaParcela::query()
-            ->whereNull('deleted_at')
-            ->where('tenant_id', $tenantId)
-            ->where('id', (int) $validated['receivable_id'])
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->first();
+        $tenantId = session('tenant_id');
 
-        if (! $parcela) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Parcela não encontrada.',
-            ], 404);
+        $query = ContaReceber::where('id', $validated['receivable_id']);
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
         }
 
-        $tz = 'America/Manaus';
-        $agora = Carbon::now($tz);
-        $paidAt = Carbon::createFromFormat('Y-m-d', $validated['date'], $tz)
-            ->setTime((int) $agora->format('H'), (int) $agora->format('i'), (int) $agora->format('s'));
-
-        $parcela->pago_em = $paidAt;
-        $parcela->status = 'pago';
-        $parcela->save();
+        $receivable = $query->first();
+        if ($receivable) {
+            $receivable->update([
+                'status' => 'pago',
+                'data_pagamento' => now(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
-            'id' => $parcela->id,
-            'pago_em' => $parcela->pago_em,
+            'message' => 'Pagamento registrado com sucesso!',
+            'valor_recebido' => $validated['valor'] ?? null,
+            'data_recebimento' => now()->format('d/m/Y H:i:s')
         ]);
     }
 }

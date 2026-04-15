@@ -11,14 +11,6 @@
         </h2>
         <p class="text-muted mb-0">Gestão completa de parcelas e pagamentos</p>
     </div>
-    <div class="d-flex gap-2">
-        <button class="btn btn-outline-success" onclick="exportReceivables()">
-            <i class="mdi mdi-download me-2"></i>Exportar
-        </button>
-        <button class="btn btn-warning" onclick="sendBulkReminders()">
-            <i class="mdi mdi-whatsapp me-2"></i>Enviar Lembretes
-        </button>
-    </div>
 </div>
 
 <!-- Resumo Rápido -->
@@ -33,9 +25,9 @@
                     <div class="float-end">
                         <p class="mb-0 text-right text-dark">Parcelas Vencidas</p>
                         <div class="fluid-container">
-                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ (int) ($summary['vencidas']['count'] ?? 0) }}</h3>
+                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $financialData['vencidas_count'] ?? 0 }}</h3>
                         </div>
-                        <small class="text-danger">R$ {{ number_format((float) ($summary['vencidas']['valor'] ?? 0), 2, ',', '.') }}</small>
+                        <small class="text-danger">R$ {{ number_format($financialData['vencidas_total'] ?? 0, 2, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
@@ -51,9 +43,9 @@
                     <div class="float-end">
                         <p class="mb-0 text-right text-dark">Vencem Hoje</p>
                         <div class="fluid-container">
-                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ (int) ($summary['vence_hoje']['count'] ?? 0) }}</h3>
+                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $financialData['vence_hoje_count'] ?? 0 }}</h3>
                         </div>
-                        <small class="text-warning">R$ {{ number_format((float) ($summary['vence_hoje']['valor'] ?? 0), 2, ',', '.') }}</small>
+                        <small class="text-warning">R$ {{ number_format($financialData['vence_hoje_total'] ?? 0, 2, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
@@ -69,9 +61,9 @@
                     <div class="float-end">
                         <p class="mb-0 text-right text-dark">Vencem Esta Semana</p>
                         <div class="fluid-container">
-                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ (int) ($summary['vence_semana']['count'] ?? 0) }}</h3>
+                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $financialData['vence_semana_count'] ?? 0 }}</h3>
                         </div>
-                        <small class="text-info">R$ {{ number_format((float) ($summary['vence_semana']['valor'] ?? 0), 2, ',', '.') }}</small>
+                        <small class="text-info">R$ {{ number_format($financialData['vence_semana_total'] ?? 0, 2, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
@@ -87,9 +79,9 @@
                     <div class="float-end">
                         <p class="mb-0 text-right text-dark">Em Dia</p>
                         <div class="fluid-container">
-                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ (int) ($summary['em_dia']['count'] ?? 0) }}</h3>
+                            <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $financialData['em_dia_count'] ?? 0 }}</h3>
                         </div>
-                        <small class="text-success">R$ {{ number_format((float) ($summary['em_dia']['valor'] ?? 0), 2, ',', '.') }}</small>
+                        <small class="text-success">R$ {{ number_format($financialData['em_dia_total'] ?? 0, 2, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
@@ -101,48 +93,55 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="mdi mdi-filter me-2"></i>
-                    Filtros
-                </h6>
-            </div>
-            <div class="card-body">
-                <form class="row g-3" id="filtersForm" method="GET" action="{{ route('financial.receivables') }}">
-                    <div class="col-md-2">
-                        <select class="form-select" id="statusFilter" name="status">
-                            <option value="">Todos Status</option>
-                            <option value="vencida">Vencidas</option>
-                            <option value="vence_hoje">Vence Hoje</option>
-                            <option value="vence_semana">Vence na Semana</option>
-                            <option value="em_dia">Em Dia</option>
-                            <option value="paga">Pagas</option>
+            <div class="card-body financial-filters">
+                <form class="row g-3 align-items-end form-aligned-sm js-list-filter-form" onsubmit="event.preventDefault(); applyFilters();">
+                <div class="col-12 col-sm-6 col-md-2">
+                        <label for="searchInput" class="form-label">Buscar</label>
+                        <input type="text" class="form-control form-control-sm" placeholder="Cliente, venda..." id="searchInput"
+                            value="{{ $filters['search'] ?? '' }}">
+                    </div>    
+                <div class="col-12 col-sm-6 col-md-2">
+                        <label for="statusFilter" class="form-label">Status</label>
+                        <select class="form-select form-select-sm" id="statusFilter">
+                            <option value="" {{ empty($activeStatusFilter) ? 'selected' : '' }}>Em Aberto</option>
+                            <option value="vencida" {{ ($activeStatusFilter ?? '') === 'vencida' ? 'selected' : '' }}>Vencidas</option>
+                            <option value="vence_hoje" {{ ($activeStatusFilter ?? '') === 'vence_hoje' ? 'selected' : '' }}>Vence Hoje</option>
+                            <option value="vence_semana" {{ ($activeStatusFilter ?? '') === 'vence_semana' ? 'selected' : '' }}>Vence na Semana</option>
+                            <option value="em_dia" {{ ($activeStatusFilter ?? '') === 'em_dia' ? 'selected' : '' }}>Em Dia</option>
+                            <option value="pago" {{ ($activeStatusFilter ?? '') === 'pago' ? 'selected' : '' }}>Pagos</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <input type="date" class="form-control" id="startDate" name="start_date"
-                            placeholder="Data Inicial" value="{{ $filters['start_date'] ?? '' }}">
+                    <div class="col-12 col-sm-6 col-md-2">
+                        <label for="startDate" class="form-label">Data Inicial</label>
+                        <input type="date" class="form-control form-control-sm" id="startDate"
+                            value="{{ $filters['start_date'] ?? '' }}">
                     </div>
-                    <div class="col-md-2">
-                        <input type="date" class="form-control" id="endDate" name="end_date" placeholder="Data Final"
+                    <div class="col-12 col-sm-6 col-md-2">
+                        <label for="endDate" class="form-label">Data Final</label>
+                        <input type="date" class="form-control form-control-sm" id="endDate"
                             value="{{ $filters['end_date'] ?? '' }}">
                     </div>
-                    <div class="col-md-3">
-                        <input type="text" class="form-control" placeholder="Buscar cliente, venda..." id="searchInput"
-                            name="q" value="{{ $filters['q'] ?? '' }}">
-                    </div>
-                    <div class="col-md-2">
-                        <select class="form-select" id="orderBy" name="order_by">
-                            <option value="vencimento">Vencimento</option>
-                            <option value="valor">Valor</option>
-                            <option value="cliente">Cliente</option>
-                            <option value="atraso">Dias Atraso</option>
+                    
+                    <div class="col-12 col-sm-6 col-md-2">
+                        <label for="orderBy" class="form-label">Ordenar Por</label>
+                        <select class="form-select form-select-sm" id="orderBy">
+                            <option value="vencimento" {{ ($filters['order_by'] ?? 'vencimento') === 'vencimento' ? 'selected' : '' }}>Vencimento</option>
+                            <option value="valor" {{ ($filters['order_by'] ?? '') === 'valor' ? 'selected' : '' }}>Valor</option>
+                            <option value="cliente" {{ ($filters['order_by'] ?? '') === 'cliente' ? 'selected' : '' }}>Cliente</option>
+                            <option value="atraso" {{ ($filters['order_by'] ?? '') === 'atraso' ? 'selected' : '' }}>Dias Atraso</option>
                         </select>
                     </div>
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
-                            <i class="mdi mdi-magnify"></i>
-                        </button>
+                    <div class="col-12 col-sm-6 col-md-2">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="mdi mdi-magnify me-1"></i>
+                                Buscar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
+                                <i class="mdi mdi-refresh me-1"></i>
+                                Limpar
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -157,16 +156,8 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">
                     <i class="mdi mdi-format-list-bulleted me-2"></i>
-                    Parcelas ({{ $receivablesPaginator->count() }} de {{ $receivablesPaginator->total() }})
+                    Parcelas a Receber ({{ count($receivables) }} de {{ $financialData['total_registros'] ?? count($receivables) }})
                 </h6>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-primary" onclick="selectAll()">
-                        <i class="mdi mdi-check-all me-2"></i>Selecionar Todas
-                    </button>
-                    <button class="btn btn-sm btn-outline-warning" onclick="sendSelectedReminders()">
-                        <i class="mdi mdi-whatsapp me-2"></i>WhatsApp Selecionadas
-                    </button>
-                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -182,19 +173,19 @@
                                 <th>Vencimento</th>
                                 <th>Valor</th>
                                 <th>Status</th>
-                                <th>Ações</th>
+                                <th width="220">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($receivables as $receivable)
-                                <tr class="@if ($receivable['status'] == 'vencida') table-danger @elseif($receivable['status'] == 'vence_hoje') table-warning @elseif($receivable['status'] == 'vence_semana') table-info @elseif($receivable['status'] == 'paga') table-success @endif">
+                                <tr class="@if ($receivable['status'] == 'vencida') table-danger @elseif($receivable['status'] == 'vence_hoje') table-warning @elseif($receivable['status'] == 'vence_semana') table-info @endif">
                                     <td>
                                         <input type="checkbox" class="form-check-input receivable-checkbox" value="{{ $receivable['id'] }}">
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar-sm @if ($receivable['status'] == 'vencida') bg-danger @elseif($receivable['status'] == 'vence_hoje') bg-warning @elseif($receivable['status'] == 'vence_semana') bg-info @elseif($receivable['status'] == 'paga') bg-success @else bg-success @endif text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
-                                                {{ mb_substr($receivable['cliente'], 0, 2) }}
+                                            <div class="avatar-sm @if ($receivable['status'] == 'vencida') bg-danger @elseif($receivable['status'] == 'vence_hoje') bg-warning @elseif($receivable['status'] == 'vence_semana') bg-info @else bg-success @endif text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                                {{ substr($receivable['cliente'], 0, 2) }}
                                             </div>
                                             <div>
                                                 <strong>{{ $receivable['cliente'] }}</strong>
@@ -240,9 +231,9 @@
                                             <span class="badge bg-info">
                                                 <i class="mdi mdi-calendar-week me-1"></i>Vence na Semana
                                             </span>
-                                        @elseif($receivable['status'] == 'paga')
+                                        @elseif($receivable['status'] == 'pago')
                                             <span class="badge bg-success">
-                                                <i class="mdi mdi-check-circle me-1"></i>Paga
+                                                <i class="mdi mdi-check-circle me-1"></i>Pago
                                             </span>
                                         @else
                                             <span class="badge bg-success">
@@ -251,45 +242,52 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            @if ($receivable['status'] == 'paga')
-                                                <button class="btn btn-outline-success" title="Pagamento confirmado" disabled>
-                                                    <i class="mdi mdi-check"></i>
-                                                </button>
-                                            @elseif ($receivable['status'] == 'vencida')
-                                                <button class="btn btn-danger" title="Cobrar Urgente" onclick="sendUrgentReminder({{ $receivable['id'] }})">
-                                                    <i class="mdi mdi-phone"></i>
-                                                </button>
-                                            @else
-                                                <button class="btn btn-outline-success" title="WhatsApp" onclick="sendWhatsApp({{ $receivable['id'] }})">
-                                                    <i class="mdi mdi-whatsapp"></i>
-                                                </button>
-                                            @endif
-                                            <button class="btn btn-outline-primary" title="Gerar Boleto" onclick="generateBoleto({{ $receivable['id'] }})">
+                                        @php
+                                            $paymentPayload = base64_encode(json_encode([
+                                                'id' => $receivable['id'],
+                                                'cliente' => $receivable['cliente'],
+                                                'cpf' => $receivable['cpf'] ?: 'N/A',
+                                                'vendaId' => $receivable['venda_id'],
+                                                'valorParcela' => (float) $receivable['valor_parcela'],
+                                                'juros' => (float) $receivable['juros'],
+                                                'valorAtualizado' => (float) $receivable['valor_atualizado'],
+                                                'parcela' => $receivable['parcela'],
+                                                'vencimento' => \Carbon\Carbon::parse($receivable['vencimento'])->format('d/m/Y'),
+                                                'status' => $receivable['status'],
+                                            ]));
+                                            $detailsPayload = base64_encode(json_encode([
+                                                'id' => $receivable['id'],
+                                                'cliente' => $receivable['cliente'],
+                                                'cpf' => $receivable['cpf'] ?: '-',
+                                                'telefone' => $receivable['telefone'],
+                                                'vendaId' => $receivable['venda_id'],
+                                                'parcela' => $receivable['parcela'],
+                                                'vencimento' => \Carbon\Carbon::parse($receivable['vencimento'])->format('d/m/Y'),
+                                                'status' => $receivable['status'],
+                                                'formaPagamento' => $receivable['forma_pagamento'] ?? '-',
+                                                'dataPagamento' => $receivable['data_pagamento'] ?? null,
+                                                'valorParcela' => (float) $receivable['valor_parcela'],
+                                                'valorTotal' => (float) $receivable['valor_total'],
+                                                'valorAtualizado' => (float) $receivable['valor_atualizado'],
+                                                'diasAtraso' => (int) $receivable['dias_atraso'],
+                                                'juros' => (float) $receivable['juros'],
+                                            ]));
+                                        @endphp
+                                        <div class="actions">
+                                            <button type="button" class="btn-action btn-action-whatsapp" title="WhatsApp" onclick="sendWhatsApp({{ $receivable['id'] }})">
+                                                <i class="mdi mdi-whatsapp"></i>
+                                            </button>
+                                            <button type="button" class="btn-action btn-action-boleto" title="Gerar Boleto" onclick="generateBoleto({{ $receivable['id'] }})">
                                                 <i class="mdi mdi-file-document-outline"></i>
                                             </button>
-                                            @if ($receivable['status'] !== 'paga')
-                                                <button class="btn btn-outline-success btn-sm" title="Dar baixa / Receber Pagamento" onclick="openPaymentModal({{ $receivable['id'] }}, '{{ $receivable['cliente'] }}', '{{ $receivable['cpf'] ?? '' }}', '{{ $receivable['venda_id'] }}', {{ (float) $receivable['valor_parcela'] }}, {{ (float) $receivable['juros'] }}, {{ (float) $receivable['valor_atualizado'] }})">
+                                            @if ($receivable['status'] !== 'pago')
+                                                <button type="button" class="btn-action btn-action-pay" title="Receber Pagamento" onclick="openPaymentModalFromPayload('{{ $paymentPayload }}')">
                                                     <i class="mdi mdi-cash"></i>
                                                 </button>
                                             @endif
-                                            <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                                    <i class="mdi mdi-dots-vertical"></i>
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><a class="dropdown-item" href="#" onclick="viewDetails({{ $receivable['id'] }})">
-                                                        <i class="mdi mdi-eye me-2"></i>Ver Detalhes
-                                                    </a></li>
-                                                    <li><a class="dropdown-item" href="#" onclick="viewHistory({{ $receivable['id'] }})">
-                                                        <i class="mdi mdi-history me-2"></i>Histórico
-                                                    </a></li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li><a class="dropdown-item text-warning" href="#" onclick="renegotiate({{ $receivable['id'] }})">
-                                                        <i class="mdi mdi-refresh me-2"></i>Renegociar
-                                                    </a></li>
-                                                </ul>
-                                            </div>
+                                            <button type="button" class="btn-action btn-action-view" title="Ver Detalhes" onclick="openDetailsModalFromPayload('{{ $detailsPayload }}')">
+                                                <i class="mdi mdi-eye"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -300,9 +298,93 @@
             </div>
             <div class="card-footer">
                 <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">Mostrando {{ $receivablesPaginator->count() }} de {{ $receivablesPaginator->total() }} parcelas</small>
-                    {{ $receivablesPaginator->links('pagination::bootstrap-5') }}
+                    <small class="text-muted">Mostrando {{ count($receivables) }} de {{ $financialData['total_registros'] ?? count($receivables) }} parcelas</small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item active">
+                                <span class="page-link">1</span>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">2</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">3</a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes -->
+<div class="modal fade" id="receivableDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="mdi mdi-eye me-2"></i>Detalhes da Parcela
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Cliente</label>
+                        <div class="fw-semibold" id="detailsCliente">-</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">CPF</label>
+                        <div id="detailsCpf">-</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Telefone</label>
+                        <div id="detailsTelefone">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Venda</label>
+                        <div class="fw-semibold" id="detailsVendaId">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Parcela</label>
+                        <div id="detailsParcela">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Status</label>
+                        <div id="detailsStatus">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Vencimento</label>
+                        <div id="detailsVencimento">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Forma de Pagamento</label>
+                        <div id="detailsFormaPagamento">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Data de Pagamento</label>
+                        <div id="detailsDataPagamento">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Valor da Parcela</label>
+                        <div class="fw-semibold" id="detailsValorParcela">R$ 0,00</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Valor Atualizado</label>
+                        <div class="fw-semibold text-success" id="detailsValorAtualizado">R$ 0,00</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Total da Venda</label>
+                        <div class="fw-semibold" id="detailsValorTotal">R$ 0,00</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="detailsReceivePaymentBtn">
+                    <i class="mdi mdi-cash me-2"></i>Receber Pagamento
+                </button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
             </div>
         </div>
     </div>
@@ -322,45 +404,106 @@
 .table-hover tbody tr:hover {
     background-color: rgba(0, 123, 255, 0.05);
 }
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    border: 1px solid transparent;
+    background: #f8f9fa;
+    color: #495057;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+}
+
+.btn-action-whatsapp {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    border-color: rgba(25, 135, 84, 0.2);
+}
+
+.btn-action-boleto {
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+    border-color: rgba(13, 110, 253, 0.2);
+}
+
+.btn-action-pay {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    border-color: rgba(25, 135, 84, 0.2);
+}
+
+.btn-action-view {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+    border-color: rgba(108, 117, 125, 0.2);
+}
 </style>
 @endpush
 
 @push('scripts')
 <script>
 let selectedReceivableId = null;
-
-function exportReceivables() {
-    alert('Exportando contas a receber...');
-}
-
-function sendBulkReminders() {
-    const selected = document.querySelectorAll('.receivable-checkbox:checked');
-    if (selected.length === 0) {
-        alert('Selecione pelo menos uma parcela para enviar lembretes.');
-        return;
-    }
-    alert(`Enviando lembretes para ${selected.length} clientes via WhatsApp...`);
-}
+let currentDetailsData = null;
 
 function applyFilters() {
-    document.getElementById('filtersForm')?.submit();
-}
+    const search = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('statusFilter').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const orderBy = document.getElementById('orderBy').value;
+    const params = new URLSearchParams(window.location.search);
 
-function selectAll() {
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const checkboxes = document.querySelectorAll('.receivable-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAllCheckbox.checked;
-    });
-}
-
-function sendSelectedReminders() {
-    const selected = document.querySelectorAll('.receivable-checkbox:checked');
-    if (selected.length === 0) {
-        alert('Selecione pelo menos uma parcela.');
-        return;
+    if (search) {
+        params.set('search', search);
+    } else {
+        params.delete('search');
     }
-    alert(`Enviando lembretes para ${selected.length} parcelas selecionadas...`);
+
+    if (status) {
+        params.set('status', status);
+    } else {
+        params.delete('status');
+    }
+
+    if (startDate) {
+        params.set('start_date', startDate);
+    } else {
+        params.delete('start_date');
+    }
+
+    if (endDate) {
+        params.set('end_date', endDate);
+    } else {
+        params.delete('end_date');
+    }
+
+    if (orderBy) {
+        params.set('order_by', orderBy);
+    } else {
+        params.delete('order_by');
+    }
+
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+}
+
+function clearFilters() {
+    window.location.href = window.location.pathname;
 }
 
 function sendUrgentReminder(id) {
@@ -375,8 +518,74 @@ function generateBoleto(id) {
     alert(`Gerando boleto para parcela ${id}...`);
 }
 
-function viewDetails(id) {
-    alert(`Visualizando detalhes da parcela ${id}...`);
+function formatMoney(value) {
+    return `R$ ${Number(value || 0).toFixed(2).replace('.', ',')}`;
+}
+
+function renderStatusBadge(status) {
+    const statusMap = {
+        vencida: '<span class="badge bg-danger">Vencida</span>',
+        vence_hoje: '<span class="badge bg-warning text-dark">Vence Hoje</span>',
+        vence_semana: '<span class="badge bg-info text-dark">Vence na Semana</span>',
+        pago: '<span class="badge bg-success">Pago</span>',
+        em_dia: '<span class="badge bg-success">Em Dia</span>',
+    };
+    return statusMap[status] || `<span class="badge bg-secondary">${status}</span>`;
+}
+
+function decodePayload(payload) {
+    try {
+        return JSON.parse(atob(payload));
+    } catch (e) {
+        console.error('Payload inválido', e);
+        return null;
+    }
+}
+
+function openPaymentModalFromPayload(payload) {
+    const data = decodePayload(payload);
+    if (!data) return;
+
+    openPaymentModal(
+        data.id,
+        data.cliente,
+        data.cpf,
+        data.vendaId,
+        data.valorParcela,
+        data.juros,
+        data.valorAtualizado,
+        data.parcela,
+        data.vencimento,
+        data.status
+    );
+}
+
+function openDetailsModalFromPayload(payload) {
+    const data = decodePayload(payload);
+    if (!data) return;
+    openDetailsModal(data);
+}
+
+function openDetailsModal(data) {
+    currentDetailsData = data;
+    document.getElementById('detailsCliente').textContent = data.cliente || '-';
+    document.getElementById('detailsCpf').textContent = data.cpf || '-';
+    document.getElementById('detailsTelefone').textContent = data.telefone || '-';
+    document.getElementById('detailsVendaId').textContent = data.vendaId || '-';
+    document.getElementById('detailsParcela').textContent = data.parcela || '-';
+    document.getElementById('detailsVencimento').textContent = data.vencimento || '-';
+    document.getElementById('detailsFormaPagamento').textContent = data.formaPagamento || '-';
+    document.getElementById('detailsDataPagamento').textContent = data.dataPagamento || '-';
+    document.getElementById('detailsValorParcela').textContent = formatMoney(data.valorParcela);
+    document.getElementById('detailsValorAtualizado').textContent = formatMoney(data.valorAtualizado);
+    document.getElementById('detailsValorTotal').textContent = formatMoney(data.valorTotal);
+    document.getElementById('detailsStatus').innerHTML = renderStatusBadge(data.status);
+
+    const receiveBtn = document.getElementById('detailsReceivePaymentBtn');
+    receiveBtn.style.display = data.status === 'pago' ? 'none' : 'inline-flex';
+
+    const modal = new bootstrap.Modal(document.getElementById('receivableDetailsModal'));
+    modal.show();
 }
 
 function viewHistory(id) {
@@ -387,10 +596,28 @@ function renegotiate(id) {
     alert(`Iniciando renegociação da parcela ${id}...`);
 }
 
-document.getElementById('selectAllCheckbox').addEventListener('change', selectAll);
+document.getElementById('detailsReceivePaymentBtn').addEventListener('click', function () {
+    if (!currentDetailsData) return;
 
-document.getElementById('statusFilter').value = "{{ $filters['status'] ?? '' }}";
-document.getElementById('orderBy').value = "{{ $filters['order_by'] ?? 'vencimento' }}";
+    const detailsModal = bootstrap.Modal.getInstance(document.getElementById('receivableDetailsModal'));
+    if (detailsModal) {
+        detailsModal.hide();
+    }
+
+    openPaymentModal(
+        currentDetailsData.id,
+        currentDetailsData.cliente,
+        currentDetailsData.cpf || 'N/A',
+        currentDetailsData.vendaId,
+        currentDetailsData.valorParcela,
+        currentDetailsData.juros || 0,
+        currentDetailsData.valorAtualizado,
+        currentDetailsData.parcela,
+        currentDetailsData.vencimento,
+        currentDetailsData.status
+    );
+});
+
 </script>
 @endpush
 @endsection

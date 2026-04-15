@@ -7,8 +7,7 @@ use App\Models\Produto;
 use App\Models\Categoria;
 use App\Models\PedidoVenda;
 use App\Models\ItemPedido;
-use App\Models\PedidoVendaParcela;
-use Carbon\Carbon;
+use App\Models\ContaReceber;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\AuthHelper;
@@ -272,7 +271,7 @@ class SaleController extends Controller
         // Verificar estoque dos produtos
         foreach ($validated['produtos'] as $item) {
             $product = Produto::findOrFail($item['produto_id']);
-
+            
             // Verificar se o produto está ativo
             if (!$product->ativo) {
                 return response()->json([
@@ -330,6 +329,14 @@ class SaleController extends Controller
                 'ativo' => true
             ]);
 
+            $this->createReceivablesFromSale(
+                $pedidoVenda,
+                $validated,
+                $tenantId,
+                $locationId,
+                $userId
+            );
+
             // Criar os itens do pedido
             foreach ($validated['produtos'] as $item) {
                 ItemPedido::create([
@@ -367,58 +374,11 @@ class SaleController extends Controller
                 }
             }
 
-            if ($validated['forma_pagamento'] === 'crediario') {
-                $totalParcelas = (int) $validated['parcelas'];
-                if ($totalParcelas < 1) {
-                    $totalParcelas = 1;
-                }
-
-                $totalCents = (int) round(((float) $validated['total']) * 100);
-                $parcelaCents = (int) floor($totalCents / $totalParcelas);
-                $lastParcelaCents = $totalCents - ($parcelaCents * ($totalParcelas - 1));
-
-                $primeiroVencimento = Carbon::today()->addMonthNoOverflow();
-                for ($numero = 1; $numero <= $totalParcelas; $numero++) {
-                    $valorCents = $numero === $totalParcelas ? $lastParcelaCents : $parcelaCents;
-
-                    PedidoVendaParcela::create([
-                        'tenant_id' => $tenantId,
-                        'location_id' => $locationId,
-                        'pedido_venda_id' => $pedidoVenda->id,
-                        'numero_parcela' => $numero,
-                        'total_parcelas' => $totalParcelas,
-                        'valor' => $valorCents / 100,
-                        'vencimento_em' => $primeiroVencimento->copy()->addMonthsNoOverflow($numero - 1),
-                        'status' => 'aberta',
-                    ]);
-                }
-            }
-            if (in_array($validated['forma_pagamento'], ['dinheiro', 'cartao_debito', 'cartao_credito', 'pix'], true)) {
-                $tz = 'America/Manaus';
-                $agora = Carbon::now($tz);
-
-                PedidoVendaParcela::updateOrCreate(
-                    [
-                        'tenant_id' => $tenantId,
-                        'pedido_venda_id' => $pedidoVenda->id,
-                        'numero_parcela' => 1,
-                    ],
-                    [
-                        'location_id' => $locationId,
-                        'total_parcelas' => 1,
-                        'valor' => (float) $validated['total'],
-                        'vencimento_em' => $agora->toDateString(),
-                        'pago_em' => $agora,
-                        'status' => 'pago',
-                    ]
-                );
-            }
-
             DB::commit();
 
             // Preparar dados de resposta
             $pedidoVenda->load('itens.produto', 'cliente');
-
+            
             $responseData = [
                 'message' => 'Venda realizada com sucesso!',
                 'pedido_id' => $pedidoVenda->id,
@@ -433,16 +393,17 @@ class SaleController extends Controller
                 return response()->json($responseData, 201);
             }
 
-            return redirect()->route('sales.index')->with('success', 'Venda realizada com sucesso!');
+        return redirect()->route('sales.index')->with('success', 'Venda realizada com sucesso!');
+
         } catch (\Exception $e) {
             DB::rollBack();
-
+            
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'message' => 'Erro ao processar a venda: ' . $e->getMessage()
                 ], 500);
             }
-
+            
             throw $e;
         }
     }
@@ -453,7 +414,7 @@ class SaleController extends Controller
     public function show(string $id)
     {
         $tenantId = session('tenant_id');
-
+        
         $pedidoVenda = PedidoVenda::with(['cliente', 'itens.produto'])
             ->where('ativo', true);
 
@@ -513,7 +474,7 @@ class SaleController extends Controller
 
         // Forma de pagamento do banco
         $formaPagamento = $pedidoVenda->forma_pagamento ?? 'Não informado';
-
+        
         $sale = [
             'id' => $pedidoVenda->id,
             'numero' => $numero,
@@ -543,7 +504,7 @@ class SaleController extends Controller
     public function print(string $id)
     {
         $tenantId = session('tenant_id');
-
+        
         $pedidoVenda = PedidoVenda::with(['cliente', 'itens.produto'])
             ->where('ativo', true);
 
@@ -605,7 +566,7 @@ class SaleController extends Controller
         $tenant = AuthHelper::tenant();
         $logoUrl = AuthHelper::tenantLogoUrl();
         $logoBase64 = null;
-
+        
         // Converter logo para base64 para garantir que apareça no PDF
         if (!empty($logoUrl)) {
             try {
@@ -613,7 +574,7 @@ class SaleController extends Controller
                 $response = \Illuminate\Support\Facades\Http::timeout(10)
                     ->withOptions(['verify' => false])
                     ->get($logoUrl);
-
+                
                 if ($response->successful()) {
                     $imageContent = $response->body();
                     if (!empty($imageContent)) {
@@ -640,7 +601,7 @@ class SaleController extends Controller
                 ]);
             }
         }
-
+        
         $tenantData = [
             'nome' => $tenant && property_exists($tenant, 'name') ? $tenant->name : 'Empresa',
             'logo_url' => $logoUrl,
@@ -679,23 +640,23 @@ class SaleController extends Controller
 
         // Gerar PDF
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('sales.print', compact('sale', 'tenantData', 'vendedor'));
-
+        
         // Configurar papel A4 em modo retrato
         $pdf->setPaper('A4', 'portrait');
-
+        
         // Configurar opções do DOMPDF
         $pdf->setOption('enable-remote', true);
         $pdf->setOption('enable-local-file-access', true);
         $pdf->setOption('defaultFont', 'DejaVu Sans');
-
+        
         // IMPORTANTE: Configurar margens usando a sintaxe correta do DOMPDF
         $pdf->setOption('margin-top', '15mm');
         $pdf->setOption('margin-bottom', '15mm');
         $pdf->setOption('margin-left', '20mm');
         $pdf->setOption('margin-right', '20mm');
-
+        
         $nomeArquivo = 'venda-' . $numero . '.pdf';
-
+        
         return $pdf->stream($nomeArquivo);
     }
 
@@ -723,7 +684,7 @@ class SaleController extends Controller
     public function destroy(string $id)
     {
         $tenantId = session('tenant_id');
-
+        
         $pedidoVenda = PedidoVenda::where('ativo', true);
         if ($tenantId) {
             $pedidoVenda->where('tenant_id', $tenantId);
@@ -737,5 +698,66 @@ class SaleController extends Controller
         ]);
 
         return redirect()->route('sales.index')->with('success', 'Venda cancelada com sucesso!');
+    }
+
+    private function createReceivablesFromSale(
+        PedidoVenda $pedidoVenda,
+        array $validated,
+        $tenantId,
+        $locationId,
+        $userId
+    ): void {
+        $formaPagamento = $validated['forma_pagamento'] ?? null;
+        $isCrediario = $formaPagamento === 'crediario';
+        $isImmediatePayment = in_array($formaPagamento, [
+            'pix',
+            'dinheiro',
+            'cartao_debito',
+            'cartao_credito',
+        ], true);
+
+        $totalParcelas = $isCrediario
+            ? max(1, (int) ($validated['parcelas'] ?? 1))
+            : 1;
+        $valorTotal = (float) $validated['total'];
+        $valorBaseParcela = round($valorTotal / $totalParcelas, 2);
+        $statusInicial = $isCrediario ? 'pendente' : 'pago';
+        $dataPagamento = $isImmediatePayment ? now() : null;
+
+        for ($parcela = 1; $parcela <= $totalParcelas; $parcela++) {
+            $valorParcela = $valorBaseParcela;
+
+            // Ajusta centavos na última parcela para fechar exatamente o total da venda.
+            if ($parcela === $totalParcelas) {
+                $valorParcela = round(
+                    $valorTotal - ($valorBaseParcela * ($totalParcelas - 1)),
+                    2
+                );
+            }
+
+            $inicioVencimento = $isCrediario ? 1 : 0;
+            $dataVencimento = now()
+                ->copy()
+                ->addMonthsNoOverflow($inicioVencimento + ($parcela - 1))
+                ->startOfDay();
+
+            ContaReceber::create([
+                'tenant_id' => $tenantId,
+                'location_id' => $locationId,
+                'user_id' => $userId,
+                'pedido_venda_id' => $pedidoVenda->id,
+                'pessoa_cliente_id' => $validated['cliente_id'],
+                'numero_parcela' => $parcela,
+                'total_parcelas' => $totalParcelas,
+                'valor_parcela' => $valorParcela,
+                'valor_total_venda' => $valorTotal,
+                'data_vencimento' => $dataVencimento,
+                'data_pagamento' => $dataPagamento,
+                'forma_pagamento' => $formaPagamento,
+                'status' => $statusInicial,
+                'observacoes' => $validated['observacoes'] ?? null,
+                'ativo' => true,
+            ]);
+        }
     }
 }
