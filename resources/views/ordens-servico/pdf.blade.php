@@ -21,8 +21,8 @@
         }
 
         .card {
-            border: 1px solid #dee2e6;
-            border-radius: 0.375rem;
+            border: none;
+            border-radius: 0;
             background-color: #fff;
             box-shadow: none;
         }
@@ -31,9 +31,10 @@
             padding: 0.2rem 1rem;
             margin-bottom: 0;
             background-color: #dee2e6;
+            border: 1px solid #dee2e6;
             border-bottom: 1px solid #dee2e6;
-            border-top-left-radius: calc(0.375rem - 1px);
-            border-top-right-radius: calc(0.375rem - 1px);
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
         }
 
         .bg-primary {
@@ -47,6 +48,7 @@
         .card-body {
             flex: 1 1 auto;
             padding: 0.4rem;
+            border: none;
         }
 
         .row {
@@ -432,20 +434,24 @@
             <div class="col-12" style="page-break-inside: avoid; margin-bottom: 2px;">
                 <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
                 <div class="p-3">
-                    @if ($ordemServico->fornecedor->cnpj)
-                        <strong>{{ $ordemServico->fornecedor->razao_social ?? 'N/A' }}</strong>
-                        @if ($ordemServico->fornecedor->nome_fantasia)
-                            <br><em>{{ $ordemServico->fornecedor->nome_fantasia }}</em>
-                        @endif
-                    @endif
-                    </br>
 
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            @if ($ordemServico->fornecedor->cnpj)
+                                <strong>{{ $ordemServico->fornecedor->razao_social ?? 'N/A' }}</strong>
+                                @if ($ordemServico->fornecedor->nome_fantasia)
+                                    <br><em>{{ $ordemServico->fornecedor->nome_fantasia }}</em>
+                                @endif
+                            @endif
+                        </div>
+                        <div class="col-md-6">
 
-                    @if ($ordemServico->fornecedor->cnpj)
-                        <strong> CNPJ:</strong>
-                        {{ preg_replace('/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/', '$1.$2.$3/$4-$5', $ordemServico->fornecedor->cnpj) }}
-                    @endif
-
+                            @if ($ordemServico->fornecedor->cnpj)
+                                <strong> CNPJ:</strong>
+                                {{ preg_replace('/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/', '$1.$2.$3/$4-$5', $ordemServico->fornecedor->cnpj) }}
+                            @endif
+                        </div>
+                    </div>
                     <div class="row mb-2">
                         <div class="col-md-6">
                             @if ($ordemServico->fornecedor->telefone)
