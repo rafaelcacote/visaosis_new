@@ -43,6 +43,34 @@
         .tag i {
             margin-right: 0.25rem;
         }
+
+        /* Padronização de fonte seguindo padrão da tabela Fila de Atendimento de recepção */
+        .card-body h6 {
+            font-size: 1rem !important;
+            font-weight: 500 !important;
+            margin-bottom: 0.25rem !important;
+        }
+
+        .card-body small.text-muted {
+            font-size: 0.875rem !important;
+            font-weight: 400 !important;
+        }
+
+        .card-body label.small,
+        .card-body .text-muted.small {
+            font-size: 0.875rem !important;
+            font-weight: 400 !important;
+        }
+
+        .card-body p {
+            font-size: 1rem !important;
+            font-weight: 500 !important;
+        }
+
+        .card-body .fw-medium,
+        .card-body span.fw-medium {
+            font-weight: 500 !important;
+        }
     </style>
     @stack('styles')
 </head>
