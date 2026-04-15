@@ -345,8 +345,9 @@
                         @endif
                     </div>
                     <div style="display: table-cell; vertical-align: middle; width: 60%; text-align: left;">
-                        <h5 style="margin: 0; font-weight: 600; color: #000;">ORDEM DE SERVIÇO</h5>
-                        <small style="color: #6c757d;">#{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</small>
+                        <h5 style="margin: 0; font-weight: 600; color: #000;">ORDEM DE SERVIÇO -
+                            {{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</h5>
+
                     </div>
                 </div>
             </div>
