@@ -1,3 +1,6 @@
+@php
+    use App\Helpers\AuthHelper;
+@endphp
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -294,13 +297,45 @@
 <body>
     <!-- Documento da OS -->
     <div class="card">
-        <div class="card-header d-print-block" style="background-color: #f8f9fa; color: #000;">
-            <div class="row align-items-center">
-                <div class="col-12">
-                    <i class="fas fa-glasses me-2"></i>
-                    <h6 class="mb-0 d-inline">VisaoSis</h6>
-                    <small>Sistema de Gestão Ótica</small>
+        <div class="card-header d-print-block"
+            style="background-color: #f8f9fa; color: #000; border-bottom: 1px solid #dee2e6;">
+            <!-- Logo e Nome da Ótica -->
+            <div class="row align-items-center mb-2">
+                <div class="col-12 d-flex align-items-center">
+                    @php
+                        $logoBase64 = null;
+                        if (AuthHelper::hasTenantLogo()) {
+                            try {
+                                $logoUrl = AuthHelper::tenantLogoUrl();
+                                if ($logoUrl) {
+                                    $imageData = @file_get_contents($logoUrl);
+                                    if ($imageData !== false) {
+                                        $finfo = new finfo(FILEINFO_MIME_TYPE);
+                                        $mimeType = $finfo->buffer($imageData);
+                                        $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                                    }
+                                }
+                            } catch (Exception $e) {
+                                $logoBase64 = null;
+                            }
+                        }
+                    @endphp
 
+                    @if ($logoBase64)
+                        <img src="{{ $logoBase64 }}" alt="{{ AuthHelper::tenantName() ?? 'Logo' }}"
+                            style="max-height: 40px; max-width: 40px; object-fit: contain; border: 1px solid #e0e0e0; border-radius: 6px; padding: 4px; background-color: #fff; margin-right: 10px;">
+                    @else
+                        <span style="font-size: 14px; margin-right: 8px;">👓</span>
+                    @endif
+
+                    <div>
+                        <h6 class="mb-0" style="font-weight: 600;">{{ AuthHelper::tenantName() ?? 'VisaoSis' }}</h6>
+                        <small style="color: #6c757d;">Sistema de Gestão Ótica</small>
+                        @if (AuthHelper::locationName())
+                            <br><small
+                                style="color: #6c757d; font-size: 0.7rem;">{{ AuthHelper::locationName() }}</small>
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="row align-items-center">
