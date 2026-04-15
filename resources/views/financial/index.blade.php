@@ -178,7 +178,8 @@
                             <small>Total: R$
                                 {{ number_format((float) ($alertas['vence_hoje']['valor'] ?? 0), 2, ',', '.') }}</small>
                         </div>
-                        <button class="btn btn-sm btn-outline-warning" onclick="sendReminders()">WhatsApp</button>
+                        <button class="btn btn-sm btn-outline-warning"
+                            onclick="window.location.href='{{ route('financial.notifications') }}'">WhatsApp</button>
                     </div>
 
                     <div class="alert alert-info d-flex align-items-center mb-0 py-2">
