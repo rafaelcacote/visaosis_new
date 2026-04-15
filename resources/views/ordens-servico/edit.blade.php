@@ -288,38 +288,63 @@
                     </div>
                 </div>
             @endif
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="mdi mdi-format-list-bulleted me-2"></i>
-                        Itens da ordem (somente leitura)
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    @if ($ordemServico->itensOrdem->count() > 0)
-                        <ul class="list-group list-group-flush">
-                            @foreach ($ordemServico->itensOrdem as $linha)
-                                @php $ip = $linha->item; @endphp
-                                <li class="list-group-item d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <strong>{{ $ip?->produto->nome ?? 'Item #' . ($ip->id ?? $linha->item_id) }}</strong>
-                                        @if ($ip?->produto?->categoria)
-                                            <br><small class="text-muted">{{ $ip->produto->categoria->nome }}</small>
-                                        @endif
-                                    </div>
-                                    <span class="badge bg-light text-dark">Qtd {{ $ip?->quantidade ?? '—' }}</span>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <div class="card-body text-muted">Nenhum item vinculado.</div>
-                    @endif
-                </div>
-            </div>
         </div>
 
         <div class="col-lg-7">
+            <!-- Itens da ordem (movido para cá) -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="mdi mdi-format-list-bulleted text-primary me-2"></i>
+                        Itens da ordem
+                    </h5>
+
+                    @if ($ordemServico->itensOrdem->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Categoria</th>
+                                        <th width="100">Quantidade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($ordemServico->itensOrdem as $linha)
+                                        @php $ip = $linha->item; @endphp
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <h6 class="mb-1">
+                                                        {{ $ip?->produto->nome ?? 'Item #' . ($ip->id ?? $linha->item_id) }}
+                                                    </h6>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if ($ip?->produto?->categoria)
+                                                    <span
+                                                        class="badge bg-light text-dark">{{ $ip->produto->categoria->nome }}</span>
+                                                @else
+                                                    <span class="text-muted">—</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <span class="fw-medium">{{ $ip?->quantidade ?? '—' }}</span>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="mdi mdi-package-variant-closed text-muted" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2 text-muted">Nenhum item vinculado</h6>
+                            <small class="text-muted">Esta ordem não possui itens associados</small>
+                        </div>
+                    @endif
+                </div>
+            </div>
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title mb-4">
