@@ -478,22 +478,38 @@
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td class="text-center"><strong>OD</strong><br><small>(Olho Direito)</small></td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->esfera_od ?? '0.00' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->cilindro_od ?? '0.00' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->eixo_od ?? '0' }}°</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->dnp_od ? $ordemServico->prescricao->dnp_od . 'mm' : '-' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_od ?? '-' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->altura_od ?? '-' }}</td>
+                                            <td class="text-center"><strong>OD</strong><br><small>(Olho Direito)</small>
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->esfera_od ?? '0.00' }}</td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->cilindro_od ?? '0.00' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->eixo_od ?? '0' }}°
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->dnp_od ? $ordemServico->prescricao->dnp_od . 'mm' : '-' }}
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_od ?? '-' }}
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->altura_od ?? '-' }}
+                                            </td>
                                         </tr>
                                         <tr>
-                                            <td class="text-center"><strong>OE</strong><br><small>(Olho Esquerdo)</small></td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->esfera_oe ?? '0.00' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->cilindro_oe ?? '0.00' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->eixo_oe ?? '0' }}°</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->dnp_oe ? $ordemServico->prescricao->dnp_oe . 'mm' : '-' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_oe ?? '-' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->altura_oe ?? '-' }}</td>
+                                            <td class="text-center"><strong>OE</strong><br><small>(Olho
+                                                    Esquerdo)</small></td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->esfera_oe ?? '0.00' }}</td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->cilindro_oe ?? '0.00' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->eixo_oe ?? '0' }}°
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->dnp_oe ? $ordemServico->prescricao->dnp_oe . 'mm' : '-' }}
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_oe ?? '-' }}
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->altura_oe ?? '-' }}
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
