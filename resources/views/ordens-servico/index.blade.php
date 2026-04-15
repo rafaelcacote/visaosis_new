@@ -236,6 +236,12 @@
                                                         title="Visualizar">
                                                         <i class="mdi mdi-eye"></i>
                                                     </a>
+                                                    <a href="{{ route('ordens-servico.pdf', $ordem) }}"
+                                                        class="btn-action"
+                                                        style="background-color: #f0fdf4; color: #16a34a;"
+                                                        title="Gerar PDF" target="_blank">
+                                                        <i class="mdi mdi-printer"></i>
+                                                    </a>
                                                     <a href="{{ route('ordens-servico.edit', $ordem) }}"
                                                         class="btn-action"
                                                         style="background-color: #f3f4f6; color: #6b7280;" title="Editar">
