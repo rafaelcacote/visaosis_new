@@ -876,8 +876,8 @@
                                 </small>
                                 <div class="itens-preview" style="max-height: 60px; overflow-y: auto; font-size: 0.8em;">
                                     ${venda.itens.slice(0, 3).map(item => `
-                                                                                                                    <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
-                                                                                                                `).join('')}
+                                                                                                                            <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
+                                                                                                                        `).join('')}
                                     ${venda.itens.length > 3 ? `<div class="text-muted">... e mais ${venda.itens.length - 3} produto(s)</div>` : ''}
                                 </div>
                             </div>
@@ -931,25 +931,23 @@
                     </h6>
                     <div style="max-height: 300px; overflow-y: auto;">
                         ${venda.itens.map(item => `
-                                                                                                    <div class="form-check border rounded p-3 mb-2 item-checkbox">
-                                                                                                        <input class="form-check-input" type="checkbox" name="itens_selecionados[]"
-                                                                                                               value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()">
-                                                                                                        <label class="form-check-label w-100" for="item_${item.id}">
-                                                                                                            <div class="d-flex justify-content-between align-items-start">
-                                                                                                                <div>
-                                                                                                                    <strong>${item.produto_nome}</strong><br>
-                                                                                                                    <small class="text-muted">
-                                                                                                                        Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
-                                                                                                                        ${item.desconto_raw > 0 ? `• Desc: ${item.desconto}` : ''}
-                                                                                                                    </small>
-                                                                                                                </div>
-                                                                                                                <div class="text-end">
-                                                                                                                    <strong>${item.total_linha}</strong>
-                                                                                                                </div>
+                                                                                                            <div class="form-check border rounded p-3 mb-2 item-checkbox">
+                                                                                                                <input class="form-check-input" type="checkbox" name="itens_selecionados[]"
+                                                                                                                       value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()">
+                                                                                                                <label class="form-check-label w-100" for="item_${item.id}">
+                                                                                                                    <div class="d-flex justify-content-between align-items-start">
+                                                                                                                        <div>
+                                                                                                                            <strong>${item.produto_nome}</strong><br>
+                                                                                                                            <small class="text-muted">
+                                                                                                                                Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
+                                                                                                                                ${item.desconto_raw > 0 ? `• Desc: ${item.desconto}` : ''}
+                                                                                                                            </small>
+                                                                                                                        </div>
+
+                                                                                                                    </div>
+                                                                                                                </label>
                                                                                                             </div>
-                                                                                                        </label>
-                                                                                                    </div>
-                                                                                                `).join('')}
+                                                                                                        `).join('')}
                     </div>
                     <div class="mt-3 text-center">
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllItems()">
@@ -961,11 +959,11 @@
                     </div>
                 </div>
                 ${venda.observacoes ? `
-                                                                                            <div class="mt-3">
-                                                                                                <h6 class="mb-1">Observações da Venda:</h6>
-                                                                                                <p class="mb-0 text-muted small">${venda.observacoes}</p>
-                                                                                            </div>
-                                                                                        ` : ''}
+                                                                                                    <div class="mt-3">
+                                                                                                        <h6 class="mb-1">Observações da Venda:</h6>
+                                                                                                        <p class="mb-0 text-muted small">${venda.observacoes}</p>
+                                                                                                    </div>
+                                                                                                ` : ''}
             `;
             document.getElementById('venda_selecionada').style.display = 'block';
             document.getElementById('btnSalvar').disabled = false;
