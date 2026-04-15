@@ -434,17 +434,82 @@
                         <div class="col-md-4 mb-3">
                             <label class="text-muted small">Prioridade</label>
                             <div>
-                                <span class="badge bg-{{ $ordemServico->prioridade_class }} fs-6">
-                                    {{ $ordemServico->prioridade_label }}
-                                </span>
+                                @switch($ordemServico->prioridade)
+                                    @case('normal')
+                                        <span class="tag" style="background-color: #f3f4f6; color: #6b7280;">
+                                            <i class="mdi mdi-minus"></i>
+                                            Normal
+                                        </span>
+                                    @break
+
+                                    @case('urgente')
+                                        <span class="tag" style="background-color: #fff8e6; color: #d97706;">
+                                            <i class="mdi mdi-star"></i>
+                                            Urgente
+                                        </span>
+                                    @break
+
+                                    @case('expressa')
+                                        <span class="tag" style="background-color: #fee2e2; color: #dc2626;">
+                                            <i class="mdi mdi-alert"></i>
+                                            Expressa
+                                        </span>
+                                    @break
+
+                                    @default
+                                        <span class="text-muted">{{ $ordemServico->prioridade_label }}</span>
+                                @endswitch
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="text-muted small">Status</label>
                             <div>
-                                <span class="badge bg-{{ $ordemServico->status_class }} fs-6">
-                                    {{ $ordemServico->status_label }}
-                                </span>
+                                @switch($ordemServico->status)
+                                    @case('pendente')
+                                        <span class="tag" style="background-color: #fff8e6; color: #d97706;">
+                                            <i class="mdi mdi-clock"></i>
+                                            Pendente
+                                        </span>
+                                    @break
+
+                                    @case('enviado')
+                                        <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
+                                            <i class="mdi mdi-send"></i>
+                                            Enviado
+                                        </span>
+                                    @break
+
+                                    @case('em_producao')
+                                        <span class="tag" style="background-color: #f3e8ff; color: #9333ea;">
+                                            <i class="mdi mdi-cog"></i>
+                                            Em Produção
+                                        </span>
+                                    @break
+
+                                    @case('pronto')
+                                        <span class="tag tag-status tag-status-ativo">
+                                            <i class="mdi mdi-check-circle"></i>
+                                            Pronto
+                                        </span>
+                                    @break
+
+                                    @case('entregue')
+                                        <span class="tag" style="background-color: #dcfce7; color: #16a34a;">
+                                            <i class="mdi mdi-package-check"></i>
+                                            Entregue
+                                        </span>
+                                    @break
+
+                                    @case('cancelado')
+                                        <span class="tag tag-status tag-status-inativo">
+                                            <i class="mdi mdi-close-circle"></i>
+                                            Cancelado
+                                        </span>
+                                    @break
+
+                                    @default
+                                        <span class="text-muted">{{ $ordemServico->status_label }}</span>
+                                @endswitch
                             </div>
                         </div>
                     </div>
