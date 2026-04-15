@@ -38,15 +38,23 @@
                             <i class="mdi mdi-account-circle text-primary me-1"></i>
                             {{ $ordemServico->pedido->cliente->nome ?? '—' }}
                         </h6>
+
                         @if ($ordemServico->pedido->cliente)
-                            <small class="text-muted d-block">
-                                CPF: {{ $ordemServico->pedido->cliente->cpf_formatado ?? 'Não informado' }}
-                            </small>
-                            @if ($ordemServico->pedido->cliente->telefone_formatado)
-                                <small class="text-muted d-block">
-                                    Tel: {{ $ordemServico->pedido->cliente->telefone_formatado }}
-                                </small>
-                            @endif
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">
+                                        CPF: {{ $ordemServico->pedido->cliente->cpf_formatado ?? 'Não informado' }}
+                                    </small>
+                                </div>
+
+                                <div class="col-md-6">
+                                    @if ($ordemServico->pedido->cliente->telefone_formatado)
+                                        <small class="text-muted d-block">
+                                            Tel: {{ $ordemServico->pedido->cliente->telefone_formatado }}
+                                        </small>
+                                    @endif
+                                </div>
+                            </div>
                         @endif
                     </div>
 
@@ -102,13 +110,6 @@
                                 </div>
                             </div>
 
-                            @if ($ordemServico->pedido->forma_pagamento)
-                                <div class="mt-2">
-                                    <small class="text-muted d-block">Forma Pagamento:</small>
-                                    <small class="fw-medium">{{ $ordemServico->pedido->forma_pagamento }}</small>
-                                </div>
-                            @endif
-
                             @if ($ordemServico->pedido->observacoes)
                                 <div class="mt-2">
                                     <small class="text-muted d-block">Observações:</small>
@@ -136,18 +137,25 @@
                                 <i class="mdi mdi-file-document-outline text-info me-1"></i>
                                 Prescrição #{{ $ordemServico->prescricao->id }}
                             </h6>
-                            <small class="text-muted d-block">
-                                Criada em:
-                                {{ $ordemServico->prescricao->created_at ? $ordemServico->prescricao->created_at->format('d/m/Y H:i') : 'N/A' }}
-                            </small>
-                            <small class="text-muted d-block">
-                                Paciente: {{ $ordemServico->prescricao->paciente->nome ?? '—' }}
-                            </small>
-                            @if ($ordemServico->prescricao->paciente && $ordemServico->prescricao->paciente->cpf)
-                                <small class="text-muted d-block">
-                                    CPF: {{ $ordemServico->prescricao->paciente->cpf_formatado }}
-                                </small>
-                            @endif
+                            <div class="row">
+
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">
+                                        Paciente: {{ $ordemServico->prescricao->paciente->nome ?? '—' }}
+                                    </small>
+                                    @if ($ordemServico->prescricao->paciente && $ordemServico->prescricao->paciente->cpf)
+                                        <small class="text-muted d-block">
+                                            CPF: {{ $ordemServico->prescricao->paciente->cpf_formatado }}
+                                        </small>
+                                    @endif
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">
+                                        Criada em:
+                                        {{ $ordemServico->prescricao->created_at ? $ordemServico->prescricao->created_at->format('d/m/Y H:i') : 'N/A' }}
+                                    </small>
+                                </div>
+                            </div>
                         </div>
 
                         <hr class="my-3">
@@ -235,22 +243,34 @@
                                     <i class="mdi mdi-information-outline text-secondary me-1"></i>
                                     Informações Adicionais
                                 </h6>
-                                @if ($ordemServico->prescricao->tipo_lente)
-                                    <small class="text-muted d-block">Tipo de Lente:
-                                        <span class="fw-medium">{{ $ordemServico->prescricao->tipo_lente }}</span>
-                                    </small>
-                                @endif
-                                @if ($ordemServico->prescricao->validade_dias)
-                                    <small class="text-muted d-block">Validade:
-                                        <span class="fw-medium">{{ $ordemServico->prescricao->validade_dias }} dias</span>
-                                    </small>
-                                @endif
-                                @if ($ordemServico->prescricao->especialista_externo)
-                                    <small class="text-muted d-block">Especialista:
-                                        <span
-                                            class="fw-medium">{{ $ordemServico->prescricao->especialista_externo }}</span>
-                                    </small>
-                                @endif
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        @if ($ordemServico->prescricao->tipo_lente)
+                                            <small class="text-muted d-block">Tipo de Lente:
+                                                <span class="fw-medium">{{ $ordemServico->prescricao->tipo_lente }}</span>
+                                            </small>
+                                        @endif
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        @if ($ordemServico->prescricao->validade_dias)
+                                            <small class="text-muted d-block">Validade:
+                                                <span class="fw-medium">{{ $ordemServico->prescricao->validade_dias }}
+                                                    dias</span>
+                                            </small>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        @if ($ordemServico->prescricao->especialista_externo)
+                                            <small class="text-muted d-block">Especialista:
+                                                <span
+                                                    class="fw-medium">{{ $ordemServico->prescricao->especialista_externo }}</span>
+                                            </small>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
                         @endif
 
@@ -265,24 +285,38 @@
                                     <i class="mdi mdi-note-text-outline text-warning me-1"></i>
                                     Observações Clínicas
                                 </h6>
-                                @if ($ordemServico->prescricao->diagnostico)
-                                    <div class="mb-2">
-                                        <small class="text-muted d-block">Diagnóstico:</small>
-                                        <small class="fw-medium">{{ $ordemServico->prescricao->diagnostico }}</small>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        @if ($ordemServico->prescricao->diagnostico)
+                                            <div class="mb-2">
+                                                <small class="text-muted d-block">Diagnóstico:</small>
+                                                <small
+                                                    class="fw-medium">{{ $ordemServico->prescricao->diagnostico }}</small>
+                                            </div>
+                                        @endif
                                     </div>
-                                @endif
-                                @if ($ordemServico->prescricao->recomendacoes)
-                                    <div class="mb-2">
-                                        <small class="text-muted d-block">Recomendações:</small>
-                                        <small class="fw-medium">{{ $ordemServico->prescricao->recomendacoes }}</small>
+
+                                    <div class="col-md-6">
+                                        @if ($ordemServico->prescricao->recomendacoes)
+                                            <div class="mb-2">
+                                                <small class="text-muted d-block">Recomendações:</small>
+                                                <small
+                                                    class="fw-medium">{{ $ordemServico->prescricao->recomendacoes }}</small>
+                                            </div>
+                                        @endif
                                     </div>
-                                @endif
-                                @if ($ordemServico->prescricao->observacoes)
-                                    <div class="mb-2">
-                                        <small class="text-muted d-block">Observações:</small>
-                                        <small class="fw-medium">{{ $ordemServico->prescricao->observacoes }}</small>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        @if ($ordemServico->prescricao->observacoes)
+                                            <div class="mb-2">
+                                                <small class="text-muted d-block">Observações:</small>
+                                                <small
+                                                    class="fw-medium">{{ $ordemServico->prescricao->observacoes }}</small>
+                                            </div>
+                                        @endif
                                     </div>
-                                @endif
+                                </div>
                             </div>
                         @endif
                     </div>
