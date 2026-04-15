@@ -349,77 +349,81 @@
             </div>
 
             <!-- Fornecedor -->
-            @if ($ordemServico->fornecedor_id && $ordemServico->fornecedor)
-                <div class="supplier-section">
-                    <div class="col-12">
-                        <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
-                        <div class="p-3">
-                            <strong>{{ $ordemServico->fornecedor->razao_social ?? 'N/A' }}</strong>
-                            @if ($ordemServico->fornecedor->nome_fantasia)
-                                <br><em>{{ $ordemServico->fornecedor->nome_fantasia }}</em>
-                            @endif
-                            <br>
-                            @if (isset($ordemServico->fornecedor->endereco_completo) && $ordemServico->fornecedor->endereco_completo)
-                                {{ $ordemServico->fornecedor->endereco_completo }}<br>
-                            @endif
+            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
+                <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
+                <div class="p-3">
+                    @if ($ordemServico->fornecedor->cnpj)
+                        <strong>{{ $ordemServico->fornecedor->razao_social ?? 'N/A' }}</strong>
+                        @if ($ordemServico->fornecedor->nome_fantasia)
+                            <br><em>{{ $ordemServico->fornecedor->nome_fantasia }}</em>
+                        @endif
+                    @endif
+                    </br>
+
+
+                    @if ($ordemServico->fornecedor->cnpj)
+                        <strong> CNPJ:</strong>
+                        {{ preg_replace('/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/', '$1.$2.$3/$4-$5', $ordemServico->fornecedor->cnpj) }}
+                    @endif
+
+                    <div class="row mb-2">
+                        <div class="col-md-6">
                             @if ($ordemServico->fornecedor->telefone)
-                                Telefone:
+                                <strong> Telefone:</strong>
                                 {{ $ordemServico->fornecedor->telefone_formatado ?? $ordemServico->fornecedor->telefone }}<br>
                             @endif
+                        </div>
+                        <div class="col-md-6">
+
                             @if ($ordemServico->fornecedor->email)
-                                Email: {{ $ordemServico->fornecedor->email }}
+                                <strong> Email:</strong> {{ $ordemServico->fornecedor->email }}
                             @endif
                         </div>
                     </div>
                 </div>
-            @else
-                <div class="supplier-section">
-                    <div class="col-12">
-                        <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
-                        <div class="alert alert-warning">
-                            Nenhum fornecedor associado a esta ordem.
-                        </div>
-                    </div>
-                </div>
-            @endif
+
+            </div>
+
 
 
             <!-- Produtos -->
             <div class="col-12" style="page-break-inside: avoid; margin-bottom: 8px;">
                 <h6>PRODUTOS E ESPECIFICAÇÕES</h6>
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="text-center">Produto</th>
-                                <th class="text-center">Qtd</th>
-                                <th class="text-center">Especificações</th>
-                                <th class="text-center">Observações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if ($ordemServico->itensOrdem && $ordemServico->itensOrdem->count() > 0)
-                                @foreach ($ordemServico->itensOrdem as $itemOrdem)
-                                    @if ($itemOrdem->item && $itemOrdem->item->produto)
-                                        <tr>
-                                            <td><strong>{{ $itemOrdem->item->produto->nome ?? 'N/A' }}</strong>
-                                            </td>
-                                            <td class="text-center">{{ $itemOrdem->item->quantidade ?? 0 }}</td>
-                                            <td>{{ $itemOrdem->item->produto->categoria->descricao ?? '-' }}</td>
-                                            <td>{{ $ordemServico->observacoes ?? '-' }}</td>
-                                        </tr>
-                                    @endif
-                                @endforeach
-                            @else
+                <div class="p-3">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
                                 <tr>
-                                    <td><strong>Ordem de Serviço Geral</strong></td>
-                                    <td class="text-center">{{ $ordemServico->quantidade ?? 1 }}</td>
-                                    <td>{{ $ordemServico->preco_unit_formatado ?? 'N/A' }}</td>
-                                    <td>{{ $ordemServico->observacoes ?? '-' }}</td>
+                                    <th class="text-center">Produto</th>
+                                    <th class="text-center">Qtd</th>
+                                    <th class="text-center">Especificações</th>
+                                    <th class="text-center">Observações</th>
                                 </tr>
-                            @endif
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @if ($ordemServico->itensOrdem && $ordemServico->itensOrdem->count() > 0)
+                                    @foreach ($ordemServico->itensOrdem as $itemOrdem)
+                                        @if ($itemOrdem->item && $itemOrdem->item->produto)
+                                            <tr>
+                                                <td><strong>{{ $itemOrdem->item->produto->nome ?? 'N/A' }}</strong>
+                                                </td>
+                                                <td class="text-center">{{ $itemOrdem->item->quantidade ?? 0 }}</td>
+                                                <td>{{ $itemOrdem->item->produto->categoria->descricao ?? '-' }}</td>
+                                                <td>{{ $ordemServico->observacoes ?? '-' }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td><strong>Ordem de Serviço Geral</strong></td>
+                                        <td class="text-center">{{ $ordemServico->quantidade ?? 1 }}</td>
+                                        <td>{{ $ordemServico->preco_unit_formatado ?? 'N/A' }}</td>
+                                        <td>{{ $ordemServico->observacoes ?? '-' }}</td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -467,18 +471,19 @@
                                 <table class="table table-bordered">
                                     <thead class="table-light">
                                         <tr>
-                                            <th style="width: 14.28%;" class="text-center">Olho</th>
-                                            <th style="width: 14.28%;" class="text-center">Esférico</th>
-                                            <th style="width: 14.28%;" class="text-center">Cilíndrico</th>
-                                            <th style="width: 14.28%;" class="text-center">Eixo</th>
-                                            <th style="width: 14.28%;" class="text-center">DNP</th>
-                                            <th style="width: 14.28%;" class="text-center">Adição</th>
-                                            <th style="width: 14.28%;" class="text-center">Altura</th>
+                                            <th class="text-center">Olho</th>
+                                            <th class="text-center">Esférico</th>
+                                            <th class="text-center">Cilíndrico</th>
+                                            <th class="text-center">Eixo</th>
+                                            <th class="text-center">DNP</th>
+                                            <th class="text-center">Adição</th>
+                                            <th class="text-center">Altura</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td class="text-center"><strong>OD</strong><br><small>(Olho Direito)</small>
+                                            <td class="text-center"><strong>OD</strong><br><small>(Olho
+                                                    Direito)</small>
                                             </td>
                                             <td class="text-center">
                                                 {{ $ordemServico->prescricao->esfera_od ?? '0.00' }}</td>
