@@ -73,10 +73,12 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
-                    <i class="mdi mdi-cog text-primary me-2"></i>
+                    <i class="mdi mdi-format-list-bulleted text-primary me-2"></i>
                     Lista de Ordens de Serviço
                 </h5>
-                <span class="badge bg-primary">{{ $ordensServico->total() }} ordens</span>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">{{ $ordensServico->total() }} ordens</span>
+                </div>
             </div>
 
             <div class="card-body p-0">
@@ -135,26 +137,91 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge bg-{{ $ordem->status_class }}">
-                                                {{ $ordem->status_label }}
-                                            </span>
+                                            @switch($ordem->status)
+                                                @case('pendente')
+                                                    <span class="tag" style="background-color: #fff8e6; color: #d97706;">
+                                                        <i class="mdi mdi-clock"></i>
+                                                        Pendente
+                                                    </span>
+                                                @break
+
+                                                @case('enviado')
+                                                    <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
+                                                        <i class="mdi mdi-send"></i>
+                                                        Enviado
+                                                    </span>
+                                                @break
+
+                                                @case('em_producao')
+                                                    <span class="tag" style="background-color: #f3e8ff; color: #9333ea;">
+                                                        <i class="mdi mdi-cog"></i>
+                                                        Em Produção
+                                                    </span>
+                                                @break
+
+                                                @case('pronto')
+                                                    <span class="tag tag-status tag-status-ativo">
+                                                        <i class="mdi mdi-check-circle"></i>
+                                                        Pronto
+                                                    </span>
+                                                @break
+
+                                                @case('entregue')
+                                                    <span class="tag" style="background-color: #dcfce7; color: #16a34a;">
+                                                        <i class="mdi mdi-package-check"></i>
+                                                        Entregue
+                                                    </span>
+                                                @break
+
+                                                @case('cancelado')
+                                                    <span class="tag tag-status tag-status-inativo">
+                                                        <i class="mdi mdi-close-circle"></i>
+                                                        Cancelado
+                                                    </span>
+                                                @break
+
+                                                @default
+                                                    <span class="text-muted">{{ $ordem->status_label }}</span>
+                                            @endswitch
                                         </td>
                                         <td>
-                                            <span class="badge bg-{{ $ordem->prioridade_class }}">
-                                                {{ $ordem->prioridade_label }}
-                                            </span>
+                                            @switch($ordem->prioridade)
+                                                @case('normal')
+                                                    <span class="tag" style="background-color: #f3f4f6; color: #6b7280;">
+                                                        <i class="mdi mdi-minus"></i>
+                                                        Normal
+                                                    </span>
+                                                @break
+
+                                                @case('urgente')
+                                                    <span class="tag" style="background-color: #fff8e6; color: #d97706;">
+                                                        <i class="mdi mdi-star"></i>
+                                                        Urgente
+                                                    </span>
+                                                @break
+
+                                                @case('expressa')
+                                                    <span class="tag" style="background-color: #fee2e2; color: #dc2626;">
+                                                        <i class="mdi mdi-alert"></i>
+                                                        Expressa
+                                                    </span>
+                                                @break
+
+                                                @default
+                                                    <span class="text-muted">{{ $ordem->prioridade_label }}</span>
+                                            @endswitch
                                         </td>
                                         <td>
-                                            <div class="btn-group" role="group">
+                                            <div class="actions">
                                                 <a href="{{ route('ordens-servico.show', $ordem) }}"
-                                                    class="btn btn-sm btn-outline-primary" title="Visualizar">
+                                                    class="btn-action" style="background-color: #e0f0ff; color: #1d7dd6;" title="Visualizar">
                                                     <i class="mdi mdi-eye"></i>
                                                 </a>
                                                 <a href="{{ route('ordens-servico.edit', $ordem) }}"
-                                                    class="btn btn-sm btn-outline-secondary" title="Editar">
+                                                    class="btn-action" style="background-color: #f3f4f6; color: #6b7280;" title="Editar">
                                                     <i class="mdi mdi-pencil"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                <button type="button" class="btn-action" style="background-color: #fee2e2; color: #dc2626;"
                                                     onclick="confirmDelete({{ $ordem->id }}, '#{{ str_pad($ordem->id, 6, '0', STR_PAD_LEFT) }}')"
                                                     title="Excluir">
                                                     <i class="mdi mdi-delete"></i>
@@ -168,7 +235,7 @@
                     </div>
                 @else
                     <div class="text-center py-5">
-                        <i class="mdi mdi-cog text-muted" style="font-size: 3rem;"></i>
+                        <i class="mdi mdi-inbox text-muted" style="font-size: 3rem;"></i>
                         <h5 class="mt-3 text-muted">Nenhuma ordem de serviço encontrada</h5>
                         @if (($search ?? '') || ($status ?? 'todos') !== 'todos' || ($prioridade ?? 'todas') !== 'todas')
                             <p class="text-muted mb-3">
@@ -262,4 +329,59 @@
             modal.show();
         }
     </script>
+@endpush
+
+@push('styles')
+    <style>
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            line-height: 1;
+        }
+
+        .tag i {
+            font-size: 12px;
+        }
+
+        .tag-status-ativo {
+            background-color: #dcfce7 !important;
+            color: #16a34a !important;
+        }
+
+        .tag-status-inativo {
+            background-color: #fee2e2 !important;
+            color: #dc2626 !important;
+        }
+    </style>
 @endpush
