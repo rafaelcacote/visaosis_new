@@ -283,10 +283,11 @@
             <div class="card mt-3">
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button class="btn btn-primary" onclick="printReport()">
-                            <i class="bi bi-printer me-2"></i>Imprimir Relatório
-                        </button>
 
+                        <a href="{{ route('reports.attendance.pdf') }}?date={{ $selectedDate }}{{ isset($selectedProfessional) && $selectedProfessional ? '&professional_id=' . $selectedProfessional : '' }}"
+                            class="btn btn-primary" target="_blank">
+                            <i class="mdi mdi-file-pdf me-2"></i>Imprimir Relatório
+                        </a>
                     </div>
                 </div>
             </div>
@@ -315,7 +316,24 @@
         }
 
         function printReport() {
-            window.print();
+            const selectedDate = '{{ $selectedDate }}';
+            const professionalId = '{{ $selectedProfessional ?? '' }}';
+            const startDate = '{{ $startDate ?? '' }}';
+            const endDate = '{{ $endDate ?? '' }}';
+
+            let url = '{{ route('reports.attendance.pdf') }}?';
+
+            if (startDate && endDate && startDate !== endDate) {
+                url += `start_date=${startDate}&end_date=${endDate}`;
+            } else {
+                url += `date=${selectedDate}`;
+            }
+
+            if (professionalId) {
+                url += `&professional_id=${professionalId}`;
+            }
+
+            window.open(url, '_blank');
         }
 
         function exportReport() {
