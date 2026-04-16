@@ -65,8 +65,7 @@
                                     <i class="mdi mdi-magnify me-1"></i>
                                     Buscar
                                 </button>
-                                <a href="{{ route('ordens-servico.index') }}"
-                                    class="btn btn-sm btn-outline-secondary js-list-filter-clear d-none">
+                                <a href="{{ route('ordens-servico.index') }}" class="btn btn-sm btn-outline-secondary">
                                     <i class="mdi mdi-refresh me-1"></i>
                                     Limpar
                                 </a>
