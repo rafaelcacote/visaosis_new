@@ -464,6 +464,37 @@ class OrdemServicoController extends Controller
             ->with('success', 'Ordem de serviço excluída com sucesso!');
     }
 
+    public function updateStatus(Request $request, OrdemServico $ordemServico)
+    {
+        $validatedData = $request->validate([
+            'status' => 'required|string|in:pendente,enviado,em_producao,pronto,entregue,cancelado'
+        ]);
+
+        $statusAnterior = $ordemServico->status;
+        $novoStatus = $validatedData['status'];
+
+        // Atualizar o status
+        $ordemServico->update([
+            'status' => $novoStatus
+        ]);
+
+        // Mapear labels para exibição
+        $statusLabels = [
+            'pendente' => 'Pendente',
+            'enviado' => 'Enviado',
+            'em_producao' => 'Em Produção',
+            'pronto' => 'Pronto',
+            'entregue' => 'Entregue',
+            'cancelado' => 'Cancelado'
+        ];
+
+        $labelAnterior = $statusLabels[$statusAnterior] ?? $statusAnterior;
+        $labelNovo = $statusLabels[$novoStatus] ?? $novoStatus;
+
+        return redirect()->route('ordens-servico.index')
+            ->with('success', "Status da ordem #{$ordemServico->id} alterado de '{$labelAnterior}' para '{$labelNovo}' com sucesso!");
+    }
+
     public function pdf(OrdemServico $ordemServico)
     {
         // Carrega relacionamentos necessários

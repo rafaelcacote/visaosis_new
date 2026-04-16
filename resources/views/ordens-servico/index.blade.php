@@ -106,7 +106,7 @@
                                         <th>Entrega</th>
                                         <th>Status</th>
                                         <th>Prioridade</th>
-                                        <th width="120">Ações</th>
+                                        <th width="150">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -248,6 +248,12 @@
                                                         <i class="mdi mdi-pencil"></i>
                                                     </a>
                                                     <button type="button" class="btn-action"
+                                                        style="background-color: #f3e8ff; color: #9333ea;"
+                                                        onclick="changeStatus({{ $ordem->id }}, '#{{ str_pad($ordem->id, 6, '0', STR_PAD_LEFT) }}', '{{ $ordem->status }}', '{{ $ordem->pedido->cliente->nome ?? 'N/A' }}', '{{ $ordem->fornecedor->razao_social ?? 'N/A' }}', '{{ $ordem->total_formatado }}', '{{ $ordem->prioridade }}')"
+                                                        title="Alterar Status">
+                                                        <i class="mdi mdi-swap-horizontal"></i>
+                                                    </button>
+                                                    <button type="button" class="btn-action"
                                                         style="background-color: #fee2e2; color: #dc2626;"
                                                         onclick="confirmDelete({{ $ordem->id }}, '#{{ str_pad($ordem->id, 6, '0', STR_PAD_LEFT) }}')"
                                                         title="Excluir">
@@ -302,6 +308,78 @@
         </div>
     </div>
 
+    <!-- Modal de Alteração de Status -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="statusModalLabel">
+                        <i class="mdi mdi-swap-horizontal me-2"></i>
+                        Alterar Status da Ordem
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6 class="text-dark mb-3 fw-bold">Informações da Ordem</h6>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">Número da Ordem</small>
+                                <strong id="statusOrdemNumber">—</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">Cliente</small>
+                                <strong id="statusOrdemCliente">—</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">Fornecedor</small>
+                                <strong id="statusOrdemFornecedor">—</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">Valor Total</small>
+                                <strong class="text-success" id="statusOrdemValor">—</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-dark mb-3 fw-bold">Alterar Status</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">Status Atual</small>
+                                <span id="statusAtual" class="tag">—</span>
+                            </div>
+                            <div class="col-6">
+                                <label for="novoStatus" class="form-label">Novo Status <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="novoStatus" name="status" required>
+                                    <option value="">Selecione o novo status</option>
+                                    <option value="pendente">Pendente</option>
+                                    <option value="enviado">Enviado</option>
+                                    <option value="em_producao">Em Produção</option>
+                                    <option value="pronto">Pronto</option>
+                                    <option value="entregue">Entregue</option>
+                                    <option value="cancelado">Cancelado</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="mdi mdi-close-circle me-1"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmarStatus">
+                        <i class="mdi mdi-check-circle me-1"></i>
+                        Alterar Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Confirmação de Exclusão -->
     <div class="modal fade" id="deleteModal" tabindex="-1">
         <div class="modal-dialog">
@@ -348,6 +426,8 @@
 
 @push('scripts')
     <script>
+        let currentOrdemId = null;
+
         function confirmDelete(ordemId, ordemNumber) {
             document.getElementById('deleteOrdemNumber').textContent = ordemNumber;
             const form = document.getElementById('deleteForm');
@@ -355,6 +435,112 @@
             const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
             modal.show();
         }
+
+        function changeStatus(ordemId, ordemNumber, currentStatus, cliente, fornecedor, valor, prioridade) {
+            currentOrdemId = ordemId;
+
+            // Preencher informações da ordem
+            document.getElementById('statusOrdemNumber').textContent = ordemNumber;
+            document.getElementById('statusOrdemCliente').textContent = cliente;
+            document.getElementById('statusOrdemFornecedor').textContent = fornecedor;
+            document.getElementById('statusOrdemValor').textContent = valor;
+
+            // Mostrar status atual com formatação
+            const statusAtualElement = document.getElementById('statusAtual');
+            const statusLabels = {
+                'pendente': {
+                    text: 'Pendente',
+                    style: 'background-color: #fff8e6; color: #d97706;',
+                    icon: 'mdi-clock'
+                },
+                'enviado': {
+                    text: 'Enviado',
+                    style: 'background-color: #e0f0ff; color: #1d7dd6;',
+                    icon: 'mdi-send'
+                },
+                'em_producao': {
+                    text: 'Em Produção',
+                    style: 'background-color: #f3e8ff; color: #9333ea;',
+                    icon: 'mdi-cog'
+                },
+                'pronto': {
+                    text: 'Pronto',
+                    style: 'background-color: #dcfce7; color: #16a34a;',
+                    icon: 'mdi-check-circle'
+                },
+                'entregue': {
+                    text: 'Entregue',
+                    style: 'background-color: #dcfce7; color: #16a34a;',
+                    icon: 'mdi-package-check'
+                },
+                'cancelado': {
+                    text: 'Cancelado',
+                    style: 'background-color: #fee2e2; color: #dc2626;',
+                    icon: 'mdi-close-circle'
+                }
+            };
+
+            const statusInfo = statusLabels[currentStatus] || {
+                text: currentStatus,
+                style: '',
+                icon: 'mdi-help'
+            };
+            statusAtualElement.innerHTML = `<i class="mdi ${statusInfo.icon}"></i> ${statusInfo.text}`;
+            statusAtualElement.setAttribute('style', statusInfo.style);
+
+            // Limpar seleção anterior
+            document.getElementById('novoStatus').value = '';
+
+            // Mostrar modal
+            const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+            modal.show();
+        }
+
+        // Event listener para confirmar alteração de status
+        document.getElementById('btnConfirmarStatus').addEventListener('click', function() {
+            const novoStatus = document.getElementById('novoStatus').value;
+
+            if (!novoStatus) {
+                alert('Por favor, selecione um novo status.');
+                return;
+            }
+
+            if (!currentOrdemId) {
+                alert('Erro: ID da ordem não encontrado.');
+                return;
+            }
+
+            // Criar formulário para submissão
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/ordens-servico/${currentOrdemId}/status`;
+            form.style.display = 'none';
+
+            // Token CSRF
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+
+            // Method override para PATCH
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'PATCH';
+            form.appendChild(methodInput);
+
+            // Status
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'status';
+            statusInput.value = novoStatus;
+            form.appendChild(statusInput);
+
+            // Adicionar ao DOM e submeter
+            document.body.appendChild(form);
+            form.submit();
+        });
     </script>
 @endpush
 
