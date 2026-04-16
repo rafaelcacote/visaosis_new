@@ -283,6 +283,51 @@
             margin-bottom: 1px;
         }
 
+        /* Estilos para estatísticas em formato de cards lado a lado */
+        .stats-row {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            margin-bottom: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .stat-column {
+            display: table-cell;
+            width: 16.666%;
+            text-align: center;
+            padding: 12px 8px;
+            border-right: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .stat-column:last-child {
+            border-right: none;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            color: #212529;
+            margin-bottom: 2px;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 9px;
+            color: #6c757d;
+            margin: 0;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            color: #212529;
+        }
+
         /* Print styles */
         @media print {
             body {
@@ -381,59 +426,44 @@
     </div>
 
     <!-- Estatísticas gerais -->
-    <h3 class="section-title">RESUMO ESTATÍSTICO</h3>
-    <div class="stats-grid">
-        <div class="stat-card">
-            <span class="number highlight-blue">{{ $stats['scheduled'] ?? 0 }}</span>
-            <span class="label">Consultas Agendadas</span>
-        </div>
-        <div class="stat-card">
-            <span class="number highlight-green">{{ $stats['attended'] ?? 0 }}</span>
-            <span class="label">Atendimentos Realizados</span>
-        </div>
-        <div class="stat-card">
-            <span class="number highlight-red">{{ $stats['cancelled'] ?? 0 }}</span>
-            <span class="label">Consultas Canceladas</span>
-        </div>
-        <div class="stat-card">
-            <span class="number highlight-orange">{{ $stats['returns'] ?? 0 }}</span>
-            <span class="label">Retornos</span>
-        </div>
-        <div class="stat-card">
-            <span class="number highlight-blue">{{ $stats['referrals'] ?? 0 }}</span>
-            <span class="label">Encaminhamentos</span>
-        </div>
-        <div class="stat-card">
-            <span class="number highlight-red">{{ $stats['priority_patients'] ?? 0 }}</span>
-            <span class="label">Pacientes Prioritários</span>
+    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
+        <h3 class="section-title">RESUMO ESTATÍSTICO</h3>
+        <div class="p-3">
+
+            <div class="stats-row">
+                <div class="stat-column">
+                    <span class="stat-number">{{ $stats['scheduled'] ?? 0 }}</span>
+                    <span class="stat-label">Agendados</span>
+                </div>
+                <div class="stat-column">
+                    <span class="stat-number">{{ $stats['attended'] ?? 0 }}</span>
+                    <span class="stat-label">Atendidos</span>
+                </div>
+                <div class="stat-column">
+                    <span class="stat-number">{{ $stats['cancelled'] ?? 0 }}</span>
+                    <span class="stat-label">Cancelados</span>
+                </div>
+                <div class="stat-column">
+                    <span class="stat-number">{{ $stats['returns'] ?? 0 }}</span>
+                    <span class="stat-label">Retornos</span>
+                </div>
+                <div class="stat-column">
+                    <span class="stat-number">{{ $stats['referrals'] ?? 0 }}</span>
+                    <span class="stat-label">Encaminhamentos</span>
+                </div>
+                <div class="stat-column">
+                    <span class="stat-number">{{ $stats['priority_patients'] ?? 0 }}</span>
+                    <span class="stat-label">Prioritários</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Tempos médios -->
-    <div class="info-row">
-        <div class="info-card">
-            <h4>TEMPO MÉDIO DE ESPERA</h4>
-            <p class="highlight-blue">{{ $stats['avg_wait_time'] ?? 'N/A' }}</p>
-        </div>
-        <div class="info-card">
-            <h4>TEMPO MÉDIO DE ATENDIMENTO</h4>
-            <p class="highlight-green">{{ $stats['avg_service_time'] ?? 'N/A' }}</p>
-        </div>
-        <div class="info-card">
-            <h4>TAXA DE COMPARECIMENTO</h4>
-            @php
-                $totalScheduled = $stats['scheduled'] ?? 0;
-                $totalAttended = $stats['attended'] ?? 0;
-                $attendanceRate = $totalScheduled > 0 ? round(($totalAttended / $totalScheduled) * 100, 1) : 0;
-            @endphp
-            <p class="highlight-blue">{{ $attendanceRate }}%</p>
-        </div>
-    </div>
 
     <!-- Estatísticas por profissional -->
     <!-- Produtos -->
     <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
-        <h6>DESEMPENHO POR PROFISSIONAL</h6>
+        <h3 class="section-title">DESEMPENHO POR PROFISSIONAL</h3>
         <div class="p-3">
             <div class="table-responsive">
                 @if (count($professionalStats) > 0)
@@ -482,23 +512,8 @@
 
 
 
-    <!-- Observações -->
-    <div style="margin-top: 20px; padding: 8px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 4px;">
-        <h4 style="color: #92400e; font-size: 9px; margin-bottom: 4px;">OBSERVAÇÕES</h4>
-        <p style="font-size: 8px; color: #92400e;">
-            • Os tempos são calculados com base nos registros disponíveis no sistema<br>
-            • Taxa de comparecimento = (Atendimentos / Agendamentos) x 100<br>
-            • Pacientes prioritários incluem emergências e prioridades altas<br>
-            • Relatório gerado automaticamente pelo sistema em
-            {{ \Carbon\Carbon::now('America/Sao_Paulo')->format('d/m/Y \à\s H:i') }}
-        </p>
-    </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <span>{{ \App\Helpers\AuthHelper::tenantName() ?? 'Sistema de Gestão' }} - Relatório de Atendimentos</span>
-        <span>{{ \Carbon\Carbon::now('America/Sao_Paulo')->format('d/m/Y H:i') }}</span>
-    </div>
+
 </body>
 
 </html>
