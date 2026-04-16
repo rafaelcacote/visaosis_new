@@ -375,7 +375,7 @@
     <!-- Modal de confirmação de criação -->
     <div class="modal fade" id="confirmCriarOrdemModal" tabindex="-1" aria-labelledby="confirmCriarOrdemModalLabel"
         aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="confirmCriarOrdemModalLabel">
@@ -386,41 +386,79 @@
                         aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted mb-3">Revise os dados abaixo antes de criar a ordem de serviço.</p>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-1 small text-uppercase">Cliente</h6>
-                            <p class="mb-0 fw-semibold" id="confirm_os_cliente">—</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-1 small text-uppercase">Venda</h6>
-                            <p class="mb-0 fw-semibold" id="confirm_os_venda">—</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-1 small text-uppercase">Fornecedor / Laboratório</h6>
-                            <p class="mb-0 fw-semibold" id="confirm_os_fornecedor">—</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-1 small text-uppercase">Itens selecionados</h6>
-                            <p class="mb-0 fw-semibold" id="confirm_os_itens">—</p>
-                        </div>
-                        <div class="col-md-4">
-                            <h6 class="text-muted mb-1 small text-uppercase">Quantidade</h6>
-                            <p class="mb-0 fw-semibold" id="confirm_os_quantidade">—</p>
-                        </div>
-                        <div class="col-md-4">
-                            <h6 class="text-muted mb-1 small text-uppercase">Prioridade</h6>
-                            <p class="mb-0 fw-semibold text-capitalize" id="confirm_os_prioridade">—</p>
-                        </div>
-                        <div class="col-md-4">
-                            <h6 class="text-muted mb-1 small text-uppercase">Total (linha)</h6>
-                            <p class="mb-0 fw-semibold text-success" id="confirm_os_total">—</p>
+                    <p class="text-muted mb-4 small">Revise os dados antes de criar a ordem de serviço.</p>
+
+                    <!-- Cliente e Venda -->
+                    <div class="mb-4">
+                        <h6 class="text-dark mb-3 fw-bold">Cliente e Venda</h6>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">Cliente</small>
+                                <strong id="confirm_os_cliente">—</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block mb-1">Venda</small>
+                                <strong id="confirm_os_venda">—</strong>
+                            </div>
                         </div>
                     </div>
-                    <div class="alert alert-light border mt-3 mb-0">
-                        <i class="mdi mdi-information-outline me-2 text-primary"></i>
-                        <small class="text-muted">Após confirmar, a ordem será registrada e enviada conforme os dados
-                            informados.</small>
+
+                    <!-- ID da Prescrição -->
+                    <div class="mb-4" id="confirm_os_prescricao_container" style="display: none;">
+                        <h6 class="text-dark mb-3 fw-bold">Prescrição</h6>
+                        <div class="row">
+                            <div class="col-12">
+                                <small class="text-muted d-block mb-1">ID da Prescrição</small>
+                                <strong id="confirm_os_prescricao">—</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informações da Ordem de Serviço -->
+                    <div class="mb-4">
+                        <h6 class="text-dark mb-3 fw-bold">Ordem de Serviço</h6>
+                        <div class="row g-3">
+                            <div class="col-4">
+                                <small class="text-muted d-block mb-1">Fornecedor</small>
+                                <strong id="confirm_os_fornecedor">—</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block mb-1">Itens</small>
+                                <strong id="confirm_os_itens">—</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block mb-1">Quantidade</small>
+                                <strong id="confirm_os_quantidade">—</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block mb-1">Prioridade</small>
+                                <strong class="text-capitalize" id="confirm_os_prioridade">—</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block mb-1">Data de Entrega</small>
+                                <strong id="confirm_os_entrega">—</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block mb-1">Total</small>
+                                <strong class="text-success" id="confirm_os_total">—</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Itens Detalhados -->
+                    <div class="mb-4" id="confirm_os_itens_detalhes_container" style="display: none;">
+                        <h6 class="text-dark mb-3 fw-bold">Produtos Selecionados</h6>
+                        <div class="bg-light p-3 rounded" style="max-height: 120px; overflow-y: auto;">
+                            <div id="confirm_os_itens_detalhes"></div>
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="mb-3" id="confirm_os_observacoes_container" style="display: none;">
+                        <h6 class="text-dark mb-3 fw-bold">Observações</h6>
+                        <div class="bg-light p-3 rounded">
+                            <small id="confirm_os_observacoes"></small>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -876,8 +914,8 @@
                                 </small>
                                 <div class="itens-preview" style="max-height: 60px; overflow-y: auto; font-size: 0.8em;">
                                     ${venda.itens.slice(0, 3).map(item => `
-                                                                                                                                                <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
-                                                                                                                                            `).join('')}
+                                                                                                                                                        <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
+                                                                                                                                                    `).join('')}
                                     ${venda.itens.length > 3 ? `<div class="text-muted">... e mais ${venda.itens.length - 3} produto(s)</div>` : ''}
                                 </div>
                             </div>
@@ -931,20 +969,20 @@
                     </h6>
                     <div style="max-height: 60vh; overflow-y: auto; overflow-x: hidden; width: 100%;">
                         ${venda.itens.map(item => `
-                                                                                                                                <div class="border rounded p-2 mb-2 item-checkbox d-flex align-items-start" style="cursor: pointer;">
-                                                                                                                                    <input class="form-check-input me-3" type="checkbox" name="itens_selecionados[]"
-                                                                                                                                           value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()" style="margin-top: 2px;">
-                                                                                                                                    <div class="flex-grow-1">
-                                                                                                                                        <label class="form-check-label w-100" for="item_${item.id}" style="cursor: pointer;">
-                                                                                                                                            <strong style="display: block; font-size: 0.9rem; line-height: 1.3; margin-bottom: 2px;">${item.produto_nome}</strong>
-                                                                                                                                            <small class="text-muted" style="font-size: 0.75rem; line-height: 1.2;">
-                                                                                                                                                Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
-                                                                                                                                                ${item.desconto_raw > 0 ? ` • Desc: ${item.desconto}` : ''}
-                                                                                                                                            </small>
-                                                                                                                                        </label>
-                                                                                                                                    </div>
-                                                                                                                                </div>
-                                                                                                                            `).join('')}
+                                                                                                                                        <div class="border rounded p-2 mb-2 item-checkbox d-flex align-items-start" style="cursor: pointer;">
+                                                                                                                                            <input class="form-check-input me-3" type="checkbox" name="itens_selecionados[]"
+                                                                                                                                                   value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()" style="margin-top: 2px;">
+                                                                                                                                            <div class="flex-grow-1">
+                                                                                                                                                <label class="form-check-label w-100" for="item_${item.id}" style="cursor: pointer;">
+                                                                                                                                                    <strong style="display: block; font-size: 0.9rem; line-height: 1.3; margin-bottom: 2px;">${item.produto_nome}</strong>
+                                                                                                                                                    <small class="text-muted" style="font-size: 0.75rem; line-height: 1.2;">
+                                                                                                                                                        Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
+                                                                                                                                                        ${item.desconto_raw > 0 ? ` • Desc: ${item.desconto}` : ''}
+                                                                                                                                                    </small>
+                                                                                                                                                </label>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                    `).join('')}
                     </div>
                     <div class="mt-3 text-center">
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllItems()">
@@ -956,11 +994,11 @@
                     </div>
                 </div>
                 ${venda.observacoes ? `
-                                                                                                                        <div class="mt-3">
-                                                                                                                            <h6 class="mb-1">Observações da Venda:</h6>
-                                                                                                                            <p class="mb-0 text-muted small">${venda.observacoes}</p>
-                                                                                                                        </div>
-                                                                                                                    ` : ''}
+                                                                                                                                <div class="mt-3">
+                                                                                                                                    <h6 class="mb-1">Observações da Venda:</h6>
+                                                                                                                                    <p class="mb-0 text-muted small">${venda.observacoes}</p>
+                                                                                                                                </div>
+                                                                                                                            ` : ''}
             `;
             document.getElementById('venda_selecionada').style.display = 'block';
             document.getElementById('btnSalvar').disabled = false;
@@ -1016,23 +1054,81 @@
             const fornecedorSelect = document.getElementById('fornecedor_id');
             const fornecedorText = fornecedorSelect.options[fornecedorSelect.selectedIndex]?.text?.trim() || '—';
 
+            // Cliente
             document.getElementById('confirm_os_cliente').textContent =
                 document.getElementById('client_name')?.textContent?.trim() || '—';
+
+            // Venda
             document.getElementById('confirm_os_venda').textContent = selectedVenda ?
-                `Venda #${selectedVenda.numero}` :
-                '—';
+                `Venda #${selectedVenda.numero}` : '—';
+
+            // Prescrição
+            document.getElementById('confirm_os_prescricao').textContent = selectedPrescricao ?
+                `Prescrição de ${selectedPrescricao.profissional_nome}` : '—';
+
+            // Fornecedor
             document.getElementById('confirm_os_fornecedor').textContent = fornecedorText;
+
+            // Itens
             document.getElementById('confirm_os_itens').textContent =
-                `${itensSelecionados.length} item(ns) selecionado(s)`;
+                `${itensSelecionados.length} item(ns)`;
+
+            // Quantidade
             document.getElementById('confirm_os_quantidade').textContent =
                 document.getElementById('quantidade').value || '—';
+
+            // Prioridade
             document.getElementById('confirm_os_prioridade').textContent = prioridadeLabel(
                 document.getElementById('prioridade').value
             );
+
+            // Data de Entrega
+            const dataEntrega = document.getElementById('entrega_em').value;
+            document.getElementById('confirm_os_entrega').textContent = dataEntrega ?
+                new Date(dataEntrega + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+
+            // Total
             document.getElementById('confirm_os_total').textContent =
                 document.getElementById('total_linha').value ?
-                `R$ ${document.getElementById('total_linha').value}` :
-                '—';
+                `R$ ${document.getElementById('total_linha').value}` : '—';
+
+            // Observações
+            const observacoes = document.getElementById('observacoes').value.trim();
+            if (observacoes) {
+                document.getElementById('confirm_os_observacoes').textContent = observacoes;
+                document.getElementById('confirm_os_observacoes_container').style.display = 'block';
+            } else {
+                document.getElementById('confirm_os_observacoes_container').style.display = 'none';
+            }
+
+            // Prescrição (mostrar/ocultar)
+            if (selectedPrescricao) {
+                document.getElementById('confirm_os_prescricao_container').style.display = 'block';
+            } else {
+                document.getElementById('confirm_os_prescricao_container').style.display = 'none';
+            }
+
+            // Itens Detalhados
+            if (itensSelecionados.length > 0) {
+                let itensHtml = '';
+                itensSelecionados.forEach(checkbox => {
+                    const container = checkbox.closest('.item-checkbox');
+                    if (container) {
+                        const label = container.querySelector('label');
+                        if (label) {
+                            const produto = label.querySelector('strong')?.textContent?.trim() ||
+                                'Produto não identificado';
+                            const detalhes = label.querySelector('small')?.textContent?.trim() || '';
+                            itensHtml +=
+                                `<small class="d-block"><strong>${produto}</strong><br><span class="text-muted">${detalhes}</span></small>`;
+                        }
+                    }
+                });
+                document.getElementById('confirm_os_itens_detalhes').innerHTML = itensHtml;
+                document.getElementById('confirm_os_itens_detalhes_container').style.display = 'block';
+            } else {
+                document.getElementById('confirm_os_itens_detalhes_container').style.display = 'none';
+            }
 
             getConfirmOrdemModal().show();
             return false;
