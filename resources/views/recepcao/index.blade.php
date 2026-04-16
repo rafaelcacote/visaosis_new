@@ -368,9 +368,15 @@
                             </div>
                             <div class="text-end">
                                 @if ($emAtendimento)
-                                    <span class="badge bg-warning">Ocupado</span>
+                                    <span class="tag" style="background-color: #fff8e6; color: #d97706;">
+
+                                        Ocupado
+                                    </span>
                                 @else
-                                    <span class="badge bg-success">Disponível</span>
+                                    <span class="tag" style="background-color: #dcfce7; color: #16a34a;">
+
+                                        Disponível
+                                    </span>
                                 @endif
                                 <div class="mt-1">
                                     <small class="text-muted">{{ $consultasHoje }} consultas</small>
