@@ -65,21 +65,24 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3">
+                    <div class="row g-3 align-items-end form-aligned-sm">
                         <div class="col-md-8">
-                            <input type="text" class="form-control" id="searchPatient"
+                            <label class="form-label">Buscar Paciente</label>
+                            <input type="text" class="form-control form-control-sm" id="searchPatient"
                                 value="{{ old('search_term', '') }}"
                                 placeholder="Digite o nome, CPF ou telefone do paciente">
                         </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-primary w-100" onclick="searchPatient(event)">
-                                <i class="mdi mdi-magnify"></i> Buscar
-                            </button>
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-success w-100" onclick="showNewPatientForm()">
-                                <i class="mdi mdi-account-plus"></i> Novo Paciente
-                            </button>
+                        <div class="col-md-4">
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button class="btn btn-sm btn-outline-primary" onclick="searchPatient(event)">
+                                    <i class="mdi mdi-magnify me-1"></i>
+                                    Buscar
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="showNewPatientForm()">
+                                    <i class="mdi mdi-account-plus me-1"></i>
+                                    Novo Paciente
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
