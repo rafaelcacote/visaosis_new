@@ -407,22 +407,29 @@
     </div>
 
     <!-- Informações do período -->
-    <div class="period-info">
-        <h4>PERÍODO ANALISADO</h4>
-        @if ($startDate === $endDate)
-            <p><strong>Data:</strong> {{ \Carbon\Carbon::parse($selectedDate)->format('d/m/Y') }}</p>
-        @else
-            <p><strong>Período:</strong> {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} até
-                {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
-        @endif
-
-        @if ($selectedProfessional && $selectedProfessionalData)
-            <p class="professional-filter"><strong>Profissional:</strong>
-                {{ $selectedProfessionalData->nome ?? 'N/A' }}
-                ({{ optional($selectedProfessionalData->especialidade)->nome ?? 'Sem especialidade' }})</p>
-        @else
-            <p class="professional-filter">Todos os profissionais incluídos</p>
-        @endif
+    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
+        <h3 class="section-title">PERÍODO ANALISADO</h3>
+        <div class="p-3">
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    @if (isset($startDate) && isset($endDate) && $startDate !== $endDate)
+                        <p><strong>Período:</strong> {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} até
+                            {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
+                    @else
+                        <p><strong>Data:</strong> {{ \Carbon\Carbon::parse($selectedDate)->format('d/m/Y') }}</p>
+                    @endif
+                </div>
+                <div class="col-md-6">
+                    @if ($selectedProfessional && $selectedProfessionalData)
+                        <p class="professional-filter"><strong>Profissional:</strong>
+                            {{ $selectedProfessionalData->nome ?? 'N/A' }}
+                            ({{ optional($selectedProfessionalData->especialidade)->nome ?? 'Sem especialidade' }})</p>
+                    @else
+                        <p class="professional-filter">Todos os profissionais incluídos</p>
+                    @endif
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Estatísticas gerais -->
@@ -476,7 +483,7 @@
                                 <th>Atendidas</th>
                                 <th>Canceladas</th>
                                 <th>Taxa Atend.</th>
-                                <th>Tempo Médio</th>
+
                             </tr>
                         </thead>
                         <tbody>
@@ -487,7 +494,7 @@
                                     <td>{{ $stat['specialty'] ?: 'Não informado' }}</td>
                                     <td>{{ $stat['total'] }}</td>
                                     <td>{{ $stat['attended'] }}</td>
-                                    <td>{{ $stat['total'] - $stat['attended'] }}</td>
+                                    <td>{{ $stat['cancelled'] ?? 0 }}</td>
                                     <td>
                                         @if ($stat['total'] > 0)
                                             {{ round(($stat['attended'] / $stat['total']) * 100, 1) }}%
@@ -495,7 +502,7 @@
                                             0%
                                         @endif
                                     </td>
-                                    <td>N/A</td>
+
                                 </tr>
                             @endforeach
                         </tbody>

@@ -227,6 +227,10 @@ class ReportController extends Controller
                 ->where('status', Consulta::STATUS_ATENDIDO)
                 ->count();
 
+            $cancelledCount = (clone $consultasQuery)
+                ->where('status', Consulta::STATUS_CANCELADO)
+                ->count();
+
             $returnsCount = (clone $consultasQuery)
                 ->where('tipo', Consulta::TIPO_RETORNO)
                 ->count();
@@ -242,6 +246,7 @@ class ReportController extends Controller
                 'specialty' => $profissional->especialidade->descricao ?? 'Não informada',
                 'scheduled' => $scheduledCount,
                 'attended' => $attendedCount,
+                'cancelled' => $cancelledCount,
                 'returns' => $returnsCount,
                 'referrals' => $referralsCount,
                 'total' => $totalCount

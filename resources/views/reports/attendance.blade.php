@@ -161,9 +161,10 @@
                                         <th>Profissional</th>
                                         <th>Agendados</th>
                                         <th>Atendidos</th>
+                                        <th>Cancelados</th>
                                         <th>Retornos</th>
                                         <th>Encaminhados</th>
-                                        <th>Total</th>
+
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -203,6 +204,17 @@
                                             </td>
                                             <td>
                                                 <div>
+                                                    <h6 class="mb-1">{{ $prof['cancelled'] ?? 0 }}</h6>
+                                                    @if (($prof['cancelled'] ?? 0) > 0)
+                                                        <small class="text-danger">
+                                                            <i class="mdi mdi-cancel"></i>
+                                                            Cancelados
+                                                        </small>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
                                                     <h6 class="mb-1">{{ $prof['returns'] }}</h6>
                                                     @if ($prof['returns'] > 0)
                                                         <small class="text-info">
@@ -223,12 +235,7 @@
                                                     @endif
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div>
-                                                    <h6 class="mb-1"><strong>{{ $prof['total'] }}</strong></h6>
 
-                                                </div>
-                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -284,8 +291,26 @@
                 <div class="card-body">
                     <div class="d-grid gap-2">
 
-                        <a href="{{ route('reports.attendance.pdf') }}?date={{ $selectedDate }}{{ isset($selectedProfessional) && $selectedProfessional ? '&professional_id=' . $selectedProfessional : '' }}"
-                            class="btn btn-primary" target="_blank">
+                        @php
+                            $pdfUrl = route('reports.attendance.pdf');
+                            $params = [];
+
+                            // Adicionar parâmetros de data/período
+                            if (isset($startDate) && isset($endDate) && $startDate !== $endDate) {
+                                $params[] = 'start_date=' . $startDate;
+                                $params[] = 'end_date=' . $endDate;
+                            } else {
+                                $params[] = 'date=' . $selectedDate;
+                            }
+
+                            // Adicionar profissional se selecionado
+                            if (isset($selectedProfessional) && $selectedProfessional) {
+                                $params[] = 'professional_id=' . $selectedProfessional;
+                            }
+
+                            $pdfUrlWithParams = $pdfUrl . '?' . implode('&', $params);
+                        @endphp
+                        <a href="{{ $pdfUrlWithParams }}" class="btn btn-primary" target="_blank">
                             <i class="mdi mdi-file-pdf me-2"></i>Imprimir Relatório
                         </a>
                     </div>
@@ -313,27 +338,6 @@
 
         function goToToday() {
             window.location.href = '{{ route('reports.attendance') }}';
-        }
-
-        function printReport() {
-            const selectedDate = '{{ $selectedDate }}';
-            const professionalId = '{{ $selectedProfessional ?? '' }}';
-            const startDate = '{{ $startDate ?? '' }}';
-            const endDate = '{{ $endDate ?? '' }}';
-
-            let url = '{{ route('reports.attendance.pdf') }}?';
-
-            if (startDate && endDate && startDate !== endDate) {
-                url += `start_date=${startDate}&end_date=${endDate}`;
-            } else {
-                url += `date=${selectedDate}`;
-            }
-
-            if (professionalId) {
-                url += `&professional_id=${professionalId}`;
-            }
-
-            window.open(url, '_blank');
         }
 
         function exportReport() {
