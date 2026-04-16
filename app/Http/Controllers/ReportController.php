@@ -335,4 +335,106 @@ class ReportController extends Controller
             storage_path('app/reports/' . $filename)
         );
     }
+
+    public function attendancePdf(Request $request)
+    {
+        // Obter valores do tenant e location da sessão atual
+        $tenantId = session('tenant_id') ?? 1;
+        $locationId = session('location_id') ?? 1;
+
+        // Obter data da query string ou usar data atual
+        $selectedDate = $request->get('date', now()->format('Y-m-d'));
+        $startDate = $request->get('start_date', $selectedDate);
+        $endDate = $request->get('end_date', $selectedDate);
+        $selectedProfessional = $request->get('professional_id', null);
+
+        $date = \Carbon\Carbon::parse($selectedDate);
+        $dateStart = \Carbon\Carbon::parse($startDate);
+        $dateEnd = \Carbon\Carbon::parse($endDate);
+
+        // Estatísticas gerais do período (usando mesmo código do método attendance)
+        $baseQuery = \App\Models\Consulta::where('tenant_id', $tenantId)
+            ->where('location_id', $locationId);
+
+        // Aplicar filtro de data (período ou data única)
+        if ($startDate === $endDate) {
+            $baseQuery->whereDate('agendado_em', $date);
+        } else {
+            $baseQuery->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
+        }
+
+        // Aplicar filtro de profissional se selecionado
+        if ($selectedProfessional) {
+            $baseQuery->where('profissional_id', $selectedProfessional);
+        }
+
+        $totalConsultas = (clone $baseQuery)->count();
+
+        $attendedCount = (clone $baseQuery)
+            ->where('status', \App\Models\Consulta::STATUS_ATENDIDO)
+            ->count();
+
+        $cancelledCount = (clone $baseQuery)
+            ->where('status', \App\Models\Consulta::STATUS_CANCELADO)
+            ->count();
+
+        $returnsCount = (clone $baseQuery)
+            ->where('tipo', \App\Models\Consulta::TIPO_RETORNO)
+            ->count();
+
+        $referralsCount = (clone $baseQuery)
+            ->whereHas('encaminhamento')
+            ->count();
+
+        $priorityCount = (clone $baseQuery)
+            ->whereIn('prioridade', [\App\Models\Consulta::PRIORIDADE, \App\Models\Consulta::PRIORIDADE_EMERGENCIA])
+            ->count();
+
+        // Cálculo de tempos médios
+        $avgWaitTime = $this->calculateAverageWaitTime($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional);
+        $avgServiceTime = $this->calculateAverageServiceTime($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional);
+
+        $stats = [
+            'scheduled' => $totalConsultas,
+            'attended' => $attendedCount,
+            'cancelled' => $cancelledCount,
+            'returns' => $returnsCount,
+            'referrals' => $referralsCount,
+            'avg_wait_time' => $avgWaitTime . ' min',
+            'avg_service_time' => $avgServiceTime . ' min',
+            'priority_patients' => $priorityCount,
+            'first_time' => 0 // Por simplicidade, mantendo 0 por enquanto
+        ];
+
+        // Estatísticas por profissional
+        $professionalStats = $this->getProfessionalStatistics($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional);
+
+        // Buscar profissionais para o filtro
+        $profissionais = \App\Models\Profissional::with('especialidade')
+            ->where('location_id', $locationId)
+            ->where('ativo', true)
+            ->orderBy('nome')
+            ->get();
+
+        $selectedProfessionalData = null;
+        if ($selectedProfessional) {
+            $selectedProfessionalData = $profissionais->where('id', $selectedProfessional)->first();
+        }
+
+        // Gerar PDF usando DomPDF
+        $pdf = \PDF::loadView('reports.pdf', compact(
+            'stats',
+            'professionalStats',
+            'selectedDate',
+            'startDate',
+            'endDate',
+            'selectedProfessional',
+            'selectedProfessionalData',
+            'profissionais'
+        ));
+
+        $filename = 'relatorio_atendimentos_' . $date->format('Y-m-d') . '.pdf';
+
+        return $pdf->stream($filename);
+    }
 }
