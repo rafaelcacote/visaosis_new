@@ -12,9 +12,7 @@
             <p class="text-muted mb-0">Controle completo de pagamentos e crediário próprio</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-success" onclick="exportFinancial()">
-                <i class="mdi mdi-download me-2"></i>Exportar
-            </button>
+
             <a href="{{ route('financial.receivables') }}" class="btn btn-success">
                 <i class="mdi mdi-currency-usd me-2"></i>Contas a Receber
             </a>

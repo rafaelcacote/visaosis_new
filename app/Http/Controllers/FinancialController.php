@@ -524,6 +524,223 @@ class FinancialController extends Controller
         ]);
     }
 
+    public function receivableDetails(string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $parcela = PedidoVendaParcela::query()
+            ->with(['pedido.cliente'])
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $parcela) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parcela não encontrada.',
+            ], 404);
+        }
+
+        $tz = 'America/Manaus';
+        $driver = DB::connection()->getDriverName();
+
+        $dbHojeStr = Carbon::now($tz)->toDateString();
+        if ($driver === 'pgsql') {
+            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
+            if ($row && isset($row->d)) {
+                $dbHojeStr = (string) $row->d;
+            }
+        }
+
+        $today = Carbon::parse($dbHojeStr, $tz)->startOfDay();
+        $tomorrow = $today->copy()->addDay();
+        $weekEnd = $today->copy()->addDays(7);
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $venc = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em, $tz)->startOfDay() : null;
+        $isPaid = ! empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+
+        $status = 'em_dia';
+        if ($isPaid) {
+            $status = 'paga';
+        } elseif ($venc && $venc->lt($today)) {
+            $status = 'vencida';
+        } elseif ($venc && $venc->equalTo($today)) {
+            $status = 'vence_hoje';
+        } elseif ($venc && $venc->gte($tomorrow) && $venc->lte($weekEnd)) {
+            $status = 'vence_semana';
+        }
+
+        $diasAtraso = 0;
+        if (! $isPaid && $venc && $venc->lt($today)) {
+            $diasAtraso = $venc->diffInDays($today);
+        }
+
+        $pedido = $parcela->pedido;
+        $cliente = $pedido?->cliente;
+
+        $dataPedido = $pedido?->data_pedido ? Carbon::parse($pedido->data_pedido, $tz) : null;
+        $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
+        $vendaId = $pedido ? 'VD-' . $year . '-' . str_pad((int) $pedido->id, 4, '0', STR_PAD_LEFT) : null;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'parcela' => [
+                    'id' => $parcela->id,
+                    'numero' => $parcela->numero_parcela,
+                    'total' => $parcela->total_parcelas,
+                    'valor' => (float) ($parcela->valor ?? 0),
+                    'vencimento' => $venc ? $venc->format('Y-m-d') : null,
+                    'pago_em' => $parcela->pago_em ? Carbon::parse($parcela->pago_em, $tz)->format('Y-m-d H:i:s') : null,
+                    'status' => $status,
+                    'dias_atraso' => $diasAtraso,
+                    'forma_pagamento' => $parcela->forma_pagamento,
+                    'boleto_pdf_url' => route('financial.boleto-pdf', $parcela->id),
+                ],
+                'pedido' => $pedido ? [
+                    'id' => $pedido->id,
+                    'venda_id' => $vendaId,
+                    'data_pedido' => $pedido->data_pedido ? Carbon::parse($pedido->data_pedido, $tz)->format('Y-m-d H:i:s') : null,
+                    'valor_total' => (float) ($pedido->valor_total ?? 0),
+                    'status' => $pedido->status,
+                ] : null,
+                'cliente' => $cliente ? [
+                    'id' => $cliente->id,
+                    'nome' => $cliente->nome,
+                    'cpf' => $cliente->cpf,
+                    'telefone' => $cliente->telefone_formatado ?? $cliente->telefone,
+                ] : null,
+            ],
+        ]);
+    }
+
+    public function receivableHistory(string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $tz = 'America/Manaus';
+        $driver = DB::connection()->getDriverName();
+
+        $dbHojeStr = Carbon::now($tz)->toDateString();
+        if ($driver === 'pgsql') {
+            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
+            if ($row && isset($row->d)) {
+                $dbHojeStr = (string) $row->d;
+            }
+        }
+
+        $today = Carbon::parse($dbHojeStr, $tz)->startOfDay();
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $parcelaRef = PedidoVendaParcela::query()
+            ->with(['pedido.cliente'])
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $parcelaRef) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parcela não encontrada.',
+            ], 404);
+        }
+
+        $pedido = $parcelaRef->pedido;
+        $cliente = $pedido?->cliente;
+
+        $parcelas = PedidoVendaParcela::query()
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('pedido_venda_id', $parcelaRef->pedido_venda_id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->orderBy('numero_parcela')
+            ->orderBy('vencimento_em')
+            ->orderBy('id')
+            ->get();
+
+        $items = $parcelas->map(function (PedidoVendaParcela $p) use ($tz, $today, $paidStatuses) {
+            $venc = $p->vencimento_em ? Carbon::parse($p->vencimento_em, $tz)->startOfDay() : null;
+            $isPaid = ! empty($p->pago_em) || in_array(strtolower((string) ($p->status ?? '')), $paidStatuses, true);
+            $diasAtraso = 0;
+            if (! $isPaid && $venc && $venc->lt($today)) {
+                $diasAtraso = $venc->diffInDays($today);
+            }
+
+            return [
+                'id' => $p->id,
+                'numero' => $p->numero_parcela,
+                'total' => $p->total_parcelas,
+                'valor' => (float) ($p->valor ?? 0),
+                'vencimento' => $venc ? $venc->format('Y-m-d') : null,
+                'pago_em' => $p->pago_em ? Carbon::parse($p->pago_em, $tz)->format('Y-m-d H:i:s') : null,
+                'status' => $isPaid ? 'paga' : (($venc && $venc->lt($today)) ? 'vencida' : 'a_vencer'),
+                'dias_atraso' => $diasAtraso,
+                'boleto_pdf_url' => route('financial.boleto-pdf', $p->id),
+            ];
+        })->values()->toArray();
+
+        $dataPedido = $pedido?->data_pedido ? Carbon::parse($pedido->data_pedido, $tz) : null;
+        $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
+        $vendaId = $pedido ? 'VD-' . $year . '-' . str_pad((int) $pedido->id, 4, '0', STR_PAD_LEFT) : null;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'pedido' => $pedido ? [
+                    'id' => $pedido->id,
+                    'venda_id' => $vendaId,
+                    'data_pedido' => $pedido->data_pedido ? Carbon::parse($pedido->data_pedido, $tz)->format('Y-m-d H:i:s') : null,
+                    'valor_total' => (float) ($pedido->valor_total ?? 0),
+                    'status' => $pedido->status,
+                ] : null,
+                'cliente' => $cliente ? [
+                    'id' => $cliente->id,
+                    'nome' => $cliente->nome,
+                    'cpf' => $cliente->cpf,
+                    'telefone' => $cliente->telefone_formatado ?? $cliente->telefone,
+                ] : null,
+                'parcelas' => $items,
+            ],
+        ]);
+    }
+
     public function boletos()
     {
         // Gestão de boletos

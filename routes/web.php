@@ -187,6 +187,8 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('financial')->name('financial.')->group(function () {
         Route::get('/', [FinancialController::class, 'index'])->name('index');
         Route::get('/receivables', [FinancialController::class, 'receivables'])->name('receivables');
+        Route::get('/receivables/{id}/details', [FinancialController::class, 'receivableDetails'])->name('receivables.details');
+        Route::get('/receivables/{id}/history', [FinancialController::class, 'receivableHistory'])->name('receivables.history');
         Route::get('/boletos', [FinancialController::class, 'boletos'])->name('boletos');
         Route::post('/boletos/generate-week', [FinancialController::class, 'generateBoletosWeek'])->name('boletos.generate-week');
         Route::get('/notifications', [FinancialController::class, 'notifications'])->name('notifications');
