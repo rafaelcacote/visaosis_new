@@ -29,6 +29,8 @@ Route::prefix('public')->name('public.')->group(function () {
     Route::get('/prescription/{token}', [ProfissionalWorkflowController::class, 'viewPrescriptionByToken'])->name('prescription.view');
     Route::get('/exam/{token}', [ProfissionalWorkflowController::class, 'viewExamByToken'])->name('exam.view');
     Route::get('/referral/{token}', [ProfissionalWorkflowController::class, 'viewReferralByToken'])->name('referral.view');
+    Route::get('/boleto/{token}', [FinancialController::class, 'publicBoletoPdf'])->middleware('signed')->name('boleto.view');
+    Route::get('/recibo/{token}', [FinancialController::class, 'publicReciboPdf'])->middleware('signed')->name('recibo.view');
 });
 
 // ============================================
@@ -205,6 +207,7 @@ Route::middleware(['auth'])->group(function () {
         // Ações AJAX
         Route::post('/generate-boleto/{id}', [FinancialController::class, 'generateBoleto'])->name('generate-boleto');
         Route::get('/boleto-pdf/{id}', [FinancialController::class, 'boletoPdf'])->name('boleto-pdf');
+        Route::get('/recibo-pdf/{id}', [FinancialController::class, 'reciboPdf'])->name('recibo-pdf');
         Route::post('/send-whatsapp/{id}', [FinancialController::class, 'sendWhatsApp'])->name('send-whatsapp');
         Route::post('/receive-payment', [FinancialController::class, 'receivePayment'])->name('receive-payment');
     });

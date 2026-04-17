@@ -253,13 +253,13 @@
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <button class="btn btn-outline-secondary" title="WhatsApp"
-                                                    onclick='@if (!empty($row['proxima_parcela_id'])) sendParcelBoleto({{ $row['proxima_parcela_id'] }}, @json($row['telefone'] ?? null)); @endif'
-                                                    @if (empty($row['proxima_parcela_id']) || empty($row['telefone'])) disabled @endif>
+                                                    onclick='@if (!empty($row['proxima_parcela_boleto_url'])) sendParcelBoleto(@json($row['proxima_parcela_boleto_url']), @json($row['telefone'] ?? null)); @endif'
+                                                    @if (empty($row['proxima_parcela_boleto_url']) || empty($row['telefone'])) disabled @endif>
                                                     <i class="mdi mdi-whatsapp"></i>
                                                 </button>
                                                 <button class="btn btn-outline-primary" title="Boleto"
-                                                    onclick="@if (!empty($row['proxima_parcela_id'])) window.open('{{ route('financial.boleto-pdf', $row['proxima_parcela_id']) }}', '_blank'); @endif"
-                                                    @if (empty($row['proxima_parcela_id'])) disabled @endif>
+                                                    onclick='@if (!empty($row['proxima_parcela_boleto_url'])) window.open(@json($row['proxima_parcela_boleto_url']), "_blank"); @endif'
+                                                    @if (empty($row['proxima_parcela_boleto_url'])) disabled @endif>
                                                     <i class="mdi mdi-file-document"></i>
                                                 </button>
                                             </div>
@@ -380,9 +380,9 @@
                     });
             }
 
-            function sendParcelBoleto(parcelaId, telefone) {
-                if (!parcelaId) {
-                    alert('Parcela inválida.');
+            function sendParcelBoleto(boletoUrl, telefone) {
+                if (!boletoUrl) {
+                    alert('Link do boleto inválido.');
                     return;
                 }
                 const digits = (telefone || '').toString().replace(/\D+/g, '');
@@ -394,9 +394,7 @@
                 if (!waPhone.startsWith('55') && (waPhone.length === 10 || waPhone.length === 11)) {
                     waPhone = '55' + waPhone;
                 }
-                const base = @json(route('financial.boleto-pdf', ['id' => 0]));
-                const pdfUrl = base.replace(/0$/, String(parcelaId));
-                const message = 'Segue o boleto da sua parcela: ' + pdfUrl;
+                const message = 'Segue o boleto da sua parcela: ' + boletoUrl;
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 const waUrl = isMobile ?
                     ('https://wa.me/' + waPhone + '?text=' + encodeURIComponent(message)) :

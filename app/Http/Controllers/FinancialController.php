@@ -11,7 +11,9 @@ use App\Models\WhatsappNotification;
 use App\Models\WhatsappTemplate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 
 class FinancialController extends Controller
 {
@@ -260,7 +262,7 @@ class FinancialController extends Controller
                 ->toArray();
         }
 
-        $installmentSummaries = $installmentsRaw->map(function ($row) use ($today, $tz, $nextParcelas) {
+        $installmentSummaries = $installmentsRaw->map(function ($row) use ($tenantId, $today, $tz, $nextParcelas) {
             $cliente = (string) ($row->cliente ?? 'Cliente não informado');
             $initials = collect(preg_split('/\s+/', trim($cliente)))->filter()->take(2)->map(fn($p) => mb_strtoupper(mb_substr($p, 0, 1)))->implode('');
             if ($initials === '') {
@@ -295,9 +297,21 @@ class FinancialController extends Controller
                 }
             }
 
+            $proximaParcelaId = isset($nextParcelas[(int) $row->pedido_id]) ? (int) $nextParcelas[(int) $row->pedido_id] : null;
+            $boletoSecureUrl = null;
+            if ($tenantId && $proximaParcelaId) {
+                $boletoToken = Crypt::encryptString((int) $tenantId . '|' . (int) $proximaParcelaId);
+                $boletoSecureUrl = URL::temporarySignedRoute(
+                    'public.boleto.view',
+                    now()->addDays(7),
+                    ['token' => $boletoToken]
+                );
+            }
+
             return [
                 'pedido_id' => (int) $row->pedido_id,
-                'proxima_parcela_id' => isset($nextParcelas[(int) $row->pedido_id]) ? (int) $nextParcelas[(int) $row->pedido_id] : null,
+                'proxima_parcela_id' => $proximaParcelaId,
+                'proxima_parcela_boleto_url' => $boletoSecureUrl,
                 'cliente' => $cliente,
                 'initials' => $initials,
                 'telefone' => $telefone,
@@ -461,7 +475,7 @@ class FinancialController extends Controller
 
         $rows = $query->paginate(50)->withQueryString();
 
-        $receivables = $rows->through(function ($row) use ($today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
+        $receivables = $rows->through(function ($row) use ($tenantId, $today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
             $cliente = (string) ($row->cliente_nome ?? 'Cliente não informado');
             $telefone = $row->cliente_telefone ? (string) $row->cliente_telefone : null;
             $cpf = $row->cliente_cpf ? (string) $row->cliente_cpf : null;
@@ -491,6 +505,12 @@ class FinancialController extends Controller
 
             $valorParcela = (float) ($row->valor_parcela ?? 0);
             $juros = 0.0;
+            $secureToken = Crypt::encryptString((int) $tenantId . '|' . (int) $row->parcela_id);
+            $boletoSecureUrl = URL::temporarySignedRoute(
+                'public.boleto.view',
+                now()->addDays(7),
+                ['token' => $secureToken]
+            );
 
             return [
                 'id' => (int) $row->parcela_id,
@@ -507,6 +527,7 @@ class FinancialController extends Controller
                 'juros' => $juros,
                 'valor_atualizado' => $valorParcela + $juros,
                 'pago_em' => $row->pago_em,
+                'boleto_secure_url' => $boletoSecureUrl,
             ];
         });
 
@@ -599,6 +620,13 @@ class FinancialController extends Controller
         $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
         $vendaId = $pedido ? 'VD-' . $year . '-' . str_pad((int) $pedido->id, 4, '0', STR_PAD_LEFT) : null;
 
+        $secureToken = Crypt::encryptString((int) $parcela->tenant_id . '|' . (int) $parcela->id);
+        $boletoSecureUrl = URL::temporarySignedRoute(
+            'public.boleto.view',
+            now()->addDays(7),
+            ['token' => $secureToken]
+        );
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -612,7 +640,7 @@ class FinancialController extends Controller
                     'status' => $status,
                     'dias_atraso' => $diasAtraso,
                     'forma_pagamento' => $parcela->forma_pagamento,
-                    'boleto_pdf_url' => route('financial.boleto-pdf', $parcela->id),
+                    'boleto_secure_url' => $boletoSecureUrl,
                 ],
                 'pedido' => $pedido ? [
                     'id' => $pedido->id,
@@ -703,6 +731,20 @@ class FinancialController extends Controller
                 $diasAtraso = $venc->diffInDays($today);
             }
 
+            $secureToken = Crypt::encryptString((int) $p->tenant_id . '|' . (int) $p->id);
+            $secureUrl = URL::temporarySignedRoute(
+                'public.recibo.view',
+                now()->addDays(7),
+                ['token' => $secureToken]
+            );
+
+            $boletoToken = Crypt::encryptString((int) $p->tenant_id . '|' . (int) $p->id);
+            $boletoSecureUrl = URL::temporarySignedRoute(
+                'public.boleto.view',
+                now()->addDays(7),
+                ['token' => $boletoToken]
+            );
+
             return [
                 'id' => $p->id,
                 'numero' => $p->numero_parcela,
@@ -712,7 +754,8 @@ class FinancialController extends Controller
                 'pago_em' => $p->pago_em ? Carbon::parse($p->pago_em, $tz)->format('Y-m-d H:i:s') : null,
                 'status' => $isPaid ? 'paga' : (($venc && $venc->lt($today)) ? 'vencida' : 'a_vencer'),
                 'dias_atraso' => $diasAtraso,
-                'boleto_pdf_url' => route('financial.boleto-pdf', $p->id),
+                'boleto_secure_url' => $boletoSecureUrl,
+                'recibo_secure_url' => $secureUrl,
             ];
         })->values()->toArray();
 
@@ -1724,9 +1767,16 @@ class FinancialController extends Controller
             ->get();
 
         $boletos = $parcelas->map(function (PedidoVendaParcela $p) {
+            $secureToken = Crypt::encryptString((int) $p->tenant_id . '|' . (int) $p->id);
+            $secureUrl = URL::temporarySignedRoute(
+                'public.boleto.view',
+                now()->addDays(7),
+                ['token' => $secureToken]
+            );
+
             return [
                 'parcela_id' => $p->id,
-                'pdf_url' => route('financial.boleto-pdf', $p->id),
+                'pdf_url' => $secureUrl,
             ];
         })->values()->toArray();
 
@@ -1770,11 +1820,17 @@ class FinancialController extends Controller
         }
 
         $boleto = $this->buildBoletoFromParcela($parcela);
+        $secureToken = Crypt::encryptString((int) $parcela->tenant_id . '|' . (int) $parcela->id);
+        $secureUrl = URL::temporarySignedRoute(
+            'public.boleto.view',
+            now()->addDays(7),
+            ['token' => $secureToken]
+        );
 
         return response()->json([
             'success' => true,
             'boleto' => $boleto,
-            'pdf_url' => route('financial.boleto-pdf', $parcela->id),
+            'pdf_url' => $secureUrl,
         ]);
     }
 
@@ -1799,6 +1855,88 @@ class FinancialController extends Controller
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
                 });
             })
+            ->firstOrFail();
+
+        $boleto = $this->buildBoletoFromParcela($parcela);
+
+        return view('financial.boleto-pdf', compact('boleto'));
+    }
+
+    public function reciboPdf($id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            abort(403, 'Tenant não informado na sessão.');
+        }
+
+        $parcela = PedidoVendaParcela::query()
+            ->with('pedido.cliente')
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->firstOrFail();
+
+        $recibo = $this->buildReciboFromParcela($parcela);
+
+        return view('financial.recibo-pdf', compact('recibo'));
+    }
+
+    public function publicReciboPdf(Request $request, string $token)
+    {
+        try {
+            $decrypted = Crypt::decryptString($token);
+            [$tenantId, $parcelaId] = explode('|', $decrypted, 2);
+        } catch (\Throwable $e) {
+            abort(403, 'Link inválido.');
+        }
+
+        $tenantId = (int) $tenantId;
+        $parcelaId = (int) $parcelaId;
+        if ($tenantId <= 0 || $parcelaId <= 0) {
+            abort(403, 'Link inválido.');
+        }
+
+        $parcela = PedidoVendaParcela::query()
+            ->with('pedido.cliente')
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $parcelaId)
+            ->firstOrFail();
+
+        $recibo = $this->buildReciboFromParcela($parcela);
+
+        return view('financial.recibo-pdf', compact('recibo'));
+    }
+
+    public function publicBoletoPdf(Request $request, string $token)
+    {
+        try {
+            $decrypted = Crypt::decryptString($token);
+            [$tenantId, $parcelaId] = explode('|', $decrypted, 2);
+        } catch (\Throwable $e) {
+            abort(403, 'Link inválido.');
+        }
+
+        $tenantId = (int) $tenantId;
+        $parcelaId = (int) $parcelaId;
+        if ($tenantId <= 0 || $parcelaId <= 0) {
+            abort(403, 'Link inválido.');
+        }
+
+        $parcela = PedidoVendaParcela::query()
+            ->with('pedido.cliente')
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $parcelaId)
             ->firstOrFail();
 
         $boleto = $this->buildBoletoFromParcela($parcela);
@@ -1858,6 +1996,50 @@ class FinancialController extends Controller
             'gerado_em' => now()->format('Y-m-d H:i:s'),
             'descricao' => 'Venda #' . (int) $parcela->pedido_venda_id . ' - Parcela ' . (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
             'observacoes' => null,
+        ];
+    }
+
+    private function buildReciboFromParcela(PedidoVendaParcela $parcela): array
+    {
+        $tenant = session('tenant');
+        $tenantName = null;
+        $tenantCpfCnpj = null;
+
+        if (is_array($tenant)) {
+            $tenantName = $tenant['trade_name'] ?? $tenant['name'] ?? null;
+            $tenantCpfCnpj = $tenant['cpf_cnpj'] ?? null;
+        } elseif (is_object($tenant)) {
+            $tenantName = $tenant->trade_name ?? $tenant->name ?? null;
+            $tenantCpfCnpj = $tenant->cpf_cnpj ?? null;
+        }
+
+        $pedido = $parcela->pedido;
+        $cliente = $pedido?->cliente;
+
+        $tz = 'America/Manaus';
+        $paidAt = $parcela->pago_em ? Carbon::parse($parcela->pago_em, $tz) : null;
+        $venc = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em, $tz) : null;
+
+        $saleDate = $pedido?->data_pedido ? Carbon::parse($pedido->data_pedido, $tz) : null;
+        $year = $saleDate ? $saleDate->format('Y') : ($paidAt ? $paidAt->format('Y') : now($tz)->format('Y'));
+        $vendaId = $pedido ? 'VD-' . $year . '-' . str_pad((int) $pedido->id, 4, '0', STR_PAD_LEFT) : null;
+
+        return [
+            'id' => 'RCB-' . $parcela->id,
+            'emitido_em' => now($tz)->format('Y-m-d H:i:s'),
+            'beneficiario' => $tenantName ?: 'Beneficiário não informado',
+            'beneficiario_cpf_cnpj' => $tenantCpfCnpj ?: '',
+            'cliente' => $cliente?->nome ?? 'Cliente não informado',
+            'cliente_cpf' => $cliente?->cpf ?? '',
+            'cliente_telefone' => $cliente?->telefone_formatado ?? $cliente?->telefone ?? '',
+            'pedido_id' => $pedido?->id,
+            'venda_id' => $vendaId,
+            'valor' => (float) ($parcela->valor ?? 0),
+            'parcela_numero' => (int) $parcela->numero_parcela,
+            'parcela_total' => (int) $parcela->total_parcelas,
+            'vencimento' => $venc ? $venc->toDateString() : null,
+            'pago_em' => $paidAt ? $paidAt->format('Y-m-d H:i:s') : null,
+            'forma_pagamento' => $parcela->forma_pagamento,
         ];
     }
 

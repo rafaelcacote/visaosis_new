@@ -110,9 +110,15 @@
                 </div>
                 <div class="card-body">
                     <form class="row g-3" id="filtersForm" method="GET" action="{{ route('financial.receivables') }}">
+                        <div class="col-md-3">
+                            <label for="searchInput" class="form-label">Buscar</label>
+                            <input type="text" class="form-control" placeholder="cliente, venda..." id="searchInput"
+                                name="q" value="{{ $filters['q'] ?? '' }}">
+                        </div>
                         <div class="col-md-2">
+                            <label for="statusFilter" class="form-label">Status</label>
                             <select class="form-select" id="statusFilter" name="status">
-                                <option value="">Todos Status</option>
+                                <option value="">Todos</option>
                                 <option value="vencida">Vencidas</option>
                                 <option value="vence_hoje">Vence Hoje</option>
                                 <option value="vence_semana">Vence na Semana</option>
@@ -121,18 +127,18 @@
                             </select>
                         </div>
                         <div class="col-md-2">
+                            <label for="startDate" class="form-label">Data Inicial</label>
                             <input type="date" class="form-control" id="startDate" name="start_date"
                                 placeholder="Data Inicial" value="{{ $filters['start_date'] ?? '' }}">
                         </div>
                         <div class="col-md-2">
+                            <label for="endDate" class="form-label">Data Final</label>
                             <input type="date" class="form-control" id="endDate" name="end_date"
                                 placeholder="Data Final" value="{{ $filters['end_date'] ?? '' }}">
                         </div>
-                        <div class="col-md-3">
-                            <input type="text" class="form-control" placeholder="Buscar cliente, venda..."
-                                id="searchInput" name="q" value="{{ $filters['q'] ?? '' }}">
-                        </div>
+
                         <div class="col-md-2">
+                            <label for="orderBy" class="form-label">Ordenar Por</label>
                             <select class="form-select" id="orderBy" name="order_by">
                                 <option value="vencimento">Vencimento</option>
                                 <option value="valor">Valor</option>
@@ -144,6 +150,7 @@
                             <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
                                 <i class="mdi mdi-magnify"></i>
                             </button>
+
                         </div>
                     </form>
                 </div>
@@ -252,52 +259,70 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                @if ($receivable['status'] == 'paga')
-                                                    <button class="btn btn-outline-success" title="Pagamento confirmado"
-                                                        disabled>
-                                                        <i class="mdi mdi-check"></i>
-                                                    </button>
-                                                @elseif ($receivable['status'] == 'vencida')
-                                                    <button class="btn btn-danger" title="Cobrar Urgente"
-                                                        onclick="sendUrgentReminder({{ $receivable['id'] }})">
-                                                        <i class="mdi mdi-phone"></i>
-                                                    </button>
-                                                @else
-                                                    <button class="btn btn-outline-success" title="WhatsApp"
-                                                        onclick='sendReceivableBoleto({{ $receivable['id'] }}, @json($receivable['telefone'] ?? null));'
-                                                        @if (empty($receivable['telefone'])) disabled @endif>
-                                                        <i class="mdi mdi-whatsapp"></i>
-                                                    </button>
-                                                @endif
-                                                <button class="btn btn-outline-primary" title="Gerar Boleto"
-                                                    onclick="generateBoleto({{ $receivable['id'] }})">
-                                                    <i class="mdi mdi-file-document-outline"></i>
+                                                <button class="btn btn-outline-secondary dropdown-toggle"
+                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="mdi mdi-dots-vertical"></i>
                                                 </button>
-                                                @if ($receivable['status'] !== 'paga')
-                                                    <button class="btn btn-outline-success btn-sm"
-                                                        title="Dar baixa / Receber Pagamento"
-                                                        onclick="openPaymentModal({{ $receivable['id'] }}, '{{ $receivable['cliente'] }}', '{{ $receivable['cpf'] ?? '' }}', '{{ $receivable['venda_id'] }}', {{ (float) $receivable['valor_parcela'] }}, {{ (float) $receivable['juros'] }}, {{ (float) $receivable['valor_atualizado'] }})">
-                                                        <i class="mdi mdi-cash"></i>
-                                                    </button>
-                                                @endif
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-outline-secondary dropdown-toggle"
-                                                        data-bs-toggle="dropdown">
-                                                        <i class="mdi mdi-dots-vertical"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="#"
-                                                                onclick="return viewDetails({{ $receivable['id'] }})">
-                                                                <i class="mdi mdi-eye me-2"></i>Ver Detalhes
-                                                            </a></li>
-                                                        <li><a class="dropdown-item" href="#"
-                                                                onclick="return viewHistory({{ $receivable['id'] }})">
-                                                                <i class="mdi mdi-history me-2"></i>Histórico
-                                                            </a></li>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    @if ($receivable['status'] == 'paga')
+                                                        <li>
+                                                            <button type="button" class="dropdown-item text-success"
+                                                                disabled>
+                                                                <i class="mdi mdi-check me-2"></i>Pagamento confirmado
+                                                            </button>
+                                                        </li>
+                                                    @endif
 
+                                                    @if ($receivable['status'] == 'vencida')
+                                                        <li>
+                                                            <button type="button" class="dropdown-item text-danger"
+                                                                onclick="sendUrgentReminder({{ $receivable['id'] }})">
+                                                                <i class="mdi mdi-phone me-2"></i>Cobrar Urgente
+                                                            </button>
+                                                        </li>
+                                                    @else
+                                                        <li>
+                                                            <button type="button" class="dropdown-item"
+                                                                onclick='sendReceivableBoleto(@json($receivable['boleto_secure_url'] ?? null), @json($receivable['telefone'] ?? null));'
+                                                                @if (empty($receivable['telefone'])) disabled @endif>
+                                                                <i class="mdi mdi-whatsapp me-2"></i>Enviar WhatsApp
+                                                            </button>
+                                                        </li>
+                                                    @endif
 
-                                                    </ul>
-                                                </div>
+                                                    <li>
+                                                        <button type="button" class="dropdown-item"
+                                                            onclick='generateBoleto(@json($receivable['boleto_secure_url'] ?? null))'>
+                                                            <i class="mdi mdi-file-document-outline me-2"></i>Gerar
+                                                            Boleto
+                                                        </button>
+                                                    </li>
+
+                                                    @if ($receivable['status'] !== 'paga')
+                                                        <li>
+                                                            <button type="button" class="dropdown-item"
+                                                                onclick="openPaymentModal({{ $receivable['id'] }}, '{{ $receivable['cliente'] }}', '{{ $receivable['cpf'] ?? '' }}', '{{ $receivable['venda_id'] }}', {{ (float) $receivable['valor_parcela'] }}, {{ (float) $receivable['juros'] }}, {{ (float) $receivable['valor_atualizado'] }})">
+                                                                <i class="mdi mdi-cash me-2"></i>Dar Baixa
+                                                            </button>
+                                                        </li>
+                                                    @endif
+
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+                                                    <li>
+                                                        <button type="button" class="dropdown-item"
+                                                            onclick="viewDetails({{ $receivable['id'] }})">
+                                                            <i class="mdi mdi-eye me-2"></i>Ver Detalhes
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button type="button" class="dropdown-item"
+                                                            onclick="viewHistory({{ $receivable['id'] }})">
+                                                            <i class="mdi mdi-history me-2"></i>Histórico
+                                                        </button>
+                                                    </li>
+                                                </ul>
                                             </div>
                                         </td>
                                     </tr>
@@ -406,11 +431,12 @@
                                     <th class="text-end">Valor</th>
                                     <th>Status</th>
                                     <th class="text-end">Boleto</th>
+                                    <th class="text-end">Recibo</th>
                                 </tr>
                             </thead>
                             <tbody id="rhRows">
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-3">Carregando...</td>
+                                    <td colspan="7" class="text-center text-muted py-3">Carregando...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -441,6 +467,40 @@
     @push('scripts')
         <script>
             let selectedReceivableId = null;
+            let currentHistoryWaPhone = null;
+
+            function normalizeWhatsappPhone(raw) {
+                const digits = (raw || '').toString().replace(/\D+/g, '');
+                if (!digits) return null;
+                if (digits.startsWith('55')) return digits;
+                if (digits.length === 10 || digits.length === 11) return '55' + digits;
+                return digits;
+            }
+
+            function openReceivableReceipt(parcelaId) {
+                const urlTemplate = @json(route('financial.recibo-pdf', ['id' => '__ID__']));
+                const url = urlTemplate.replace('__ID__', String(parcelaId));
+                window.open(url, '_blank');
+            }
+
+            function sendReceivableReceiptWhatsapp(reciboSecureUrl) {
+                if (!reciboSecureUrl) {
+                    alert('Link do recibo inválido.');
+                    return;
+                }
+                if (!currentHistoryWaPhone) {
+                    alert('Telefone do cliente não informado.');
+                    return;
+                }
+
+                const message = 'Segue o recibo de pagamento da sua parcela: ' + reciboSecureUrl;
+
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const waUrl = isMobile ?
+                    ('https://wa.me/' + currentHistoryWaPhone + '?text=' + encodeURIComponent(message)) :
+                    ('https://web.whatsapp.com/send?phone=' + currentHistoryWaPhone + '&text=' + encodeURIComponent(message));
+                window.open(waUrl, 'whatsapp_web');
+            }
 
             function exportReceivables() {
                 alert('Exportando contas a receber...');
@@ -480,9 +540,9 @@
                 alert(`Enviando cobrança urgente para parcela ${id}...`);
             }
 
-            function sendReceivableBoleto(parcelaId, telefone) {
-                if (!parcelaId) {
-                    alert('Parcela inválida.');
+            function sendReceivableBoleto(boletoUrl, telefone) {
+                if (!boletoUrl) {
+                    alert('Link do boleto inválido.');
                     return;
                 }
 
@@ -496,9 +556,7 @@
                     waPhone = '55' + waPhone;
                 }
 
-                const base = @json(route('financial.boleto-pdf', ['id' => 0]));
-                const pdfUrl = base.replace(/0$/, String(parcelaId));
-                const message = 'Segue o boleto da sua parcela: ' + pdfUrl;
+                const message = 'Segue o boleto da sua parcela: ' + boletoUrl;
 
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 const waUrl = isMobile ?
@@ -507,10 +565,12 @@
                 window.open(waUrl, 'whatsapp_web');
             }
 
-            function generateBoleto(id) {
-                const base = @json(route('financial.boleto-pdf', ['id' => 0]));
-                const pdfUrl = base.replace(/0$/, String(id));
-                window.open(pdfUrl, '_blank');
+            function generateBoleto(boletoUrl) {
+                if (!boletoUrl) {
+                    alert('Link do boleto inválido.');
+                    return;
+                }
+                window.open(boletoUrl, '_blank');
             }
 
             async function viewDetails(id) {
@@ -558,9 +618,9 @@
 
                     const boletoLink = document.getElementById('rdBoletoLink');
                     if (boletoLink) {
-                        boletoLink.href = parcela.boleto_pdf_url || '#';
-                        boletoLink.classList.toggle('disabled', !parcela.boleto_pdf_url);
-                        boletoLink.setAttribute('aria-disabled', parcela.boleto_pdf_url ? 'false' : 'true');
+                        boletoLink.href = parcela.boleto_secure_url || '#';
+                        boletoLink.classList.toggle('disabled', !parcela.boleto_secure_url);
+                        boletoLink.setAttribute('aria-disabled', parcela.boleto_secure_url ? 'false' : 'true');
                     }
 
                     const modalEl = document.getElementById('receivableDetailsModal');
@@ -586,7 +646,7 @@
 
                 const tbody = document.getElementById('rhRows');
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Carregando...</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Carregando...</td></tr>';
                 }
 
                 try {
@@ -616,6 +676,7 @@
                     setText('rhCpf', cliente.cpf ? ('CPF: ' + cliente.cpf) : '-');
                     setText('rhVendaId', pedido.venda_id || '-');
                     setText('rhDataPedido', pedido.data_pedido ? ('Data: ' + pedido.data_pedido) : '-');
+                    currentHistoryWaPhone = normalizeWhatsappPhone(cliente.telefone || null);
 
                     if (tbody) {
                         const rows = parcelas.map(function(p) {
@@ -631,11 +692,23 @@
                             else if (p.status === 'vencida') badge = '<span class="badge bg-danger">Vencida</span>';
                             else if (p.status === 'a_vencer') badge = '<span class="badge bg-info">A vencer</span>';
 
-                            const boletoBtn = p.boleto_pdf_url ?
-                                ('<a class="btn btn-sm btn-outline-primary" href="' + p.boleto_pdf_url +
+                            const boletoBtn = p.boleto_secure_url ?
+                                ('<a class="btn btn-sm btn-outline-primary" href="' + p.boleto_secure_url +
                                     '" target="_blank"><i class="mdi mdi-file-document-outline"></i></a>') :
                                 (
                                     '<button class="btn btn-sm btn-outline-secondary" disabled><i class="mdi mdi-file-document-outline"></i></button>'
+                                );
+
+                            const secureUrl = (p.recibo_secure_url || '').replace(/'/g, "\\'");
+                            const reciboBtn = p.status === 'paga' ?
+                                ('<div class="btn-group btn-group-sm" role="group">' +
+                                    '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="openReceivableReceipt(' +
+                                    String(p.id) + ')"><i class="mdi mdi-receipt"></i></button>' +
+                                    '<button type="button" class="btn btn-sm btn-outline-success" onclick="sendReceivableReceiptWhatsapp(\'' +
+                                    secureUrl + '\')"><i class="mdi mdi-whatsapp"></i></button>' +
+                                    '</div>') :
+                                (
+                                    '<button class="btn btn-sm btn-outline-secondary" disabled><i class="mdi mdi-receipt"></i></button>'
                                 );
 
                             return '<tr>' +
@@ -646,11 +719,12 @@
                                 '<td class="text-end">' + valor + '</td>' +
                                 '<td>' + badge + '</td>' +
                                 '<td class="text-end">' + boletoBtn + '</td>' +
+                                '<td class="text-end">' + reciboBtn + '</td>' +
                                 '</tr>';
                         }).join('');
 
                         tbody.innerHTML = rows ||
-                            '<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma parcela encontrada.</td></tr>';
+                            '<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma parcela encontrada.</td></tr>';
                     }
 
                     const modalEl = document.getElementById('receivableHistoryModal');
