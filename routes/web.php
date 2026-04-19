@@ -181,6 +181,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('ordens-servico', OrdemServicoController::class)->parameters([
         'ordens-servico' => 'ordemServico',
     ]);
+    Route::get('/ordens-servico/{ordemServico}/pdf', [OrdemServicoController::class, 'pdf'])->name('ordens-servico.pdf');
+    Route::patch('/ordens-servico/{ordemServico}/status', [OrdemServicoController::class, 'updateStatus'])->name('ordens-servico.update-status');
     Route::get('/ordens-servico/api/buscar-clientes', [OrdemServicoController::class, 'buscarClientes'])->name('ordens-servico.buscar-clientes');
     Route::get('/ordens-servico/api/buscar-vendas-cliente', [OrdemServicoController::class, 'buscarVendasCliente'])->name('ordens-servico.buscar-vendas-cliente');
     Route::get('/ordens-servico/api/buscar-prescricoes', [OrdemServicoController::class, 'buscarPrescricoes'])->name('ordens-servico.buscar-prescricoes');
@@ -215,8 +217,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Relatórios
     Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/dashboard', [ReportController::class, 'dashboard'])->name('index');
         Route::get('/financial', [ReportController::class, 'financial'])->name('financial');
         Route::get('/attendance', [ReportController::class, 'attendance'])->name('attendance');
         Route::get('/attendance/export', [ReportController::class, 'exportAttendance'])->name('attendance.export');
+        Route::get('/attendance/pdf', [ReportController::class, 'attendancePdf'])->name('attendance.pdf');
     });
 });

@@ -12,6 +12,7 @@ use App\Models\Prescricao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrdemServicoController extends Controller
 {
@@ -71,7 +72,7 @@ class OrdemServicoController extends Controller
         $locationId = session('location_id');
 
         $query = Laboratorio::where('ativo', true);
-        
+
         if ($tenantId) {
             $query->where('tenant_id', $tenantId);
         }
@@ -81,7 +82,7 @@ class OrdemServicoController extends Controller
         }
 
         $fornecedores = $query->orderBy('razao_social')->get();
-        
+
         return view('ordens-servico.create', compact('fornecedores'));
     }
 
@@ -338,13 +339,17 @@ class OrdemServicoController extends Controller
 
         if ($search) {
             // Buscar por ID da prescrição ou nome do paciente
-            if (is_numeric($search)) {
-                $query->where('id', $search);
-            } else {
-                $query->whereHas('paciente', function ($q) use ($search) {
-                    $q->where('nome', 'LIKE', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // Se for numérico, buscar por ID também
+                if (is_numeric($search)) {
+                    $q->where('id', $search);
+                }
+
+                // Sempre incluir busca por nome do paciente
+                $q->orWhereHas('paciente', function ($subQ) use ($search) {
+                    $subQ->where('nome', 'ILIKE', "%{$search}%");
                 });
-            }
+            });
         }
 
         $prescricoes = $query->orderBy('created_at', 'desc')
@@ -385,7 +390,7 @@ class OrdemServicoController extends Controller
         $locationId = session('location_id');
 
         $query = Laboratorio::where('ativo', true);
-        
+
         if ($tenantId) {
             $query->where('tenant_id', $tenantId);
         }
@@ -457,5 +462,68 @@ class OrdemServicoController extends Controller
         $ordemServico->delete();
         return redirect()->route('ordens-servico.index')
             ->with('success', 'Ordem de serviço excluída com sucesso!');
+    }
+
+    public function updateStatus(Request $request, OrdemServico $ordemServico)
+    {
+        $validatedData = $request->validate([
+            'status' => 'required|string|in:pendente,enviado,em_producao,pronto,entregue,cancelado'
+        ]);
+
+        $statusAnterior = $ordemServico->status;
+        $novoStatus = $validatedData['status'];
+
+        // Atualizar o status
+        $ordemServico->update([
+            'status' => $novoStatus
+        ]);
+
+        // Mapear labels para exibição
+        $statusLabels = [
+            'pendente' => 'Pendente',
+            'enviado' => 'Enviado',
+            'em_producao' => 'Em Produção',
+            'pronto' => 'Pronto',
+            'entregue' => 'Entregue',
+            'cancelado' => 'Cancelado'
+        ];
+
+        $labelAnterior = $statusLabels[$statusAnterior] ?? $statusAnterior;
+        $labelNovo = $statusLabels[$novoStatus] ?? $novoStatus;
+
+        return redirect()->route('ordens-servico.index')
+            ->with('success', "Status da ordem #{$ordemServico->id} alterado de '{$labelAnterior}' para '{$labelNovo}' com sucesso!");
+    }
+
+    public function pdf(OrdemServico $ordemServico)
+    {
+        // Carrega relacionamentos necessários
+        $ordemServico->load([
+            'pedido.cliente',
+            'fornecedor',
+            'user',
+            'prescricao.paciente',
+            'itensOrdem.item.produto.categoria'
+        ]);
+
+        // Preparar status para o PDF
+        $currentStatus = [
+            'text' => $ordemServico->status_label,
+            'class' => match ($ordemServico->status) {
+                'pendente' => 'warning',
+                'enviado' => 'info',
+                'em_producao' => 'primary',
+                'pronto' => 'success',
+                'entregue' => 'success',
+                'cancelado' => 'danger',
+                default => 'secondary'
+            }
+        ];
+
+        $pdf = Pdf::loadView('ordens-servico.pdf', compact('ordemServico', 'currentStatus'));
+
+        $filename = 'ordem_servico_' . str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) . '.pdf';
+
+        return $pdf->stream($filename);
     }
 }

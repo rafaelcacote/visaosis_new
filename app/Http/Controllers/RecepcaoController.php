@@ -89,12 +89,12 @@ class RecepcaoController extends Controller
     public function searchPatient(Request $request)
     {
         $term = $request->get('term');
-        
+
         // Obter tenant_id e location_id da sessão (sem valores padrão)
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
-        
+
         // Log dos valores da sessão para debug
         \Log::info('Busca de paciente iniciada', [
             'term' => $term,
@@ -104,7 +104,7 @@ class RecepcaoController extends Controller
             'user_locations_count' => count($userLocations),
             'user_locations' => $userLocations
         ]);
-        
+
         // Validar se temos os valores necessários
         if (!$tenantId || !$locationId) {
             \Log::warning('Tenant ou Location não encontrados na sessão', [
@@ -112,13 +112,13 @@ class RecepcaoController extends Controller
                 'location_id' => $locationId,
                 'user_id' => Auth::id()
             ]);
-            
+
             return response()->json([
                 'found' => false,
                 'error' => 'Sessão inválida. Por favor, faça login novamente.'
             ], 400);
         }
-        
+
         // Verificar se a location_id da sessão está nas locations do usuário
         $validLocation = collect($userLocations)->firstWhere('location_id', $locationId);
         if (!$validLocation) {
@@ -127,13 +127,13 @@ class RecepcaoController extends Controller
                 'user_locations' => $userLocations,
                 'user_id' => Auth::id()
             ]);
-            
+
             // Tentar pegar a primeira location válida do usuário
             if (!empty($userLocations)) {
                 $firstLocation = $userLocations[0];
                 $locationId = $firstLocation['location_id'] ?? null;
                 $tenantId = $firstLocation['tenant_id'] ?? null;
-                
+
                 // Atualizar sessão com a location correta
                 session([
                     'location_id' => $locationId,
@@ -141,7 +141,7 @@ class RecepcaoController extends Controller
                     'location' => (object)($firstLocation['location'] ?? []),
                     'tenant' => (object)($firstLocation['tenant'] ?? [])
                 ]);
-                
+
                 \Log::info('Location corrigida automaticamente', [
                     'new_location_id' => $locationId,
                     'new_tenant_id' => $tenantId
@@ -165,7 +165,7 @@ class RecepcaoController extends Controller
         // Detectar o driver do banco de dados
         $driver = DB::connection()->getDriverName();
         $isPostgres = ($driver === 'pgsql');
-        
+
         // Construir a query de busca
         $query = Pessoa::where('tenant_id', $tenantId)
             ->where('location_id', $locationId)
@@ -178,12 +178,12 @@ class RecepcaoController extends Controller
                     // MySQL/SQLite: usar LOWER com LIKE
                     $q->whereRaw('LOWER(nome) LIKE ?', ['%' . mb_strtolower($term, 'UTF-8') . '%']);
                 }
-                
+
                 // Buscar por CPF se o termo contém números
                 if (!empty($termLimpoNumerico) && strlen($termLimpoNumerico) >= 3) {
                     $q->orWhere('cpf', 'LIKE', "%{$termLimpoNumerico}%");
                 }
-                
+
                 // Buscar por telefone se o termo contém números
                 if (!empty($termLimpoNumerico) && strlen($termLimpoNumerico) >= 3) {
                     $q->orWhere('telefone', 'LIKE', "%{$termLimpoNumerico}%");
@@ -238,9 +238,9 @@ class RecepcaoController extends Controller
     {
         try {
             // Validação simples
-            if (!$request->nome || !$request->cpf || !$request->profissional_id) {
+            if (!$request->nome || !$request->cpf) {
                 return redirect()->back()
-                    ->with('validation_message', 'Nome, CPF e Profissional são obrigatórios')
+                    ->with('validation_message', 'Nome e CPF são obrigatórios')
                     ->withInput();
             }
 
@@ -348,7 +348,7 @@ class RecepcaoController extends Controller
     {
         $request->validate([
             'pessoa_paciente_id' => 'required|exists:pessoas,id',
-            'profissional_id' => 'required|exists:profissionais,id',
+            'profissional_id' => 'required|exists:profissional,id',
             'tipo' => 'required|integer',
             'prioridade' => 'required|integer'
         ]);
@@ -377,28 +377,50 @@ class RecepcaoController extends Controller
 
     public function updateStatus(Request $request, $consulta)
     {
-        $request->validate([
-            'status' => 'required|integer'
-        ]);
+        try {
+            $request->validate([
+                'status' => 'required|integer',
+                'profissional_id' => 'sometimes|nullable|exists:profissional,id'
+            ]);
 
-        $consulta = Consulta::findOrFail($consulta);
-        $consulta->status = $request->status;
+            $consulta = Consulta::findOrFail($consulta);
+            $consulta->status = $request->status;
 
-        // Atualizar timestamp baseado no status
-        if ($request->status == Consulta::STATUS_EM_ATENDIMENTO) {
-            $consulta->atendido_em = now();
-        } elseif ($request->status == Consulta::STATUS_ATENDIDO) {
-            if (!$consulta->atendido_em) {
-                $consulta->atendido_em = now();
+            // Atualizar profissional se fornecido (especialmente para iniciar atendimento)
+            if ($request->has('profissional_id')) {
+                $consulta->profissional_id = $request->profissional_id ?: null;
             }
-        }
 
-        $consulta->save();
+            // Atualizar timestamp baseado no status
+            if ($request->status == Consulta::STATUS_EM_ATENDIMENTO) {
+                $consulta->atendido_em = now();
+            } elseif ($request->status == Consulta::STATUS_ATENDIDO) {
+                if (!$consulta->atendido_em) {
+                    $consulta->atendido_em = now();
+                }
+            }
+
+            $consulta->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status da consulta atualizado com sucesso!',
+                'consulta' => $consulta
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro interno: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getConsultaProfissional($consultaId)
+    {
+        $consulta = Consulta::findOrFail($consultaId);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Status da consulta atualizado com sucesso!',
-            'consulta' => $consulta
+            'profissional_id' => $consulta->profissional_id
         ]);
     }
 
