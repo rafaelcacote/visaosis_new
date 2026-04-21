@@ -85,6 +85,9 @@ class ProfissionalWorkflowController extends Controller
         // Buscar pacientes da fila de atendimento usando o model Consulta
         // com eager loading dos relacionamentos paciente e profissional
 
+        $tenantId = AuthHelper::tenantId() ?? (session('tenant_id') ?? 1);
+        $locationId = AuthHelper::locationId() ?? (session('location_id') ?? 1);
+
         $today = Carbon::now('America/Manaus')->format('Y-m-d');
 
         $patients = Consulta::with(['paciente', 'profissional'])
@@ -111,7 +114,14 @@ class ProfissionalWorkflowController extends Controller
 
         ];
 
-        return view('professional.index', compact('patients', 'stats'));
+        $profissionais = Profissional::with('especialidade')
+            ->where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->where('ativo', true)
+            ->orderBy('nome')
+            ->get();
+
+        return view('professional.index', compact('patients', 'stats', 'profissionais'));
     }
 
     public function printExamDoc($id)
@@ -1165,8 +1175,31 @@ class ProfissionalWorkflowController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        $consulta = Consulta::findOrFail($id);
-        $consulta->status = $request->input('status');
+        $tenantId = AuthHelper::tenantId() ?? (session('tenant_id') ?? 1);
+        $locationId = AuthHelper::locationId() ?? (session('location_id') ?? 1);
+
+        $request->validate([
+            'status' => 'required|integer',
+            'profissional_id' => 'sometimes|nullable|exists:profissional,id',
+        ]);
+
+        $consulta = Consulta::where('id', $id)
+            ->where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->firstOrFail();
+
+        $consulta->status = (int) $request->input('status');
+
+        if ($request->has('profissional_id')) {
+            $consulta->profissional_id = $request->input('profissional_id') ?: null;
+        }
+
+        if ($consulta->status === Consulta::STATUS_EM_ATENDIMENTO) {
+            if (! $consulta->atendido_em) {
+                $consulta->atendido_em = now();
+            }
+        }
+
         $consulta->save();
 
         return response()->json(['success' => true]);

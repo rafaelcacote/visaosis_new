@@ -784,6 +784,74 @@ class FinancialController extends Controller
         ]);
     }
 
+    public function renegotiateReceivable(Request $request, string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'vencimento_em' => 'required|date_format:Y-m-d',
+            'valor' => 'required|numeric|min:0.01',
+        ], [
+            'required' => 'O campo :attribute é obrigatório.',
+            'date_format' => 'O campo :attribute deve estar no formato YYYY-MM-DD.',
+            'numeric' => 'O campo :attribute deve ser numérico.',
+            'min.numeric' => 'O campo :attribute deve ser maior que zero.',
+        ], [
+            'vencimento_em' => 'Vencimento',
+            'valor' => 'Valor',
+        ]);
+
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $parcela = PedidoVendaParcela::query()
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $parcela) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parcela não encontrada.',
+            ], 404);
+        }
+
+        $isPaid = ! empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+        if ($isPaid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Não é possível renegociar uma parcela já paga.',
+            ], 422);
+        }
+
+        $parcela->vencimento_em = $validated['vencimento_em'];
+        $parcela->valor = (float) $validated['valor'];
+        $parcela->status = 'renegociado';
+        $parcela->save();
+
+        return response()->json([
+            'success' => true,
+            'id' => $parcela->id,
+            'vencimento_em' => $parcela->vencimento_em?->toDateString(),
+            'valor' => (float) $parcela->valor,
+        ]);
+    }
+
     public function boletos()
     {
         // Gestão de boletos

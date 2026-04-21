@@ -284,8 +284,7 @@
     }
 
     function generateReceipt() {
-        alert(
-            'Recibo gerado com sucesso!\n\nEm produção, seria aberta uma nova janela com o recibo formatado para impressão.');
+        window.showAppModalMessage?.('Recibo gerado com sucesso!', 'Sucesso', 'success');
     }
 
     function confirmPayment() {
@@ -327,13 +326,13 @@
                     return data;
                 })
                 .then(() => {
-                    alert('Pagamento registrado com sucesso!');
+                    window.showAppModalMessage?.('Pagamento registrado com sucesso!', 'Sucesso', 'success');
                     const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
                     modal.hide();
                     location.reload();
                 })
                 .catch((err) => {
-                    alert(err?.message || 'Erro ao registrar pagamento.');
+                    window.showAppModalMessage?.(err?.message || 'Erro ao registrar pagamento.', 'Erro', 'danger');
                 });
         }
     }

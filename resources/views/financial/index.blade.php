@@ -339,11 +339,11 @@
     @push('scripts')
         <script>
             function exportFinancial() {
-                alert('Exportando relatório financeiro...');
+                window.showAppModalMessage?.('Exportando relatório financeiro...', 'Info', 'info');
             }
 
             function sendReminders() {
-                alert('Enviando lembretes via WhatsApp...');
+                window.showAppModalMessage?.('Enviando lembretes via WhatsApp...', 'Info', 'info');
             }
 
             function generateBoletos() {
@@ -366,7 +366,7 @@
                     .then((data) => {
                         const boletos = Array.isArray(data.boletos) ? data.boletos : [];
                         if (!boletos.length) {
-                            alert('Nenhuma parcela encontrada para gerar boleto nesta semana.');
+                            window.showAppModalMessage?.('Nenhuma parcela encontrada para gerar boleto nesta semana.', 'Atenção', 'warning');
                             return;
                         }
                         boletos.forEach((b) => {
@@ -376,19 +376,19 @@
                         });
                     })
                     .catch((err) => {
-                        alert(err?.message || 'Erro ao gerar boletos.');
+                        window.showAppModalMessage?.(err?.message || 'Erro ao gerar boletos.', 'Erro', 'danger');
                     });
             }
 
             function sendParcelBoleto(boletoUrl, telefone) {
                 if (!boletoUrl) {
-                    alert('Link do boleto inválido.');
+                    window.showAppModalMessage?.('Link do boleto inválido.', 'Atenção', 'warning');
                     return;
                 }
                 const digits = (telefone || '').toString().replace(/\D+/g, '');
                 let waPhone = digits;
                 if (!waPhone) {
-                    alert('Telefone do cliente não informado.');
+                    window.showAppModalMessage?.('Telefone do cliente não informado.', 'Atenção', 'warning');
                     return;
                 }
                 if (!waPhone.startsWith('55') && (waPhone.length === 10 || waPhone.length === 11)) {

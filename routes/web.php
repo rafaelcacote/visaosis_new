@@ -193,6 +193,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/receivables', [FinancialController::class, 'receivables'])->name('receivables');
         Route::get('/receivables/{id}/details', [FinancialController::class, 'receivableDetails'])->name('receivables.details');
         Route::get('/receivables/{id}/history', [FinancialController::class, 'receivableHistory'])->name('receivables.history');
+        Route::post('/receivables/{id}/renegotiate', [FinancialController::class, 'renegotiateReceivable'])->name('receivables.renegotiate');
         Route::get('/boletos', [FinancialController::class, 'boletos'])->name('boletos');
         Route::post('/boletos/generate-week', [FinancialController::class, 'generateBoletosWeek'])->name('boletos.generate-week');
         Route::get('/notifications', [FinancialController::class, 'notifications'])->name('notifications');

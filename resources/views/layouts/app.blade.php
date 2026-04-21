@@ -184,6 +184,21 @@
         @endif
     </div>
 
+    <div class="modal fade" id="appMessageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" id="appMessageModalHeader">
+                    <h5 class="modal-title" id="appMessageModalTitle">Mensagem</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" id="appMessageModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- container-scroller -->
     <!-- plugins:js -->
     <script src="{{ asset('assets/vendors/js/vendor.bundle.base.js') }}"></script>
@@ -213,6 +228,38 @@
                 });
             }
         });
+    </script>
+    <script>
+        (function() {
+            function getVariantClass(variant) {
+                const v = (variant || 'primary').toString();
+                if (v === 'success') return 'bg-success text-white';
+                if (v === 'danger') return 'bg-danger text-white';
+                if (v === 'warning') return 'bg-warning';
+                if (v === 'info') return 'bg-info';
+                return 'bg-primary text-white';
+            }
+
+            window.showAppModalMessage = function(message, title, variant) {
+                const modalEl = document.getElementById('appMessageModal');
+                if (!modalEl || !window.bootstrap || !window.bootstrap.Modal) {
+                    return;
+                }
+
+                const header = document.getElementById('appMessageModalHeader');
+                const titleEl = document.getElementById('appMessageModalTitle');
+                const bodyEl = document.getElementById('appMessageModalBody');
+
+                if (titleEl) titleEl.textContent = title || 'Mensagem';
+                if (bodyEl) bodyEl.textContent = message || '';
+
+                if (header) {
+                    header.className = 'modal-header ' + getVariantClass(variant);
+                }
+
+                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            };
+        })();
     </script>
     <!-- End custom js for this page -->
 </body>

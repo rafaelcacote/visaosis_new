@@ -302,7 +302,7 @@
                                                 <div class="btn-group btn-group-sm">
                                                     @if ($patient->status == \App\Models\Consulta::STATUS_AGUARDANDO)
                                                         <button class="btn btn-sm btn-primary" title="Iniciar Atendimento"
-                                                            onclick="showStartConsultationModal({{ $patient->id }}, '{{ addslashes($patient->paciente->nome ?? 'Paciente') }}')">
+                                                            onclick="showStartConsultationModal({{ $patient->id }}, '{{ addslashes($patient->paciente->nome ?? 'Paciente') }}', @json($patient->profissional_id))">
                                                             <i class="mdi mdi-play"></i>
                                                         </button>
                                                     @elseif($patient->status == \App\Models\Consulta::STATUS_EM_ATENDIMENTO)
@@ -338,9 +338,9 @@
                 </div>
                 <div class="card-body">
                     @php
-                        $profissionais = $patients->pluck('profissional')->unique('id')->filter();
+                        $profissionaisEmAtendimento = $patients->pluck('profissional')->unique('id')->filter();
                     @endphp
-                    @forelse ($profissionais as $profissional)
+                    @forelse ($profissionaisEmAtendimento as $profissional)
                         <div class="mb-3 pb-2 border-bottom">
                             <div class="d-flex justify-content-between">
                                 <span><strong>{{ $profissional->nome ?? 'N/A' }}</strong></span>
@@ -424,6 +424,18 @@
                             id="startConsultationPatientName"></strong>?
                     </div>
                     <p>O status da consulta será alterado para "Em Atendimento".</p>
+                    <div id="startProfissionalSelection" style="display:none;">
+                        <hr>
+                        <label for="start_profissional_id" class="form-label">Selecionar profissional</label>
+                        <select class="form-select" id="start_profissional_id">
+                            <option value="">Selecione...</option>
+                            @foreach ($profissionais as $profissional)
+                                <option value="{{ $profissional->id }}">
+                                    {{ $profissional->nome }} ({{ $profissional->especialidade->descricao ?? '-' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer border-0 pt-0 justify-content-center">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -558,10 +570,25 @@
         }
 
         let selectedConsultationId = null;
+        let selectedStartProfissionalId = null;
 
-        function showStartConsultationModal(consultationId, patientName) {
+        function showStartConsultationModal(consultationId, patientName, profissionalId) {
             selectedConsultationId = consultationId;
+            selectedStartProfissionalId = profissionalId || null;
             document.getElementById('startConsultationPatientName').innerText = patientName;
+
+            const selection = document.getElementById('startProfissionalSelection');
+            const select = document.getElementById('start_profissional_id');
+            if (selection && select) {
+                if (selectedStartProfissionalId) {
+                    selection.style.display = 'none';
+                    select.value = String(selectedStartProfissionalId);
+                } else {
+                    selection.style.display = 'block';
+                    select.value = '';
+                }
+            }
+
             const modal = new bootstrap.Modal(document.getElementById('startConsultationModal'));
             modal.show();
 
@@ -572,8 +599,19 @@
 
         function startConsultationConfirmed() {
             if (!selectedConsultationId) {
-                alert('Erro: ID da consulta não encontrado.');
+                window.showAppModalMessage?.('Erro: ID da consulta não encontrado.', 'Erro', 'danger');
                 return;
+            }
+
+            let profissionalId = selectedStartProfissionalId;
+            const selection = document.getElementById('startProfissionalSelection');
+            const select = document.getElementById('start_profissional_id');
+            if (!profissionalId && selection && selection.style.display !== 'none') {
+                profissionalId = select && select.value ? parseInt(select.value, 10) : null;
+                if (!profissionalId) {
+                    window.showAppModalMessage?.('Selecione um profissional para iniciar o atendimento.', 'Atenção', 'warning');
+                    return;
+                }
             }
 
             // Atualizar status para "Em Atendimento" e redirecionar
@@ -584,7 +622,8 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({
-                        status: {{ \App\Models\Consulta::STATUS_EM_ATENDIMENTO }}
+                        status: {{ \App\Models\Consulta::STATUS_EM_ATENDIMENTO }},
+                        profissional_id: profissionalId
                     })
                 })
                 .then(response => response.json())
@@ -593,12 +632,12 @@
                         // Redirecionar para a tela de consulta
                         window.location.href = `/professional/consultation/${selectedConsultationId}`;
                     } else {
-                        alert('Erro ao iniciar atendimento.');
+                        window.showAppModalMessage?.('Erro ao iniciar atendimento.', 'Erro', 'danger');
                     }
                 })
                 .catch(error => {
                     console.error('Erro:', error);
-                    alert('Erro ao iniciar atendimento.');
+                    window.showAppModalMessage?.('Erro ao iniciar atendimento.', 'Erro', 'danger');
                 });
         }
 

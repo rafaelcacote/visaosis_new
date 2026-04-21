@@ -305,6 +305,12 @@
                                                                 <i class="mdi mdi-cash me-2"></i>Dar Baixa
                                                             </button>
                                                         </li>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item text-warning"
+                                                                onclick="openRenegotiateModal({{ $receivable['id'] }})">
+                                                                <i class="mdi mdi-refresh me-2"></i>Renegociar
+                                                            </button>
+                                                        </li>
                                                     @endif
 
                                                     <li>
@@ -449,6 +455,41 @@
         </div>
     </div>
 
+    <div class="modal fade" id="renegotiateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Renegociar Parcela</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="renegotiateId">
+                    <div class="mb-3">
+                        <div class="text-muted small">Cliente</div>
+                        <div class="fw-semibold" id="renegotiateClientName">-</div>
+                        <div class="text-muted small" id="renegotiateInstallmentLabel">-</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Novo vencimento</label>
+                        <input type="date" class="form-control" id="renegotiateDueDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Novo valor</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" class="form-control" id="renegotiateValue" step="0.01"
+                                min="0.01" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" onclick="confirmRenegotiation()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('styles')
         <style>
             .avatar-sm {
@@ -485,11 +526,11 @@
 
             function sendReceivableReceiptWhatsapp(reciboSecureUrl) {
                 if (!reciboSecureUrl) {
-                    alert('Link do recibo inválido.');
+                    window.showAppModalMessage?.('Link do recibo inválido.', 'Atenção', 'warning');
                     return;
                 }
                 if (!currentHistoryWaPhone) {
-                    alert('Telefone do cliente não informado.');
+                    window.showAppModalMessage?.('Telefone do cliente não informado.', 'Atenção', 'warning');
                     return;
                 }
 
@@ -503,16 +544,18 @@
             }
 
             function exportReceivables() {
-                alert('Exportando contas a receber...');
+                window.showAppModalMessage?.('Exportando contas a receber...', 'Info', 'info');
             }
 
             function sendBulkReminders() {
                 const selected = document.querySelectorAll('.receivable-checkbox:checked');
                 if (selected.length === 0) {
-                    alert('Selecione pelo menos uma parcela para enviar lembretes.');
+                    window.showAppModalMessage?.('Selecione pelo menos uma parcela para enviar lembretes.', 'Atenção',
+                        'warning');
                     return;
                 }
-                alert(`Enviando lembretes para ${selected.length} clientes via WhatsApp...`);
+                window.showAppModalMessage?.(`Enviando lembretes para ${selected.length} clientes via WhatsApp...`, 'Info',
+                    'info');
             }
 
             function applyFilters() {
@@ -530,26 +573,27 @@
             function sendSelectedReminders() {
                 const selected = document.querySelectorAll('.receivable-checkbox:checked');
                 if (selected.length === 0) {
-                    alert('Selecione pelo menos uma parcela.');
+                    window.showAppModalMessage?.('Selecione pelo menos uma parcela.', 'Atenção', 'warning');
                     return;
                 }
-                alert(`Enviando lembretes para ${selected.length} parcelas selecionadas...`);
+                window.showAppModalMessage?.(`Enviando lembretes para ${selected.length} parcelas selecionadas...`, 'Info',
+                    'info');
             }
 
             function sendUrgentReminder(id) {
-                alert(`Enviando cobrança urgente para parcela ${id}...`);
+                window.showAppModalMessage?.(`Enviando cobrança urgente para parcela ${id}...`, 'Info', 'info');
             }
 
             function sendReceivableBoleto(boletoUrl, telefone) {
                 if (!boletoUrl) {
-                    alert('Link do boleto inválido.');
+                    window.showAppModalMessage?.('Link do boleto inválido.', 'Atenção', 'warning');
                     return;
                 }
 
                 const digits = (telefone || '').toString().replace(/\D+/g, '');
                 let waPhone = digits;
                 if (!waPhone) {
-                    alert('Telefone do cliente não informado.');
+                    window.showAppModalMessage?.('Telefone do cliente não informado.', 'Atenção', 'warning');
                     return;
                 }
                 if (!waPhone.startsWith('55') && (waPhone.length === 10 || waPhone.length === 11)) {
@@ -567,10 +611,99 @@
 
             function generateBoleto(boletoUrl) {
                 if (!boletoUrl) {
-                    alert('Link do boleto inválido.');
+                    window.showAppModalMessage?.('Link do boleto inválido.', 'Atenção', 'warning');
                     return;
                 }
                 window.open(boletoUrl, '_blank');
+            }
+
+            async function openRenegotiateModal(id) {
+                if (!id) {
+                    window.showAppModalMessage?.('Parcela inválida.', 'Atenção', 'warning');
+                    return;
+                }
+
+                const urlTemplate = @json(route('financial.receivables.details', ['id' => '__ID__']));
+                const url = urlTemplate.replace('__ID__', String(id));
+
+                try {
+                    const res = await fetch(url, {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const payload = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        window.showAppModalMessage?.(payload.message || 'Erro ao carregar dados da parcela.', 'Erro',
+                            'danger');
+                        return;
+                    }
+
+                    const data = payload.data || {};
+                    const cliente = data.cliente || {};
+                    const parcela = data.parcela || {};
+
+                    document.getElementById('renegotiateId').value = parcela.id || id;
+                    document.getElementById('renegotiateClientName').textContent = cliente.nome || '-';
+                    document.getElementById('renegotiateInstallmentLabel').textContent =
+                        (parcela.numero && parcela.total) ? ('Parcela: ' + String(parcela.numero) + '/' + String(parcela
+                            .total)) : '-';
+                    document.getElementById('renegotiateDueDate').value = parcela.vencimento || '';
+                    document.getElementById('renegotiateValue').value = typeof parcela.valor === 'number' ? parcela.valor :
+                        (parseFloat(parcela.valor) || 0);
+
+                    const modalEl = document.getElementById('renegotiateModal');
+                    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    } else {
+                        window.showAppModalMessage?.('Não foi possível abrir a janela de renegociação.', 'Erro', 'danger');
+                    }
+                } catch (e) {
+                    window.showAppModalMessage?.('Erro ao carregar dados da parcela.', 'Erro', 'danger');
+                }
+            }
+
+            function confirmRenegotiation() {
+                const id = document.getElementById('renegotiateId').value;
+                const vencimento = document.getElementById('renegotiateDueDate').value;
+                const valor = document.getElementById('renegotiateValue').value;
+
+                if (!id || !vencimento || !valor) {
+                    window.showAppModalMessage?.('Preencha vencimento e valor.', 'Atenção', 'warning');
+                    return;
+                }
+
+                const urlTemplate = @json(route('financial.receivables.renegotiate', ['id' => '__ID__']));
+                const url = urlTemplate.replace('__ID__', String(id));
+
+                fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            vencimento_em: vencimento,
+                            valor: parseFloat(valor)
+                        })
+                    })
+                    .then(async (res) => {
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                            throw new Error(data.message || 'Erro ao renegociar parcela.');
+                        }
+                        return data;
+                    })
+                    .then(() => {
+                        window.showAppModalMessage?.('Parcela renegociada com sucesso!', 'Sucesso', 'success');
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('renegotiateModal'));
+                        modal.hide();
+                        location.reload();
+                    })
+                    .catch((err) => {
+                        window.showAppModalMessage?.(err?.message || 'Erro ao renegociar parcela.', 'Erro', 'danger');
+                    });
             }
 
             async function viewDetails(id) {
@@ -588,7 +721,7 @@
                     });
                     const payload = await res.json().catch(() => ({}));
                     if (!res.ok) {
-                        alert(payload.message || 'Erro ao carregar detalhes.');
+                        window.showAppModalMessage?.(payload.message || 'Erro ao carregar detalhes.', 'Erro', 'danger');
                         return false;
                     }
 
@@ -607,11 +740,13 @@
                     setText('rdCpf', cliente.cpf ? ('CPF: ' + cliente.cpf) : '-');
                     setText('rdVendaId', pedido.venda_id || '-');
                     setText('rdDataPedido', pedido.data_pedido ? ('Data: ' + pedido.data_pedido) : '-');
-                    setText('rdParcela', (parcela.numero ? String(parcela.numero) : '-') + '/' + (parcela.total ? String(
-                        parcela.total) : '-'));
+                    setText('rdParcela', (parcela.numero ? String(parcela.numero) : '-') + '/' + (parcela.total ?
+                        String(
+                            parcela.total) : '-'));
                     setText('rdVencimento', parcela.vencimento || '-');
                     setText('rdDiasAtraso', parcela.dias_atraso ? (String(parcela.dias_atraso) + ' dias atraso') : '');
-                    setText('rdValor', typeof parcela.valor === 'number' ? ('R$ ' + parcela.valor.toFixed(2).replace('.',
+                    setText('rdValor', typeof parcela.valor === 'number' ? ('R$ ' + parcela.valor.toFixed(2).replace(
+                        '.',
                         ',')) : '-');
                     setText('rdStatus', parcela.status || '-');
                     setText('rdPagoEm', parcela.pago_em ? ('Pago em: ' + parcela.pago_em) : '');
@@ -627,10 +762,10 @@
                     if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                         bootstrap.Modal.getOrCreateInstance(modalEl).show();
                     } else {
-                        alert('Não foi possível abrir a janela de detalhes (Bootstrap não carregado).');
+                        window.showAppModalMessage?.('Não foi possível abrir a janela de detalhes.', 'Erro', 'danger');
                     }
                 } catch (e) {
-                    alert('Erro ao carregar detalhes.');
+                    window.showAppModalMessage?.('Erro ao carregar detalhes.', 'Erro', 'danger');
                 }
 
                 return false;
@@ -657,7 +792,7 @@
                     });
                     const payload = await res.json().catch(() => ({}));
                     if (!res.ok) {
-                        alert(payload.message || 'Erro ao carregar histórico.');
+                        window.showAppModalMessage?.(payload.message || 'Erro ao carregar histórico.', 'Erro', 'danger');
                         return false;
                     }
 
@@ -689,8 +824,10 @@
 
                             let badge = '<span class="badge bg-secondary">-</span>';
                             if (p.status === 'paga') badge = '<span class="badge bg-success">Paga</span>';
-                            else if (p.status === 'vencida') badge = '<span class="badge bg-danger">Vencida</span>';
-                            else if (p.status === 'a_vencer') badge = '<span class="badge bg-info">A vencer</span>';
+                            else if (p.status === 'vencida') badge =
+                                '<span class="badge bg-danger">Vencida</span>';
+                            else if (p.status === 'a_vencer') badge =
+                                '<span class="badge bg-info">A vencer</span>';
 
                             const boletoBtn = p.boleto_secure_url ?
                                 ('<a class="btn btn-sm btn-outline-primary" href="' + p.boleto_secure_url +
@@ -731,20 +868,20 @@
                     if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                         bootstrap.Modal.getOrCreateInstance(modalEl).show();
                     } else {
-                        alert('Não foi possível abrir a janela de histórico (Bootstrap não carregado).');
+                        window.showAppModalMessage?.('Não foi possível abrir a janela de histórico.', 'Erro', 'danger');
                     }
                 } catch (e) {
-                    alert('Erro ao carregar histórico.');
+                    window.showAppModalMessage?.('Erro ao carregar histórico.', 'Erro', 'danger');
                 }
 
                 return false;
             }
 
             function renegotiate(id) {
-                alert(`Iniciando renegociação da parcela ${id}...`);
+                window.showAppModalMessage?.(`Iniciando renegociação da parcela ${id}...`, 'Info', 'info');
             }
 
-            document.getElementById('selectAllCheckbox').addEventListener('change', selectAll);
+            document.getElementById('selectAllCheckbox')?.addEventListener('change', selectAll);
 
             document.getElementById('statusFilter').value = "{{ $filters['status'] ?? '' }}";
             document.getElementById('orderBy').value = "{{ $filters['order_by'] ?? 'vencimento' }}";
