@@ -489,6 +489,33 @@ class PessoaController extends Controller
         }
     }
 
+    private function normalizeEsferico(?string $value): string
+    {
+        $raw = is_string($value) ? trim($value) : '';
+        if ($raw === '') {
+            return '0';
+        }
+
+        $upper = strtoupper(str_replace(' ', '', $raw));
+        if ($upper === 'PL') {
+            return '0';
+        }
+
+        $upper = str_replace(',', '.', $upper);
+        if (preg_match('/^([+-]?)(\d+(?:\.\d{1,2})?)$/', $upper, $m)) {
+            $num = (float) $m[2];
+            if (abs($num) < 0.0000001) {
+                return '0';
+            }
+
+            $sign = $m[1] === '-' ? '-' : '';
+            $formatted = number_format($num, 2, '.', '');
+            return $sign . $formatted;
+        }
+
+        return $raw;
+    }
+
     /**
      * Store a new prescription for the patient.
      */
@@ -496,15 +523,20 @@ class PessoaController extends Controller
     {
         $this->checkTenantAccess($pessoa);
 
+        $request->merge([
+            'od_esferico' => $this->normalizeEsferico($request->input('od_esferico')),
+            'oe_esferico' => $this->normalizeEsferico($request->input('oe_esferico')),
+        ]);
+
         $validatedData = $request->validate([
             'especialista_externo' => 'required|string|max:255',
-            'od_esferico' => 'nullable|string',
+            'od_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
             'od_cilindrico' => 'nullable|string',
             'od_eixo' => 'nullable|string',
             'od_dnp' => 'nullable|string',
             'od_altura' => 'nullable|string',
             'od_adicao' => 'nullable|string',
-            'oe_esferico' => 'nullable|string',
+            'oe_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
             'oe_cilindrico' => 'nullable|string',
             'oe_eixo' => 'nullable|string',
             'oe_dnp' => 'nullable|string',
@@ -518,6 +550,8 @@ class PessoaController extends Controller
         ], [
             'required' => 'O campo :attribute é obrigatório.',
             'string' => 'O campo :attribute deve ser um texto.',
+            'od_esferico.regex' => 'O campo OD Esférico deve ser PL ou um número com até 2 casas decimais.',
+            'oe_esferico.regex' => 'O campo OE Esférico deve ser PL ou um número com até 2 casas decimais.',
             'boolean' => 'O campo :attribute deve ser verdadeiro ou falso.',
             'integer' => 'O campo :attribute deve ser um número inteiro.',
             'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',

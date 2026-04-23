@@ -44,6 +44,8 @@ class Prescricao extends Model
         'ativo',
         'location_id',
         'tipo_lente',
+        'acuidade_od',
+        'acuidade_oe'
     ];
 
     protected $casts = [
@@ -55,6 +57,90 @@ class Prescricao extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+
+    private static function normalizeEsfericoToStorage($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $raw = is_string($value) ? trim($value) : (string) $value;
+        if ($raw === '') {
+            return null;
+        }
+
+        $upper = strtoupper(str_replace(' ', '', $raw));
+        if ($upper === 'PL') {
+            return '0';
+        }
+
+        $upper = str_replace(',', '.', $upper);
+        if (preg_match('/^([+-]?)(\d+(?:\.\d{1,2})?)$/', $upper, $m)) {
+            $num = (float) $m[2];
+            if (abs($num) < 0.0000001) {
+                return '0';
+            }
+
+            $sign = $m[1] === '-' ? '-' : '';
+            $formatted = number_format($num, 2, '.', '');
+            return $sign . $formatted;
+        }
+
+        return $raw;
+    }
+
+    private static function formatEsfericoForDisplay($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $raw = is_string($value) ? trim($value) : (string) $value;
+        if ($raw === '') {
+            return null;
+        }
+
+        $upper = strtoupper(str_replace(' ', '', $raw));
+        if ($upper === 'PL') {
+            return 'PL';
+        }
+
+        $normalized = str_replace(',', '.', $upper);
+        if (preg_match('/^-?\d+(?:\.\d+)?$/', $normalized)) {
+            $num = (float) $normalized;
+            if (abs($num) < 0.0000001) {
+                return 'PL';
+            }
+
+            if ($num > 0) {
+                return '+' . number_format($num, 2, '.', '');
+            }
+
+            return '-' . number_format(abs($num), 2, '.', '');
+        }
+
+        return $raw;
+    }
+
+    public function setEsferaOdAttribute($value): void
+    {
+        $this->attributes['esfera_od'] = self::normalizeEsfericoToStorage($value);
+    }
+
+    public function setEsferaOeAttribute($value): void
+    {
+        $this->attributes['esfera_oe'] = self::normalizeEsfericoToStorage($value);
+    }
+
+    public function getEsferaOdAttribute($value): ?string
+    {
+        return self::formatEsfericoForDisplay($value);
+    }
+
+    public function getEsferaOeAttribute($value): ?string
+    {
+        return self::formatEsfericoForDisplay($value);
+    }
 
     public function consulta()
     {

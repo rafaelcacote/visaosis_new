@@ -204,6 +204,7 @@
                                                 <th>Esférico</th>
                                                 <th>Cilíndrico</th>
                                                 <th>Eixo</th>
+                                                <th>Acuidade</th>
                                                 <th>DNP</th>
                                                 <th>Altura</th>
                                                 <th>Adição</th>
@@ -230,15 +231,23 @@
                                                 </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="od_eixo"
-                                                        placeholder="0-180°"
+                                                        placeholder="180°"
                                                         value="{{ old('od_eixo', $patient['prescricao']['od_eixo'] ?? '') }}">
                                                     @error('od_eixo')
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
+                                                   <td>
+                                                    <input type="text" class="form-control" name="od_acuidade"
+                                                        placeholder="20/20"
+                                                        value="{{ old('od_acuidade', $patient['prescricao']['od_acuidade'] ?? '') }}">
+                                                    @error('od_acuidade')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="od_dnp"
-                                                        placeholder="62°"
+                                                        placeholder="62"
                                                         value="{{ old('od_dnp', $patient['prescricao']['od_dnp'] ?? '') }}">
                                                     @error('od_dnp')
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -246,7 +255,7 @@
                                                 </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="od_altura"
-                                                        placeholder="100 cm"
+                                                        placeholder="40"
                                                         value="{{ old('od_altura', $patient['prescricao']['od_altura'] ?? '') }}">
                                                     @error('od_altura')
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -281,15 +290,23 @@
                                                 </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="oe_eixo"
-                                                        placeholder="0-180°"
+                                                        placeholder="180°"
                                                         value="{{ old('oe_eixo', $patient['prescricao']['oe_eixo'] ?? '') }}">
                                                     @error('oe_eixo')
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
                                                 <td>
+                                                    <input type="text" class="form-control" name="oe_acuidade"
+                                                        placeholder="20/20"
+                                                        value="{{ old('oe_acuidade', $patient['prescricao']['oe_acuidade'] ?? '') }}">
+                                                    @error('oe_acuidade')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td>
                                                     <input type="text" class="form-control" name="oe_dnp"
-                                                        placeholder="62°"
+                                                        placeholder="62"
                                                         value="{{ old('oe_dnp', $patient['prescricao']['oe_dnp'] ?? '') }}">
                                                     @error('oe_dnp')
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -297,7 +314,7 @@
                                                 </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="oe_altura"
-                                                        placeholder="100 cm"
+                                                        placeholder="100"
                                                         value="{{ old('oe_altura', $patient['prescricao']['oe_altura'] ?? '') }}">
                                                     @error('oe_altura')
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>

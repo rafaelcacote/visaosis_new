@@ -574,20 +574,15 @@
 
         function showStartConsultationModal(consultationId, patientName, profissionalId) {
             selectedConsultationId = consultationId;
-            selectedStartProfissionalId = profissionalId || null;
             document.getElementById('startConsultationPatientName').innerText = patientName;
 
             const selection = document.getElementById('startProfissionalSelection');
             const select = document.getElementById('start_profissional_id');
-            if (selection && select) {
-                if (selectedStartProfissionalId) {
-                    selection.style.display = 'none';
-                    select.value = String(selectedStartProfissionalId);
-                } else {
-                    selection.style.display = 'block';
-                    select.value = '';
-                }
-            }
+            const parsedProfissionalId = profissionalId ? parseInt(profissionalId, 10) : null;
+            selectedStartProfissionalId = Number.isFinite(parsedProfissionalId) ? parsedProfissionalId : null;
+
+            if (selection) selection.style.display = 'block';
+            if (select) select.value = selectedStartProfissionalId ? String(selectedStartProfissionalId) : '';
 
             const modal = new bootstrap.Modal(document.getElementById('startConsultationModal'));
             modal.show();
@@ -603,12 +598,13 @@
                 return;
             }
 
-            let profissionalId = selectedStartProfissionalId;
             const selection = document.getElementById('startProfissionalSelection');
             const select = document.getElementById('start_profissional_id');
-            if (!profissionalId && selection && selection.style.display !== 'none') {
+            let profissionalId = selectedStartProfissionalId;
+
+            if (selection && selection.style.display !== 'none') {
                 profissionalId = select && select.value ? parseInt(select.value, 10) : null;
-                if (!profissionalId) {
+                if (!profissionalId || !Number.isFinite(profissionalId)) {
                     window.showAppModalMessage?.('Selecione um profissional para iniciar o atendimento.', 'Atenção', 'warning');
                     return;
                 }

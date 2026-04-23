@@ -318,12 +318,14 @@ class ProfissionalWorkflowController extends Controller
                 'od_esferico' => optional($prescricao ?? null)->esfera_od,
                 'od_cilindrico' => optional($prescricao ?? null)->cilindro_od,
                 'od_eixo' => optional($prescricao ?? null)->eixo_od,
+                'od_acuidade' => optional($prescricao ?? null)->acuidade_od,
                 'od_adicao' => optional($prescricao ?? null)->adicao_od,
                 'od_dnp' => optional($prescricao ?? null)->dnp_od,
                 'od_altura' => optional($prescricao ?? null)->altura_od,
                 'oe_esferico' => optional($prescricao ?? null)->esfera_oe,
                 'oe_cilindrico' => optional($prescricao ?? null)->cilindro_oe,
                 'oe_eixo' => optional($prescricao ?? null)->eixo_oe,
+                'oe_acuidade' => optional($prescricao ?? null)->acuidade_oe,
                 'oe_adicao' => optional($prescricao ?? null)->adicao_oe,
                 'oe_dnp' => optional($prescricao ?? null)->dnp_oe,
                 'oe_altura' => optional($prescricao ?? null)->altura_oe,
@@ -334,12 +336,14 @@ class ProfissionalWorkflowController extends Controller
                 'od_esferico' => $prescricaoAtual->esfera_od,
                 'od_cilindrico' => $prescricaoAtual->cilindro_od,
                 'od_eixo' => $prescricaoAtual->eixo_od,
+                'od_acuidade' => $prescricaoAtual->acuidade_od,
                 'od_dnp' => $prescricaoAtual->dnp_od,
                 'od_altura' => $prescricaoAtual->altura_od,
                 'od_adicao' => $prescricaoAtual->adicao_od,
                 'oe_esferico' => $prescricaoAtual->esfera_oe,
                 'oe_cilindrico' => $prescricaoAtual->cilindro_oe,
                 'oe_eixo' => $prescricaoAtual->eixo_oe,
+                'oe_acuidade' => $prescricaoAtual->acuidade_oe,
                 'oe_dnp' => $prescricaoAtual->dnp_oe,
                 'oe_altura' => $prescricaoAtual->altura_oe,
                 'oe_adicao' => $prescricaoAtual->adicao_oe,
@@ -407,6 +411,7 @@ class ProfissionalWorkflowController extends Controller
                 'od_esferico' => $request->input('od_esferico', optional($prescricao)->esfera_od),
                 'od_cilindrico' => $request->input('od_cilindrico', optional($prescricao)->cilindro_od),
                 'od_eixo' => $request->input('od_eixo', optional($prescricao)->eixo_od),
+                'od_acuidade' => $request->input('od_acuidade', optional($prescricao)->acuidade_od),
                 'od_dnp' => $request->input('od_dnp', optional($prescricao)->dnp_od),
                 'od_altura' => $request->input('od_altura', optional($prescricao)->altura_od),
                 'od_adicao' => $request->input('od_adicao', optional($prescricao)->adicao_od),
@@ -414,6 +419,7 @@ class ProfissionalWorkflowController extends Controller
                 'oe_esferico' => $request->input('oe_esferico', optional($prescricao)->esfera_oe),
                 'oe_cilindrico' => $request->input('oe_cilindrico', optional($prescricao)->cilindro_oe),
                 'oe_eixo' => $request->input('oe_eixo', optional($prescricao)->eixo_oe),
+                'oe_acuidade' => $request->input('oe_acuidade', optional($prescricao)->acuidade_oe),
                 'oe_dnp' => $request->input('oe_dnp', optional($prescricao)->dnp_oe),
                 'oe_altura' => $request->input('oe_altura', optional($prescricao)->altura_oe),
                 'oe_adicao' => $request->input('oe_adicao', optional($prescricao)->adicao_oe),
@@ -765,8 +771,10 @@ class ProfissionalWorkflowController extends Controller
                 'oe_esferico' => optional($pres)->esfera_oe,
                 'od_cilindrico' => optional($pres)->cilindro_od,
                 'od_eixo' => optional($pres)->eixo_od,
+                'od_acuidade' => optional($pres)->acuidade_od,
                 'oe_cilindrico' => optional($pres)->cilindro_oe,
                 'oe_eixo' => optional($pres)->eixo_oe,
+                'oe_acuidade' => optional($pres)->acuidade_oe,
                 'od_adicao' => optional($pres)->adicao_od,
                 'oe_adicao' => optional($pres)->adicao_oe,
                 'od_dnp' => optional($pres)->dnp_od,
@@ -859,6 +867,7 @@ class ProfissionalWorkflowController extends Controller
                 'od_esferico' => optional($prescricao)->esfera_od,
                 'od_cilindrico' => optional($prescricao)->cilindro_od,
                 'od_eixo' => optional($prescricao)->eixo_od,
+                'od_acuidade' => optional($prescricao)->acuidade_od,
                 'od_dnp' => optional($prescricao)->dnp_od,
                 'od_altura' => optional($prescricao)->altura_od,
                 'od_adicao' => optional($prescricao)->adicao_od,
@@ -866,6 +875,7 @@ class ProfissionalWorkflowController extends Controller
                 'oe_esferico' => optional($prescricao)->esfera_oe,
                 'oe_cilindrico' => optional($prescricao)->cilindro_oe,
                 'oe_eixo' => optional($prescricao)->eixo_oe,
+                'oe_acuidade' => optional($prescricao)->acuidade_oe,
                 'oe_dnp' => optional($prescricao)->dnp_oe,
                 'oe_altura' => optional($prescricao)->altura_oe,
                 'oe_adicao' => optional($prescricao)->adicao_oe,
@@ -1032,6 +1042,7 @@ class ProfissionalWorkflowController extends Controller
                 'od_esferico' => optional($prescricao)->esfera_od,
                 'od_cilindrico' => optional($prescricao)->cilindro_od,
                 'od_eixo' => optional($prescricao)->eixo_od,
+                'od_acuidade' => optional($prescricao)->acuidade_od,
                 'od_dnp' => optional($prescricao)->dnp_od,
                 'od_altura' => optional($prescricao)->altura_od,
                 'od_adicao' => optional($prescricao)->adicao_od,
@@ -1039,6 +1050,7 @@ class ProfissionalWorkflowController extends Controller
                 'oe_esferico' => optional($prescricao)->esfera_oe,
                 'oe_cilindrico' => optional($prescricao)->cilindro_oe,
                 'oe_eixo' => optional($prescricao)->eixo_oe,
+                'oe_acuidade' => optional($prescricao)->acuidade_oe,
                 'oe_dnp' => optional($prescricao)->dnp_oe,
                 'oe_altura' => optional($prescricao)->altura_oe,
                 'oe_adicao' => optional($prescricao)->adicao_oe,
@@ -1061,17 +1073,48 @@ class ProfissionalWorkflowController extends Controller
         return view('professional.new-prescription');
     }
 
+    private function normalizeEsferico(?string $value): string
+    {
+        $raw = is_string($value) ? trim($value) : '';
+        if ($raw === '') {
+            return '0';
+        }
+
+        $upper = strtoupper(str_replace(' ', '', $raw));
+        if ($upper === 'PL') {
+            return '0';
+        }
+
+        $upper = str_replace(',', '.', $upper);
+        if (preg_match('/^([+-]?)(\d+(?:\.\d{1,2})?)$/', $upper, $m)) {
+            $num = (float) $m[2];
+            if (abs($num) < 0.0000001) {
+                return '0';
+            }
+
+            $sign = $m[1] === '-' ? '-' : '';
+            $formatted = number_format($num, 2, '.', '');
+            return $sign . $formatted;
+        }
+
+        return $raw;
+    }
+
     public function storeNewPrescription(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $requestData = $request->all();
+        $requestData['od_esferico'] = $this->normalizeEsferico($request->input('od_esferico'));
+        $requestData['oe_esferico'] = $this->normalizeEsferico($request->input('oe_esferico'));
+
+        $validator = Validator::make($requestData, [
             'nome' => ['required', 'string', 'max:255'],
             'cpf' => ['nullable', 'string', 'max:14'],
             'telefone' => ['nullable', 'string', 'max:15'],
             'email' => ['nullable', 'email'],
-            'od_esferico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+            'od_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
             'od_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
             'od_eixo' => ['nullable', 'integer', 'between:0,180'],
-            'oe_esferico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+            'oe_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
             'oe_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
             'oe_eixo' => ['nullable', 'integer', 'between:0,180'],
             'od_dnp' => ['nullable', 'numeric', 'min:0', 'max:80'],
@@ -1133,6 +1176,8 @@ class ProfissionalWorkflowController extends Controller
                 $data[$f] = str_replace(',', '.', $data[$f]);
             }
         }
+        $data['od_esferico'] = $this->normalizeEsferico($data['od_esferico'] ?? null);
+        $data['oe_esferico'] = $this->normalizeEsferico($data['oe_esferico'] ?? null);
 
         Prescricao::create([
             'tenant_id' => $tenantId,
@@ -1141,9 +1186,11 @@ class ProfissionalWorkflowController extends Controller
             'esfera_od' => $data['od_esferico'] ?? null,
             'cilindro_od' => $data['od_cilindrico'] ?? null,
             'eixo_od' => $data['od_eixo'] ?? null,
+            'acuidade_od' => $data['od_acuidade'] ?? null,
             'esfera_oe' => $data['oe_esferico'] ?? null,
             'cilindro_oe' => $data['oe_cilindrico'] ?? null,
             'eixo_oe' => $data['oe_eixo'] ?? null,
+            'acuidade_oe' => $data['oe_acuidade'] ?? null,
             'dnp_od' => $data['od_dnp'] ?? null,
             'dnp_oe' => $data['oe_dnp'] ?? null,
             'altura_od' => $data['od_altura'] ?? null,
@@ -1227,12 +1274,14 @@ class ProfissionalWorkflowController extends Controller
                     $requestData[$f] = str_replace(',', '.', $request->input($f));
                 }
             }
+            $requestData['od_esferico'] = $this->normalizeEsferico($requestData['od_esferico'] ?? $request->input('od_esferico'));
+            $requestData['oe_esferico'] = $this->normalizeEsferico($requestData['oe_esferico'] ?? $request->input('oe_esferico'));
 
             $rules = [
-                'od_esferico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+                'od_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
                 'od_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
                 'od_eixo' => ['nullable', 'integer', 'between:0,180'],
-                'oe_esferico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+                'oe_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
                 'oe_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
                 'oe_eixo' => ['nullable', 'integer', 'between:0,180'],
                 'od_dnp' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
@@ -1249,6 +1298,8 @@ class ProfissionalWorkflowController extends Controller
             ];
 
             $messages = [
+                'od_esferico.regex' => 'O campo OD Esférico deve ser PL ou um número com até 2 casas decimais.',
+                'oe_esferico.regex' => 'O campo OE Esférico deve ser PL ou um número com até 2 casas decimais.',
                 'regex' => 'O campo :attribute deve ser um número com até 2 casas decimais.',
                 'integer' => 'O campo :attribute deve ser um número inteiro.',
                 'between' => 'O campo :attribute deve estar entre :min e :max.',
@@ -1280,9 +1331,11 @@ class ProfissionalWorkflowController extends Controller
                     'esfera_od' => $requestData['od_esferico'] ?? null,
                     'cilindro_od' => $requestData['od_cilindrico'] ?? null,
                     'eixo_od' => $requestData['od_eixo'] ?? null,
+                    'acuidade_od' => $requestData['od_acuidade'] ?? null,
                     'esfera_oe' => $requestData['oe_esferico'] ?? null,
                     'cilindro_oe' => $requestData['oe_cilindrico'] ?? null,
                     'eixo_oe' => $requestData['oe_eixo'] ?? null,
+                    'acuidade_oe' => $requestData['oe_acuidade'] ?? null,
                     'dnp_od' => $requestData['od_dnp'] ?? null,
                     'dnp_oe' => $requestData['oe_dnp'] ?? null,
                     'altura_od' => $requestData['od_altura'] ?? null,
