@@ -1041,11 +1041,15 @@
                 document.querySelector('input[name="od_cilindrico"]').value =
                     '{{ $patient['ultima_receita']['od_cilindrico'] }}';
                 document.querySelector('input[name="od_eixo"]').value = '{{ $patient['ultima_receita']['od_eixo'] }}';
+                document.querySelector('input[name="od_acuidade"]').value =
+                    '{{ $patient['ultima_receita']['od_acuidade'] ?? '' }}';
                 document.querySelector('input[name="oe_esferico"]').value =
                     '{{ $patient['ultima_receita']['oe_esferico'] }}';
                 document.querySelector('input[name="oe_cilindrico"]').value =
                     '{{ $patient['ultima_receita']['oe_cilindrico'] }}';
                 document.querySelector('input[name="oe_eixo"]').value = '{{ $patient['ultima_receita']['oe_eixo'] }}';
+                document.querySelector('input[name="oe_acuidade"]').value =
+                    '{{ $patient['ultima_receita']['oe_acuidade'] ?? '' }}';
                 document.querySelector('input[name="od_adicao"]').value = '{{ $patient['ultima_receita']['od_adicao'] }}';
                 document.querySelector('input[name="oe_adicao"]').value = '{{ $patient['ultima_receita']['oe_adicao'] }}';
                 document.querySelector('input[name="od_dnp"]').value = '{{ $patient['ultima_receita']['od_dnp'] }}';

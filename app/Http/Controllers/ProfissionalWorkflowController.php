@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuthHelper;
+use App\Http\Requests\PrescriptionFormRequest;
 use App\Models\Consulta; // Import the Consulta model
 use App\Models\Encaminhamento;
 use App\Models\Especialidade;
@@ -13,6 +14,7 @@ use App\Models\Profissional;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ProfissionalWorkflowController extends Controller
 {
@@ -1070,7 +1072,28 @@ class ProfissionalWorkflowController extends Controller
 
     public function newPrescription()
     {
-        return view('professional.new-prescription');
+        $tenantId = AuthHelper::tenantId() ?? 1;
+        $locationId = AuthHelper::locationId() ?? 1;
+        $userId = AuthHelper::userId();
+
+        $profissionais = Profissional::query()
+            ->ativos()
+            ->where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->with('especialidade')
+            ->orderBy('nome')
+            ->get();
+
+        $currentProfissionalId = null;
+        if ($userId) {
+            $currentProfissionalId = Profissional::query()
+                ->where('tenant_id', $tenantId)
+                ->where('location_id', $locationId)
+                ->where('user_id', $userId)
+                ->value('id');
+        }
+
+        return view('professional.new-prescription', compact('profissionais', 'currentProfissionalId'));
     }
 
     private function normalizeEsferico(?string $value): string
@@ -1130,101 +1153,53 @@ class ProfissionalWorkflowController extends Controller
         return $raw;
     }
 
-    public function storeNewPrescription(Request $request)
+    public function storeNewPrescription(PrescriptionFormRequest $request)
     {
-        $requestData = $request->all();
-        $requestData['od_esferico'] = $this->normalizeEsferico($request->input('od_esferico'));
-        $requestData['oe_esferico'] = $this->normalizeEsferico($request->input('oe_esferico'));
-        $requestData['od_cilindrico'] = $this->normalizeCilindrico($request->input('od_cilindrico'));
-        $requestData['oe_cilindrico'] = $this->normalizeCilindrico($request->input('oe_cilindrico'));
+        $tenantId = AuthHelper::tenantId() ?? 1;
+        $locationId = AuthHelper::locationId() ?? 1;
 
-        $messages = [
-            'od_esferico.regex' => 'O campo OD Esférico deve ser PL ou um número com até 2 casas decimais.',
-            'oe_esferico.regex' => 'O campo OE Esférico deve ser PL ou um número com até 2 casas decimais.',
-            'regex' => 'O campo :attribute deve ser um número com até 2 casas decimais.',
-            'integer' => 'O campo :attribute deve ser um número inteiro.',
-            'between' => 'O campo :attribute deve estar entre :min e :max.',
-            'numeric' => 'O campo :attribute deve ser numérico.',
-            'in' => 'O campo :attribute possui um valor inválido.',
-            'max' => 'O campo :attribute não pode exceder :max caracteres.',
-        ];
+        $validatedData = $request->validated();
 
-        $validator = Validator::make($requestData, [
-            'nome' => ['required', 'string', 'max:255'],
-            'cpf' => ['nullable', 'string', 'max:14'],
-            'telefone' => ['nullable', 'string', 'max:15'],
-            'email' => ['nullable', 'email'],
-            'od_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
-            'od_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-            'od_eixo' => ['nullable', 'integer', 'between:0,180'],
-            'oe_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
-            'oe_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-            'oe_eixo' => ['nullable', 'integer', 'between:0,180'],
-            'od_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
-            'oe_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
-            'od_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
-            'oe_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
-            'od_altura' => ['nullable', 'numeric', 'between:15,40'],
-            'oe_altura' => ['nullable', 'numeric',  'between:15,40'],
-            'tipo_lente' => ['nullable', 'string', 'max:100'],
-            'validade_dias' => ['nullable', 'integer', 'in:180,365'],
-            'diagnostico' => ['nullable', 'string', 'max:255'],
-            'observacoes_receita' => ['nullable', 'string', 'max:1000'],
-            'recomendacoes' => ['nullable', 'string', 'max:1000'],
-            'tipo_lente' => ['nullable', 'string', 'max:100'],
-
-        ], $messages);
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $tenantId = AuthHelper::tenantId();
-        $locationId = AuthHelper::locationId();
         $userId = AuthHelper::userId();
 
-        $cpfLimpo = preg_replace('/\D/', '', (string) $request->input('cpf'));
-        $telefoneLimpo = preg_replace('/\D/', '', (string) $request->input('telefone'));
+        $cpfLimpo = preg_replace('/\D/', '', (string) ($validatedData['cpf'] ?? ''));
+        $telefoneLimpo = preg_replace('/\D/', '', (string) ($validatedData['telefone'] ?? ''));
 
         $pessoa = Pessoa::firstOrCreate(
             ['cpf' => $cpfLimpo, 'tenant_id' => $tenantId],
             [
-                'nome' => $request->input('nome'),
+                'nome' => $validatedData['nome'],
                 'telefone' => $telefoneLimpo,
-                'email' => $request->input('email'),
+                'email' => $validatedData['email'] ?? null,
                 'location_id' => $locationId,
                 'user_id' => $userId,
                 'ativo' => true,
             ]
         );
-        $pessoa->nome = $request->input('nome');
+        $pessoa->nome = $validatedData['nome'];
         $pessoa->telefone = $telefoneLimpo;
-        $pessoa->email = $request->input('email');
+        $pessoa->email = $validatedData['email'] ?? null;
         $pessoa->save();
 
-        $profissional = Profissional::where('user_id', $userId)->first();
+        $selectedProfissionalId = $validatedData['profissional_id'] ?? null;
+        $profissional = null;
+        if (! $selectedProfissionalId && $userId) {
+            $profissional = Profissional::where('user_id', $userId)->first();
+        }
 
         $consulta = new Consulta;
         $consulta->tenant_id = $tenantId;
         $consulta->location_id = $locationId;
         $consulta->user_id = $userId;
         $consulta->pessoa_paciente_id = $pessoa->id;
-        $consulta->profissional_id = $profissional ? $profissional->id : null;
+        $consulta->profissional_id = $selectedProfissionalId ? (int) $selectedProfissionalId : ($profissional ? $profissional->id : null);
         $consulta->tipo = Consulta::TIPO_CONSULTA;
         $consulta->status = Consulta::STATUS_ATENDIDO;
         $consulta->atendido_em = \Carbon\Carbon::now('America/Manaus');
         $consulta->ativo = true;
         $consulta->save();
 
-        $data = $request->all();
-        foreach (['od_esferico', 'od_cilindrico', 'oe_esferico', 'oe_cilindrico', 'od_adicao', 'oe_adicao', 'od_dnp', 'oe_dnp', 'od_altura', 'oe_altura'] as $f) {
-            if (! empty($data[$f])) {
-                $data[$f] = str_replace(',', '.', $data[$f]);
-            }
-        }
-        $data['od_esferico'] = $this->normalizeEsferico($data['od_esferico'] ?? null);
-        $data['oe_esferico'] = $this->normalizeEsferico($data['oe_esferico'] ?? null);
-        $data['od_cilindrico'] = $this->normalizeCilindrico($data['od_cilindrico'] ?? null);
-        $data['oe_cilindrico'] = $this->normalizeCilindrico($data['oe_cilindrico'] ?? null);
+        $data = $validatedData;
 
         Prescricao::create([
             'tenant_id' => $tenantId,
@@ -1299,72 +1274,10 @@ class ProfissionalWorkflowController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function savePrescriptionDraft(Request $request, $id)
+    public function savePrescriptionDraft(PrescriptionFormRequest $request, $id)
     {
         try {
-            $requestData = $request->all();
-
-            $decimalFields = [
-                'od_esferico',
-                'od_cilindrico',
-                'oe_esferico',
-                'oe_cilindrico',
-                'od_adicao',
-                'oe_adicao',
-                'od_dnp',
-                'oe_dnp',
-                'od_altura',
-                'oe_altura',
-            ];
-            foreach ($decimalFields as $f) {
-                if ($request->filled($f)) {
-                    $requestData[$f] = str_replace(',', '.', $request->input($f));
-                }
-            }
-            $requestData['od_esferico'] = $this->normalizeEsferico($requestData['od_esferico'] ?? $request->input('od_esferico'));
-            $requestData['oe_esferico'] = $this->normalizeEsferico($requestData['oe_esferico'] ?? $request->input('oe_esferico'));
-            $requestData['od_cilindrico'] = $this->normalizeCilindrico($requestData['od_cilindrico'] ?? $request->input('od_cilindrico'));
-            $requestData['oe_cilindrico'] = $this->normalizeCilindrico($requestData['oe_cilindrico'] ?? $request->input('oe_cilindrico'));
-
-            $rules = [
-                'od_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
-                'od_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'od_eixo' => ['nullable', 'integer', 'between:0,180'],
-                'oe_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
-                'oe_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'oe_eixo' => ['nullable', 'integer', 'between:0,180'],
-                'od_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
-                'oe_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
-                'od_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
-                'oe_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
-                'od_altura' => ['nullable', 'numeric', 'between:15,40'],
-                'oe_altura' => ['nullable', 'numeric',  'between:15,40'],
-                'tipo_lente' => ['nullable', 'string', 'max:100'],
-                'validade_dias' => ['nullable', 'integer', 'in:180,365'],
-                'diagnostico' => ['nullable', 'string', 'max:255'],
-                'observacoes_receita' => ['nullable', 'string', 'max:1000'],
-                'recomendacoes' => ['nullable', 'string', 'max:1000'],
-            ];
-
-            $messages = [
-                'od_esferico.regex' => 'O campo OD Esférico deve ser PL ou um número com até 2 casas decimais.',
-                'oe_esferico.regex' => 'O campo OE Esférico deve ser PL ou um número com até 2 casas decimais.',
-                'regex' => 'O campo :attribute deve ser um número com até 2 casas decimais.',
-                'integer' => 'O campo :attribute deve ser um número inteiro.',
-                'between' => 'O campo :attribute deve estar entre :min e :max.',
-                'numeric' => 'O campo :attribute deve ser numérico.',
-                'in' => 'O campo :attribute possui um valor inválido.',
-                'max' => 'O campo :attribute não pode exceder :max caracteres.',
-            ];
-
-            $validator = Validator::make($requestData, $rules, $messages);
-            if ($validator->fails()) {
-                return redirect()
-                    ->route('professional.consultation', ['id' => $id])
-                    ->withErrors($validator)
-                    ->withInput()
-                    ->with('active_tab', 'prescription');
-            }
+            $requestData = $request->validated();
             $consulta = Consulta::with(['paciente', 'profissional'])
                 ->where('id', $id)
                 ->firstOrFail();

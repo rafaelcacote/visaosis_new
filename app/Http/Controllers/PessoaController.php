@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuthHelper;
+use App\Http\Requests\PrescriptionFormRequest;
 use App\Models\Pessoa;
 use App\Rules\ValidCpf;
 use Illuminate\Http\Request;
@@ -548,64 +549,11 @@ class PessoaController extends Controller
     /**
      * Store a new prescription for the patient.
      */
-    public function storePrescription(Request $request, Pessoa $pessoa)
+    public function storePrescription(PrescriptionFormRequest $request, Pessoa $pessoa)
     {
         $this->checkTenantAccess($pessoa);
 
-        $request->merge([
-            'od_esferico' => $this->normalizeEsferico($request->input('od_esferico')),
-            'oe_esferico' => $this->normalizeEsferico($request->input('oe_esferico')),
-            'od_cilindrico' => $this->normalizeCilindrico($request->input('od_cilindrico')),
-            'oe_cilindrico' => $this->normalizeCilindrico($request->input('oe_cilindrico')),
-        ]);
-
-        $validatedData = $request->validate([
-            'especialista_externo' => 'required|string|max:255',
-            'od_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
-            'od_cilindrico' => 'nullable|string',
-            'od_eixo' => 'nullable|string',
-            'od_dnp' => 'nullable|string',
-            'od_altura' => 'nullable|string',
-            'od_adicao' => 'nullable|string',
-            'oe_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
-            'oe_cilindrico' => 'nullable|string',
-            'oe_eixo' => 'nullable|string',
-            'oe_dnp' => 'nullable|string',
-            'oe_altura' => 'nullable|string',
-            'oe_adicao' => 'nullable|string',
-            'tipo_lente' => 'nullable|string',
-            'validade_dias' => 'nullable|integer',
-            'diagnostico' => 'nullable|string',
-            'recomendacoes' => 'nullable|string',
-            'observacoes_receita' => 'nullable|string',
-        ], [
-            'required' => 'O campo :attribute é obrigatório.',
-            'string' => 'O campo :attribute deve ser um texto.',
-            'od_esferico.regex' => 'O campo OD Esférico deve ser PL ou um número com até 2 casas decimais.',
-            'oe_esferico.regex' => 'O campo OE Esférico deve ser PL ou um número com até 2 casas decimais.',
-            'boolean' => 'O campo :attribute deve ser verdadeiro ou falso.',
-            'integer' => 'O campo :attribute deve ser um número inteiro.',
-            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
-        ], [
-            'especialista_externo' => 'Nome do profissional que prescreveu',
-            'od_esferico' => 'OD Esférico',
-            'od_cilindrico' => 'OD Cilíndrico',
-            'od_eixo' => 'OD Eixo',
-            'od_dnp' => 'OD DNP',
-            'od_altura' => 'OD Altura',
-            'od_adicao' => 'OD Adição',
-            'oe_esferico' => 'OE Esférico',
-            'oe_cilindrico' => 'OE Cilíndrico',
-            'oe_eixo' => 'OE Eixo',
-            'oe_dnp' => 'OE DNP',
-            'oe_altura' => 'OE Altura',
-            'oe_adicao' => 'OE Adição',
-            'tipo_lente' => 'Tipo de Lente',
-            'validade_dias' => 'Validade',
-            'diagnostico' => 'Diagnóstico',
-            'recomendacoes' => 'Recomendações',
-            'observacoes_receita' => 'Observações da Receita',
-        ]);
+        $validatedData = $request->validated();
 
         try {
             DB::beginTransaction();
@@ -617,12 +565,14 @@ class PessoaController extends Controller
                 'esfera_od' => $validatedData['od_esferico'],
                 'cilindro_od' => $validatedData['od_cilindrico'],
                 'eixo_od' => $validatedData['od_eixo'],
+                'acuidade_od' => $validatedData['od_acuidade'],
                 'dnp_od' => $validatedData['od_dnp'],
                 'altura_od' => $validatedData['od_altura'],
                 'adicao_od' => $validatedData['od_adicao'],
                 'esfera_oe' => $validatedData['oe_esferico'],
                 'cilindro_oe' => $validatedData['oe_cilindrico'],
                 'eixo_oe' => $validatedData['oe_eixo'],
+                'acuidade_oe' => $validatedData['oe_acuidade'],
                 'dnp_oe' => $validatedData['oe_dnp'],
                 'altura_oe' => $validatedData['oe_altura'],
                 'adicao_oe' => $validatedData['oe_adicao'],

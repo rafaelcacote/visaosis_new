@@ -89,6 +89,23 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Profissional</label>
+                            @php $selectedProfissionalId = old('profissional_id', $currentProfissionalId ?? '') @endphp
+                            <select class="form-select @error('profissional_id') is-invalid @enderror"
+                                name="profissional_id">
+                                <option value="">Selecione</option>
+                                @foreach ($profissionais ?? [] as $prof)
+                                    <option value="{{ $prof->id }}"
+                                        {{ (string) $selectedProfissionalId === (string) $prof->id ? 'selected' : '' }}>
+                                        {{ $prof->nome }}{{ $prof->especialidade ? ' - ' . $prof->especialidade->descricao : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('profissional_id')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
                 </div>
             </div>
