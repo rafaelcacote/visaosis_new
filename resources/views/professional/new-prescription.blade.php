@@ -3,56 +3,56 @@
 @section('title', 'Nova Receita')
 
 @section('content')
-<div class="d-xl-flex justify-content-between align-items-start mb-4">
-    <div>
-        <h2 class="text-dark font-weight-bold mb-2">
-            <i class="mdi mdi-file-document-plus me-2"></i>
-            Nova Receita
-        </h2>
-        <p class="text-muted mb-0">Criar uma nova receita para paciente</p>
-    </div>
-    <a href="{{ route('professional.index') }}" class="btn btn-outline-secondary">
-        <i class="mdi mdi-arrow-left me-2"></i>
-        Voltar
-    </a>
-</div>
-
-<div class="container-fluid py-3">
-    <div class="card mb-3">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="mdi mdi-magnify me-2"></i>Buscar Paciente</h5>
+    <div class="d-xl-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="text-dark font-weight-bold mb-2">
+                <i class="mdi mdi-file-document-plus me-2"></i>
+                Nova Receita
+            </h2>
+            <p class="text-muted mb-0">Criar uma nova receita para paciente</p>
         </div>
-        <div class="card-body">
-            <div class="row g-2">
-                <div class="col-md-6">
-                    <input type="text" class="form-control" id="searchTerm" placeholder="Nome, CPF ou Telefone">
-                </div>
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-primary w-100" id="btnSearch">
-                        <i class="mdi mdi-magnify me-2"></i>Buscar
-                    </button>
-                </div>
-            </div>
-            <div class="mt-3" id="searchFeedback" style="display:none"></div>
-
-            <div class="card mt-3" id="searchResults" style="display:none;">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="mdi mdi-account-group me-2"></i>Resultados da Busca</h6>
-                </div>
-                <div class="card-body">
-                    <div id="patientsList" class="list-group"></div>
-                </div>
-            </div>
-        </div>
+        <a href="{{ route('professional.index') }}" class="btn btn-outline-secondary">
+            <i class="mdi mdi-arrow-left me-2"></i>
+            Voltar
+        </a>
     </div>
 
-    <form action="{{ route('professional.storeNewPrescription') }}" method="POST">
-        @csrf
-
+    <div class="container-fluid py-3">
         <div class="card mb-3">
             <div class="card-header">
-                <h6 class="mb-0"><i class="mdi mdi-account me-2"></i>Dados do Paciente</h6>
+                <h5 class="mb-0"><i class="mdi mdi-magnify me-2"></i>Buscar Paciente</h5>
             </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="searchTerm" placeholder="Nome, CPF ou Telefone">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-primary w-100" id="btnSearch">
+                            <i class="mdi mdi-magnify me-2"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3" id="searchFeedback" style="display:none"></div>
+
+                <div class="card mt-3" id="searchResults" style="display:none;">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="mdi mdi-account-group me-2"></i>Resultados da Busca</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="patientsList" class="list-group"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form action="{{ route('professional.storeNewPrescription') }}" method="POST">
+            @csrf
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="mdi mdi-account me-2"></i>Dados do Paciente</h6>
+                </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -107,6 +107,7 @@
                                             <th style="width:12%">OD Esférico</th>
                                             <th style="width:12%">OD Cilíndrico</th>
                                             <th style="width:12%">OD Eixo</th>
+                                            <th style="width:12%">OD AV</th>
                                             <th style="width:12%">OD DNP</th>
                                             <th style="width:12%">OD Altura</th>
                                             <th style="width:12%">OD Adição</th>
@@ -128,7 +129,7 @@
                                                 <input type="text"
                                                     class="form-control @error('od_cilindrico') is-invalid @enderror"
                                                     name="od_cilindrico" value="{{ old('od_cilindrico') }}"
-                                                    placeholder="+/-0.00">
+                                                    placeholder="-0.00">
                                                 @error('od_cilindrico')
                                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                                 @enderror
@@ -138,6 +139,15 @@
                                                     class="form-control @error('od_eixo') is-invalid @enderror"
                                                     name="od_eixo" value="{{ old('od_eixo') }}" placeholder="0-180">
                                                 @error('od_eixo')
+                                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                @enderror
+                                            </td>
+                                            <td>
+                                                <input type="text"
+                                                    class="form-control @error('od_acuidade') is-invalid @enderror"
+                                                    name="od_acuidade" value="{{ old('od_acuidade') }}"
+                                                    placeholder="20/20">
+                                                @error('od_acuidade')
                                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                                 @enderror
                                             </td>
@@ -195,6 +205,7 @@
                                             <th style="width:12%">OE Esférico</th>
                                             <th style="width:12%">OE Cilíndrico</th>
                                             <th style="width:12%">OE Eixo</th>
+                                            <th style="width:12%">OE AV</th>
                                             <th style="width:12%">OE DNP</th>
                                             <th style="width:12%">OE Altura</th>
                                             <th style="width:12%">OE Adição</th>
@@ -216,7 +227,7 @@
                                                 <input type="text"
                                                     class="form-control @error('oe_cilindrico') is-invalid @enderror"
                                                     name="oe_cilindrico" value="{{ old('oe_cilindrico') }}"
-                                                    placeholder="+/-0.00">
+                                                    placeholder="-0.00">
                                                 @error('oe_cilindrico')
                                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                                 @enderror
@@ -226,6 +237,15 @@
                                                     class="form-control @error('oe_eixo') is-invalid @enderror"
                                                     name="oe_eixo" value="{{ old('oe_eixo') }}" placeholder="0-180">
                                                 @error('oe_eixo')
+                                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                @enderror
+                                            </td>
+                                            <td>
+                                                <input type="text"
+                                                    class="form-control @error('oe_acuidade') is-invalid @enderror"
+                                                    name="oe_acuidade" value="{{ old('oe_acuidade') }}"
+                                                    placeholder="20/20">
+                                                @error('oe_acuidade')
                                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                                 @enderror
                                             </td>
@@ -262,8 +282,7 @@
                                                     </option>
                                                     <option value="180" {{ $val === '180' ? 'selected' : '' }}>6 Meses
                                                     </option>
-                                                    <option value="90" {{ $val === '90' ? 'selected' : '' }}>3 Meses
-                                                    </option>
+
                                                 </select>
                                                 @error('validade_dias')
                                                     <div class="invalid-feedback d-block">{{ $message }}</div>

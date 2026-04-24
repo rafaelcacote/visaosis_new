@@ -1100,11 +1100,54 @@ class ProfissionalWorkflowController extends Controller
         return $raw;
     }
 
+    private function normalizeCilindrico(?string $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $upper = strtoupper(str_replace(' ', '', $raw));
+        if ($upper === 'PL') {
+            return '0';
+        }
+
+        $upper = str_replace(',', '.', $upper);
+        if (preg_match('/^([+-]?)(\d+(?:\.\d{1,2})?)$/', $upper, $m)) {
+            $num = (float) $m[2];
+            if (abs($num) < 0.0000001) {
+                return '0';
+            }
+
+            $formatted = number_format($num, 2, '.', '');
+            return '-' . $formatted;
+        }
+
+        return $raw;
+    }
+
     public function storeNewPrescription(Request $request)
     {
         $requestData = $request->all();
         $requestData['od_esferico'] = $this->normalizeEsferico($request->input('od_esferico'));
         $requestData['oe_esferico'] = $this->normalizeEsferico($request->input('oe_esferico'));
+        $requestData['od_cilindrico'] = $this->normalizeCilindrico($request->input('od_cilindrico'));
+        $requestData['oe_cilindrico'] = $this->normalizeCilindrico($request->input('oe_cilindrico'));
+
+        $messages = [
+            'od_esferico.regex' => 'O campo OD Esférico deve ser PL ou um número com até 2 casas decimais.',
+            'oe_esferico.regex' => 'O campo OE Esférico deve ser PL ou um número com até 2 casas decimais.',
+            'regex' => 'O campo :attribute deve ser um número com até 2 casas decimais.',
+            'integer' => 'O campo :attribute deve ser um número inteiro.',
+            'between' => 'O campo :attribute deve estar entre :min e :max.',
+            'numeric' => 'O campo :attribute deve ser numérico.',
+            'in' => 'O campo :attribute possui um valor inválido.',
+            'max' => 'O campo :attribute não pode exceder :max caracteres.',
+        ];
 
         $validator = Validator::make($requestData, [
             'nome' => ['required', 'string', 'max:255'],
@@ -1117,18 +1160,20 @@ class ProfissionalWorkflowController extends Controller
             'oe_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
             'oe_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
             'oe_eixo' => ['nullable', 'integer', 'between:0,180'],
-            'od_dnp' => ['nullable', 'numeric', 'min:0', 'max:80'],
-            'oe_dnp' => ['nullable', 'numeric', 'min:0', 'max:80'],
-            'od_altura' => ['nullable', 'string', 'max:100'],
-            'oe_altura' => ['nullable', 'string', 'max:100'],
-            'od_adicao' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-            'oe_adicao' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+            'od_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
+            'oe_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
+            'od_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
+            'oe_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
+            'od_altura' => ['nullable', 'numeric', 'between:15,40'],
+            'oe_altura' => ['nullable', 'numeric',  'between:15,40'],
             'tipo_lente' => ['nullable', 'string', 'max:100'],
-            'validade_dias' => ['nullable', 'integer', 'in:30,90,180,365'],
+            'validade_dias' => ['nullable', 'integer', 'in:180,365'],
             'diagnostico' => ['nullable', 'string', 'max:255'],
             'observacoes_receita' => ['nullable', 'string', 'max:1000'],
             'recomendacoes' => ['nullable', 'string', 'max:1000'],
-        ]);
+            'tipo_lente' => ['nullable', 'string', 'max:100'],
+
+        ], $messages);
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
@@ -1178,6 +1223,8 @@ class ProfissionalWorkflowController extends Controller
         }
         $data['od_esferico'] = $this->normalizeEsferico($data['od_esferico'] ?? null);
         $data['oe_esferico'] = $this->normalizeEsferico($data['oe_esferico'] ?? null);
+        $data['od_cilindrico'] = $this->normalizeCilindrico($data['od_cilindrico'] ?? null);
+        $data['oe_cilindrico'] = $this->normalizeCilindrico($data['oe_cilindrico'] ?? null);
 
         Prescricao::create([
             'tenant_id' => $tenantId,
@@ -1276,6 +1323,8 @@ class ProfissionalWorkflowController extends Controller
             }
             $requestData['od_esferico'] = $this->normalizeEsferico($requestData['od_esferico'] ?? $request->input('od_esferico'));
             $requestData['oe_esferico'] = $this->normalizeEsferico($requestData['oe_esferico'] ?? $request->input('oe_esferico'));
+            $requestData['od_cilindrico'] = $this->normalizeCilindrico($requestData['od_cilindrico'] ?? $request->input('od_cilindrico'));
+            $requestData['oe_cilindrico'] = $this->normalizeCilindrico($requestData['oe_cilindrico'] ?? $request->input('oe_cilindrico'));
 
             $rules = [
                 'od_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
@@ -1284,14 +1333,14 @@ class ProfissionalWorkflowController extends Controller
                 'oe_esferico' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
                 'oe_cilindrico' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
                 'oe_eixo' => ['nullable', 'integer', 'between:0,180'],
-                'od_dnp' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'oe_dnp' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'od_adicao' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'oe_adicao' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
-                'od_altura' => ['nullable', 'string', 'max:100'],
-                'oe_altura' => ['nullable', 'string', 'max:100'],
+                'od_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
+                'oe_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
+                'od_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
+                'oe_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
+                'od_altura' => ['nullable', 'numeric', 'between:15,40'],
+                'oe_altura' => ['nullable', 'numeric',  'between:15,40'],
                 'tipo_lente' => ['nullable', 'string', 'max:100'],
-                'validade_dias' => ['nullable', 'integer', 'in:30,90,180,365'],
+                'validade_dias' => ['nullable', 'integer', 'in:180,365'],
                 'diagnostico' => ['nullable', 'string', 'max:255'],
                 'observacoes_receita' => ['nullable', 'string', 'max:1000'],
                 'recomendacoes' => ['nullable', 'string', 'max:1000'],

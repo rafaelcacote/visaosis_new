@@ -343,8 +343,7 @@ class PessoaController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pessoas.index')
-                ->with('success', 'Paciente atualizado com sucesso!');
+            return back()->with('success', 'Paciente atualizado com sucesso!');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -516,6 +515,36 @@ class PessoaController extends Controller
         return $raw;
     }
 
+    private function normalizeCilindrico(?string $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $upper = strtoupper(str_replace(' ', '', $raw));
+        if ($upper === 'PL') {
+            return '0';
+        }
+
+        $upper = str_replace(',', '.', $upper);
+        if (preg_match('/^([+-]?)(\d+(?:\.\d{1,2})?)$/', $upper, $m)) {
+            $num = (float) $m[2];
+            if (abs($num) < 0.0000001) {
+                return '0';
+            }
+
+            $formatted = number_format($num, 2, '.', '');
+            return '-' . $formatted;
+        }
+
+        return $raw;
+    }
+
     /**
      * Store a new prescription for the patient.
      */
@@ -526,6 +555,8 @@ class PessoaController extends Controller
         $request->merge([
             'od_esferico' => $this->normalizeEsferico($request->input('od_esferico')),
             'oe_esferico' => $this->normalizeEsferico($request->input('oe_esferico')),
+            'od_cilindrico' => $this->normalizeCilindrico($request->input('od_cilindrico')),
+            'oe_cilindrico' => $this->normalizeCilindrico($request->input('oe_cilindrico')),
         ]);
 
         $validatedData = $request->validate([

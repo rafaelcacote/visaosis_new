@@ -894,6 +894,36 @@ class ProfessionalController extends Controller
     /**
      * Salvar nova receita
      */
+    private function normalizeCilindrico(?string $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $upper = strtoupper(str_replace(' ', '', $raw));
+        if ($upper === 'PL') {
+            return '0';
+        }
+
+        $upper = str_replace(',', '.', $upper);
+        if (preg_match('/^([+-]?)(\d+(?:\.\d{1,2})?)$/', $upper, $m)) {
+            $num = (float) $m[2];
+            if (abs($num) < 0.0000001) {
+                return '0';
+            }
+
+            $formatted = number_format($num, 2, '.', '');
+            return '-' . $formatted;
+        }
+
+        return $raw;
+    }
+
     public function storeNewPrescription(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -965,6 +995,8 @@ class ProfessionalController extends Controller
         foreach (['od_esferico', 'od_cilindrico', 'oe_esferico', 'oe_cilindrico', 'od_adicao', 'oe_adicao', 'od_dnp', 'oe_dnp', 'od_altura', 'oe_altura'] as $f) {
             if (!empty($data[$f])) $data[$f] = str_replace(',', '.', $data[$f]);
         }
+        $data['od_cilindrico'] = $this->normalizeCilindrico($data['od_cilindrico'] ?? null);
+        $data['oe_cilindrico'] = $this->normalizeCilindrico($data['oe_cilindrico'] ?? null);
 
         Prescricao::create([
             'tenant_id' => $tenantId,
@@ -1040,6 +1072,8 @@ class ProfessionalController extends Controller
                     $requestData[$f] = str_replace(',', '.', $request->input($f));
                 }
             }
+            $requestData['od_cilindrico'] = $this->normalizeCilindrico($requestData['od_cilindrico'] ?? $request->input('od_cilindrico'));
+            $requestData['oe_cilindrico'] = $this->normalizeCilindrico($requestData['oe_cilindrico'] ?? $request->input('oe_cilindrico'));
 
             $rules = [
                 'od_esferico'   => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],

@@ -45,9 +45,7 @@
                     <th class="text-center">Esférico</th>
                     <th class="text-center">Cilíndrico</th>
                     <th class="text-center">Eixo</th>
-                    <th class="text-center">DNP</th>
-                    <th class="text-center">Altura</th>
-                    <th class="text-center">Adição</th>
+                    <th class="text-center">AV</th>
                 </tr>
             </thead>
             <tbody>
@@ -56,18 +54,14 @@
                     <td class="text-center">{{ $prescription['prescricao']['od_esferico'] }}</td>
                     <td class="text-center">{{ $prescription['prescricao']['od_cilindrico'] }}</td>
                     <td class="text-center">{{ $prescription['prescricao']['od_eixo'] }}°</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_dnp'] }}°</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_altura'] }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_adicao'] }}</td>
+                    <td class="text-center">{{ $prescription['prescricao']['od_acuidade'] }}</td>
                 </tr>
                 <tr>
                     <td class="text-center fw-bold">OE</td>
                     <td class="text-center">{{ $prescription['prescricao']['oe_esferico'] }}</td>
                     <td class="text-center">{{ $prescription['prescricao']['oe_cilindrico'] }}</td>
                     <td class="text-center">{{ $prescription['prescricao']['oe_eixo'] }}°</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_dnp'] }}°</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_altura'] }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_adicao'] }}</td>
+                    <td class="text-center">{{ $prescription['prescricao']['oe_acuidade'] }}</td>
                 </tr>
             </tbody>
         </table>

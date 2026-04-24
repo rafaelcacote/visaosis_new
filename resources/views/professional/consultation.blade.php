@@ -193,8 +193,31 @@
                                 action="/professional/save-prescription-draft/{{ $consulta['id'] }}" method="POST">
                                 @csrf
                                 @php
-                                    //   $patient['prescricao'] = $patient['prescricao'] ?? ($patient['ultima_receita'] ?? []);
+                                    $glassesFields = [
+                                        'od_dnp',
+                                        'oe_dnp',
+                                        'od_altura',
+                                        'oe_altura',
+                                        'od_adicao',
+                                        'oe_adicao',
+                                    ];
+                                    $showGlassesFields = false;
+                                    foreach ($glassesFields as $f) {
+                                        $v = old($f, $patient['prescricao'][$f] ?? '');
+                                        if (trim((string) $v) !== '') {
+                                            $showGlassesFields = true;
+                                            break;
+                                        }
+                                    }
                                 @endphp
+
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="toggleGlassesFields"
+                                        {{ $showGlassesFields ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="toggleGlassesFields">
+                                        Informar DNP/Altura/Adição (confecção dos óculos)
+                                    </label>
+                                </div>
                                 <!-- Tabela de Prescrição -->
                                 <div class="table-responsive mb-3">
                                     <table class="table table-bordered prescription-table">
@@ -205,9 +228,12 @@
                                                 <th>Cilíndrico</th>
                                                 <th>Eixo</th>
                                                 <th>Acuidade</th>
-                                                <th>DNP</th>
-                                                <th>Altura</th>
-                                                <th>Adição</th>
+                                                <th class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">DNP
+                                                </th>
+                                                <th class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">Altura
+                                                </th>
+                                                <th class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">Adição
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -223,7 +249,7 @@
                                                 </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="od_cilindrico"
-                                                        placeholder="+/-0.00"
+                                                        placeholder="-0.00"
                                                         value="{{ old('od_cilindrico', $patient['prescricao']['od_cilindrico'] ?? '') }}">
                                                     @error('od_cilindrico')
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -237,7 +263,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                   <td>
+                                                <td>
                                                     <input type="text" class="form-control" name="od_acuidade"
                                                         placeholder="20/20"
                                                         value="{{ old('od_acuidade', $patient['prescricao']['od_acuidade'] ?? '') }}">
@@ -245,7 +271,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="od_dnp"
                                                         placeholder="62"
                                                         value="{{ old('od_dnp', $patient['prescricao']['od_dnp'] ?? '') }}">
@@ -253,7 +279,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="od_altura"
                                                         placeholder="40"
                                                         value="{{ old('od_altura', $patient['prescricao']['od_altura'] ?? '') }}">
@@ -261,7 +287,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="od_adicao"
                                                         placeholder="+0.00"
                                                         value="{{ old('od_adicao', $patient['prescricao']['od_adicao'] ?? '') }}">
@@ -282,7 +308,7 @@
                                                 </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="oe_cilindrico"
-                                                        placeholder="+/-0.00"
+                                                        placeholder="-0.00"
                                                         value="{{ old('oe_cilindrico', $patient['prescricao']['oe_cilindrico'] ?? '') }}">
                                                     @error('oe_cilindrico')
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -304,7 +330,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="oe_dnp"
                                                         placeholder="62"
                                                         value="{{ old('oe_dnp', $patient['prescricao']['oe_dnp'] ?? '') }}">
@@ -312,7 +338,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="oe_altura"
                                                         placeholder="100"
                                                         value="{{ old('oe_altura', $patient['prescricao']['oe_altura'] ?? '') }}">
@@ -320,7 +346,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="oe_adicao"
                                                         placeholder="+0.00"
                                                         value="{{ old('oe_adicao', $patient['prescricao']['oe_adicao'] ?? '') }}">
@@ -355,7 +381,7 @@
                                             @php $val = (string) old('validade_dias',  $patient['prescricao']['validade_dias'] ?? '') @endphp
                                             <option value="365" {{ $val === '365' ? 'selected' : '' }}>1 Ano</option>
                                             <option value="180" {{ $val === '180' ? 'selected' : '' }}>6 Meses</option>
-                                            <option value="90" {{ $val === '90' ? 'selected' : '' }}>3 Meses</option>
+
                                         </select>
                                         @error('validade_dias')
                                             <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -413,26 +439,6 @@
                         <div class="card-body">
                             <form id="exameForm" action="/professional/save-exame/{{ $consulta['id'] }}" method="POST">
                                 @csrf
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Acuidade Visual OD</label>
-                                        <input type="text" class="form-control" name="av_od" required
-                                            placeholder="Ex: 20/20"
-                                            value="{{ old('av_od', $patient['exame']['av_od'] ?? '') }}">
-                                        @error('av_od')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Acuidade Visual OE</label>
-                                        <input type="text" class="form-control" name="av_oe"
-                                            placeholder="Ex: 20/25"
-                                            value="{{ old('av_oe', $patient['exame']['av_oe'] ?? '') }}">
-                                        @error('av_oe')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
 
                                 <div class="row mb-3">
                                     <div class="col-md-6">
@@ -1011,6 +1017,22 @@
     <script>
         let currentPrescription = null;
 
+        function setGlassesFieldsVisible(visible) {
+            document.querySelectorAll('.glasses-fields').forEach((el) => {
+                el.classList.toggle('d-none', !visible);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('toggleGlassesFields');
+            if (!toggle) {
+                return;
+            }
+
+            setGlassesFieldsVisible(toggle.checked);
+            toggle.addEventListener('change', () => setGlassesFieldsVisible(toggle.checked));
+        });
+
         function copyLastPrescription() {
             // Copiar dados da última receita
             @if ($patient['ultima_receita'])
@@ -1041,6 +1063,17 @@
                 document.querySelector('textarea[name="recomendacoes"]').value =
                     '{{ $patient['ultima_receita']['recomendacoes'] ?? '' }}';
             @endif
+
+            const toggle = document.getElementById('toggleGlassesFields');
+            if (toggle) {
+                const glassesFields = ['od_dnp', 'oe_dnp', 'od_altura', 'oe_altura', 'od_adicao', 'oe_adicao'];
+                const hasGlassesValues = glassesFields.some((name) => {
+                    const input = document.querySelector(`input[name="${name}"]`);
+                    return input && input.value.trim() !== '';
+                });
+                toggle.checked = hasGlassesValues;
+                setGlassesFieldsVisible(toggle.checked);
+            }
 
             alert('Dados da última receita copiados!');
         }
@@ -1089,9 +1122,7 @@
                     <td>Esférico</td>
                     <td>Cilíndrico</td>
                     <td>Eixo</td>
-                    <td>DNP</td>
-                    <td>Altura</td>
-                    <td>Adição</td>
+                    <td>AV</td>
                 </tr>
                 </thead>
 
@@ -1100,18 +1131,14 @@
                     <td>${formData.get('od_esferico') || '0.00'}</td>
                     <td>${formData.get('od_cilindrico') || '0.00'}</td>
                     <td>${formData.get('od_eixo') || '0'}°</td>
-                    <td>${formData.get('od_dnp') || 'N/A'}°</td>
-                    <td>${formData.get('od_altura') || '100 cm'}</td>
-                    <td>${formData.get('od_adicao') || '0.00'}</td>
+                    <td>${formData.get('od_acuidade') || 'N/A'}</td>
                 </tr>
                 <tr>
                     <td>OE:</td>
                     <td>${formData.get('oe_esferico') || '0.00'}</td>
                     <td>${formData.get('oe_cilindrico') || '0.00'}</td>
                     <td>${formData.get('oe_eixo') || '0'}°</td>
-                    <td>${formData.get('oe_dnp') || 'N/A'}°</td>
-                    <td>${formData.get('oe_altura') || '100 cm'}</td>
-                    <td>${formData.get('oe_adicao') || '0.00'}</td>
+                    <td>${formData.get('oe_acuidade') || 'N/A'}</td>
                 </tr>
             </table>
              <p><strong>Diagnóstico:</strong> ${formData.get('diagnostico') || 'N/A'}</p>

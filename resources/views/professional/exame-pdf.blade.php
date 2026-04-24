@@ -215,19 +215,16 @@
                 <thead class="table-light">
                     <tr>
                         <th width="80" class="text-center">Olho</th>
-                        <th class="text-center">Acuidade Visual (AV)</th>
                         <th class="text-center">Pressão Intraocular (PIO)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td class="text-center fw-bold">OD</td>
-                        <td class="text-center">{{ $exame['dados']['av_od'] }}</td>
                         <td class="text-center">{{ $exame['dados']['pio_od'] }}</td>
                     </tr>
                     <tr>
                         <td class="text-center fw-bold">OE</td>
-                        <td class="text-center">{{ $exame['dados']['av_oe'] }}</td>
                         <td class="text-center">{{ $exame['dados']['pio_oe'] }}</td>
                     </tr>
                 </tbody>

@@ -2,28 +2,28 @@
 @section('title', 'Histórico Completo - ' . $patient['nome'])
 
 @section('content')
-<div class="d-xl-flex justify-content-between align-items-start mb-4">
-    <div>
-        <h2 class="text-dark font-weight-bold mb-2">
-            <i class="mdi mdi-history me-2"></i>
-            Histórico Completo - {{ $patient['nome'] }}
-        </h2>
-        <p class="text-muted mb-0">Histórico de atendimentos do paciente</p>
+    <div class="d-xl-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="text-dark font-weight-bold mb-2">
+                <i class="mdi mdi-history me-2"></i>
+                Histórico Completo - {{ $patient['nome'] }}
+            </h2>
+            <p class="text-muted mb-0">Histórico de atendimentos do paciente</p>
+        </div>
+        <div>
+            @if (isset($returnTo) && $returnTo === 'consultation' && isset($consultaId))
+                <a href="{{ route('professional.consultation', $consultaId) }}" class="btn btn-outline-secondary">
+                    <i class="mdi mdi-arrow-left me-2"></i>
+                    Voltar à Consulta
+                </a>
+            @else
+                <a href="{{ route('professional.index') }}" class="btn btn-outline-secondary">
+                    <i class="mdi mdi-arrow-left me-2"></i>
+                    Voltar à Fila
+                </a>
+            @endif
+        </div>
     </div>
-    <div>
-        @if (isset($returnTo) && $returnTo === 'consultation' && isset($consultaId))
-            <a href="{{ route('professional.consultation', $consultaId) }}" class="btn btn-outline-secondary">
-                <i class="mdi mdi-arrow-left me-2"></i>
-                Voltar à Consulta
-            </a>
-        @else
-            <a href="{{ route('professional.index') }}" class="btn btn-outline-secondary">
-                <i class="mdi mdi-arrow-left me-2"></i>
-                Voltar à Fila
-            </a>
-        @endif
-    </div>
-</div>
     <div class="container-fluid py-4">
         <!-- Patient Info Card -->
         <div class="card mb-4">
@@ -81,6 +81,7 @@
                                                                 <th>Esférico</th>
                                                                 <th>Cilíndrico</th>
                                                                 <th>Eixo</th>
+                                                                <th>AV</th>
                                                                 <th>DNP</th>
                                                                 <th>Altura </th>
                                                                 <th>Adição</th>
@@ -97,6 +98,9 @@
                                                                 </td>
                                                                 <td>
                                                                     <strong> {{ $consultation['od_eixo'] }}°</strong>
+                                                                </td>
+                                                                <td>
+                                                                    <strong>{{ $consultation['od_acuidade'] }}</strong>
                                                                 </td>
                                                                 <td>
                                                                     <strong>{{ $consultation['od_dnp'] }}</strong>
@@ -122,6 +126,9 @@
                                                                 </td>
                                                                 <td>
                                                                     <strong> {{ $consultation['oe_eixo'] }}°</strong>
+                                                                </td>
+                                                                <td>
+                                                                    <strong>{{ $consultation['oe_acuidade'] }}</strong>
                                                                 </td>
                                                                 <td>
                                                                     <strong>{{ $consultation['oe_dnp'] }}</strong>
@@ -162,14 +169,6 @@
                                             </a>
                                         </div>
                                         <div class="card-body">
-                                            <div class="row text-center mb-2">
-                                                <div class="col-6"><small class="text-muted">AV OD</small>
-                                                    <div><strong>{{ $consultation['av_od'] }}</strong></div>
-                                                </div>
-                                                <div class="col-6"><small class="text-muted">AV OE</small>
-                                                    <div><strong>{{ $consultation['av_oe'] }}</strong></div>
-                                                </div>
-                                            </div>
                                             <div class="row text-center mb-2">
                                                 <div class="col-6"><small class="text-muted">PIO OD</small>
                                                     <div><strong>{{ $consultation['pio_od'] }}</strong></div>
