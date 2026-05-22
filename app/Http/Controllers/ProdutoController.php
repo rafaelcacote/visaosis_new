@@ -370,38 +370,41 @@ class ProdutoController extends Controller
         $existingImages = $produto->images()->get()->keyBy('id');
         $processedExisting = collect();
         $desiredPrimaryId = null;
+        $hasExistingPayload = $request->has('existing_images');
 
-        foreach ($request->input('existing_images', []) as $imageId => $meta) {
-            if (!$existingImages->has($imageId)) {
-                continue;
+        if ($hasExistingPayload) {
+            foreach ($request->input('existing_images', []) as $imageId => $meta) {
+                if (!$existingImages->has($imageId)) {
+                    continue;
+                }
+
+                $image = $existingImages->get($imageId);
+                $meta = is_array($meta) ? $meta : [];
+
+                if ($this->shouldRemoveImage($meta)) {
+                    $this->deleteProductImage($image);
+                    continue;
+                }
+
+                $image->ordem = (int) ($meta['order'] ?? $image->ordem ?? 0);
+                $isPrincipal = $this->toBool($meta['principal'] ?? false);
+                $image->principal = $isPrincipal;
+                $image->ativo = array_key_exists('ativo', $meta) ? $this->toBool($meta['ativo']) : true;
+                $image->save();
+
+                if ($isPrincipal) {
+                    $desiredPrimaryId = $image->id;
+                }
+
+                $processedExisting->push($image->id);
             }
 
-            $image = $existingImages->get($imageId);
-            $meta = is_array($meta) ? $meta : [];
-
-            if ($this->shouldRemoveImage($meta)) {
-                $this->deleteProductImage($image);
-                continue;
-            }
-
-            $image->ordem = (int) ($meta['order'] ?? $image->ordem ?? 0);
-            $isPrincipal = $this->toBool($meta['principal'] ?? false);
-            $image->principal = $isPrincipal;
-            $image->ativo = array_key_exists('ativo', $meta) ? $this->toBool($meta['ativo']) : true;
-            $image->save();
-
-            if ($isPrincipal) {
-                $desiredPrimaryId = $image->id;
-            }
-
-            $processedExisting->push($image->id);
+            $existingImages->keys()
+                ->diff($processedExisting)
+                ->each(function ($imageId) use ($existingImages) {
+                    $this->deleteProductImage($existingImages->get($imageId));
+                });
         }
-
-        $existingImages->keys()
-            ->diff($processedExisting)
-            ->each(function ($imageId) use ($existingImages) {
-                $this->deleteProductImage($existingImages->get($imageId));
-            });
 
         foreach ($request->input('new_images_meta', []) as $tempId => $meta) {
             $file = $request->file("new_images.$tempId");

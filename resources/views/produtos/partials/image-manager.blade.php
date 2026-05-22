@@ -6,7 +6,10 @@
             ->map(function ($image) {
                 $url = null;
 
-                if ($image->caminho_arquivo && \Illuminate\Support\Facades\Storage::disk('public')->exists($image->caminho_arquivo)) {
+                if (
+                    $image->caminho_arquivo &&
+                    \Illuminate\Support\Facades\Storage::disk('public')->exists($image->caminho_arquivo)
+                ) {
                     $url = asset('storage/' . ltrim($image->caminho_arquivo, '/'));
                 }
 
@@ -25,7 +28,8 @@
     $encodedExistingImages = rawurlencode($existingImages->toJson(JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 @endphp
 
-<div class="mb-4" data-component="product-images-manager" data-max-images="12" data-existing-images="{{ $encodedExistingImages }}">
+<div class="mb-4" data-component="product-images-manager" data-max-images="12"
+    data-existing-images="{{ $encodedExistingImages }}">
     <label class="form-label d-flex align-items-center gap-2">
         <span>Imagens do Produto</span>
         <small class="text-muted">(JPEG, PNG ou WEBP até 5MB)</small>
@@ -35,7 +39,8 @@
         arrastando os cards.
     </div>
 
-    <div class="product-images-dropzone border border-2 border-dashed rounded-3 p-4 text-center cursor-pointer position-relative">
+    <div
+        class="product-images-dropzone border border-2 border-dashed rounded-3 p-4 text-center cursor-pointer position-relative">
         <div class="dropzone-content">
             <i class="mdi mdi-cloud-upload-outline display-5 text-primary"></i>
             <p class="mb-1 fw-semibold">Solte as imagens aqui</p>
@@ -47,7 +52,8 @@
                 Você pode enviar até 12 imagens por produto.
             </p>
         </div>
-        <div class="dropzone-overlay position-absolute top-0 start-0 w-100 h-100 rounded-3" style="display:none;background:rgba(13,110,253,.1);border:2px dashed rgba(13,110,253,.35);"></div>
+        <div class="dropzone-overlay position-absolute top-0 start-0 w-100 h-100 rounded-3"
+            style="display:none;background:rgba(13,110,253,.1);border:2px dashed rgba(13,110,253,.35);"></div>
         <input type="file" class="d-none product-images-picker" multiple accept="image/*">
     </div>
 
@@ -95,9 +101,11 @@
 
 @push('scripts')
     @once
-        <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" integrity="sha384-BSxuMLxX+FCbTdYec3TbXlnMGEEM2QXTFdtDaveen71o+jswm2J36+xFqp8k4VHM" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"
+            integrity="sha384-BSxuMLxX+FCbTdYec3TbXlnMGEEM2QXTFdtDaveen71o+jswm2J36+xFqp8k4VHM" crossorigin="anonymous">
+        </script>
         <script>
-            (function () {
+            (function() {
                 const initManager = () => {
                     const manager = document.querySelector('[data-component="product-images-manager"]');
                     if (!manager) {
@@ -113,14 +121,16 @@
                     const maxImages = parseInt(manager.dataset.maxImages || '12', 10);
                     let existingData = [];
                     try {
-                        existingData = manager.dataset.existingImages
-                            ? JSON.parse(decodeURIComponent(manager.dataset.existingImages))
-                            : [];
+                        existingData = manager.dataset.existingImages ?
+                            JSON.parse(decodeURIComponent(manager.dataset.existingImages)) :
+                            [];
                     } catch (error) {
                         existingData = [];
                         console.error('Não foi possível carregar as imagens existentes do produto.', error);
                     }
-                    const initialData = { existing: existingData };
+                    const initialData = {
+                        existing: existingData
+                    };
 
                     const state = {
                         items: [],
@@ -162,9 +172,9 @@
                             if (primaryButton) {
                                 primaryButton.classList.toggle('btn-primary', isPrimary);
                                 primaryButton.classList.toggle('btn-outline-primary', !isPrimary);
-                                primaryButton.innerHTML = isPrimary
-                                    ? '<i class="mdi mdi-star me-1"></i> Principal'
-                                    : '<i class="mdi mdi-star-outline me-1"></i> Definir como principal';
+                                primaryButton.innerHTML = isPrimary ?
+                                    '<i class="mdi mdi-star me-1"></i> Principal' :
+                                    '<i class="mdi mdi-star-outline me-1"></i> Definir como principal';
                             }
 
                             if (item.principalInput) {
@@ -299,7 +309,8 @@
                     const addExistingImage = (data) => {
                         const uid = `existing-${data.id}`;
                         const orderInput = createHiddenInput(`existing_images[${data.id}][order]`, data.order ?? 0);
-                        const principalInput = createHiddenInput(`existing_images[${data.id}][principal]`, data.principal ? '1' : '0');
+                        const principalInput = createHiddenInput(`existing_images[${data.id}][principal]`, data
+                            .principal ? '1' : '0');
                         const removeInput = createHiddenInput(`existing_images[${data.id}][remove]`, '0');
 
                         inputsContainer.append(orderInput, principalInput, removeInput);
@@ -429,23 +440,25 @@
                         picker.value = '';
                     });
 
-                    Sortable.create(list, {
-                        animation: 150,
-                        handle: '[data-action="handle-drag"]',
-                        onEnd: () => {
-                            const ordered = Array.from(list.children).map((col) => col.dataset.uid);
-                            const position = (item) => {
-                                const index = ordered.indexOf(item.uid);
-                                return index === -1 ? Number.MAX_SAFE_INTEGER : index;
-                            };
-                            state.items.sort((a, b) => position(a) - position(b));
-                            updateOrderInputs();
-                        },
-                        setData: () => {}
-                    });
-
                     if (initialData.existing?.length) {
                         initialData.existing.forEach(addExistingImage);
+                    }
+
+                    if (window.Sortable && typeof window.Sortable.create === 'function') {
+                        window.Sortable.create(list, {
+                            animation: 150,
+                            handle: '[data-action="handle-drag"]',
+                            onEnd: () => {
+                                const ordered = Array.from(list.children).map((col) => col.dataset.uid);
+                                const position = (item) => {
+                                    const index = ordered.indexOf(item.uid);
+                                    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+                                };
+                                state.items.sort((a, b) => position(a) - position(b));
+                                updateOrderInputs();
+                            },
+                            setData: () => {}
+                        });
                     }
 
                     ensurePrimaryExists();
@@ -458,8 +471,8 @@
                 } else {
                     initManager();
                 }
-            })();
+            })
+            ();
         </script>
     @endonce
 @endpush
-
