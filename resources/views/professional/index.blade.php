@@ -137,7 +137,7 @@
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
-                        <i class="mdi mdi-send me-1" aria-hidden="true"></i> Encaminhados hoje
+                        <i class="mdi mdi-send me-1" aria-hidden="true"></i> Encaminhados
                     </p>
                 </div>
             </div>
