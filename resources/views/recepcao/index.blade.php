@@ -447,32 +447,6 @@
                 font-weight: bold;
             }
 
-            /* Estilos para cards de estatísticas */
-            .card-statistics .card-body {
-                padding: 1.5rem;
-            }
-
-            .card-statistics .flex-shrink-0 {
-                width: 50px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .card-statistics .icon-lg {
-                font-size: 2.5rem;
-            }
-
-            .card-statistics h3 {
-                font-size: 1.75rem;
-                line-height: 1.2;
-            }
-
-            .card-statistics p {
-                font-size: 0.875rem;
-                line-height: 1.3;
-            }
-
             /* Estilos para tag de contador de pacientes */
             .tag {
                 padding: 4px 12px;

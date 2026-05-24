@@ -71,6 +71,30 @@
         .card-body span.fw-medium {
             font-weight: 500 !important;
         }
+
+        .card-statistics .card-body {
+            padding: 1rem !important;
+        }
+
+        .card-statistics .icon-lg {
+            font-size: 1.9rem;
+            line-height: 1;
+        }
+
+        .card-statistics h3 {
+            font-size: 1.25rem;
+            line-height: 1.1;
+        }
+
+        .card-statistics p {
+            font-size: 0.8rem !important;
+            line-height: 1.2;
+            font-weight: 400 !important;
+        }
+
+        .card-statistics .text-muted.mt-3 {
+            margin-top: 0.5rem !important;
+        }
     </style>
     @stack('styles')
 </head>

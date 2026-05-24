@@ -70,7 +70,7 @@
                             <i class="mdi mdi-account-check text-info icon-lg"></i>
                         </div>
                         <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Em Atendimento</p>
+                            <p class="mb-0 text-right text-dark">Atendimento</p>
                             <div class="fluid-container">
                                 <h3 class="font-weight-medium text-right mb-0 text-dark">{{ $stats['in_service'] }}</h3>
                             </div>
@@ -605,7 +605,8 @@
             if (selection && selection.style.display !== 'none') {
                 profissionalId = select && select.value ? parseInt(select.value, 10) : null;
                 if (!profissionalId || !Number.isFinite(profissionalId)) {
-                    window.showAppModalMessage?.('Selecione um profissional para iniciar o atendimento.', 'Atenção', 'warning');
+                    window.showAppModalMessage?.('Selecione um profissional para iniciar o atendimento.', 'Atenção',
+                        'warning');
                     return;
                 }
             }
