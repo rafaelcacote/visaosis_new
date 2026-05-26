@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\AuthHelper;
 use App\Http\Requests\PrescriptionFormRequest;
 use App\Models\Pessoa;
+use App\Models\Prescricao;
 use App\Rules\ValidCpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -594,6 +595,100 @@ class PessoaController extends Controller
             DB::rollBack();
 
             return back()->withInput()->with('error', 'Erro ao cadastrar receita: ' . $e->getMessage());
+        }
+    }
+
+    public function editPrescription(Pessoa $pessoa, Prescricao $prescricao)
+    {
+        $this->checkTenantAccess($pessoa);
+        $this->checkPrescriptionAccess($pessoa, $prescricao);
+
+        if (! $prescricao->especialista_externo) {
+            abort(403, 'Apenas receitas de especialista externo podem ser editadas.');
+        }
+
+        $query = Prescricao::with(['consulta.profissional.especialidade'])
+            ->where('pessoa_paciente_id', $pessoa->id)
+            ->whereNull('deleted_at');
+
+        $tenantId = session('tenant_id');
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        $locationId = session('location_id');
+        if ($locationId) {
+            $query->where('location_id', $locationId);
+        }
+
+        $prescricoes = $query->orderByDesc('created_at')->get();
+        $editPrescricao = $prescricao;
+
+        return view('pessoas.receitas', compact('pessoa', 'prescricoes', 'editPrescricao'));
+    }
+
+    public function updatePrescription(PrescriptionFormRequest $request, Pessoa $pessoa, Prescricao $prescricao)
+    {
+        $this->checkTenantAccess($pessoa);
+        $this->checkPrescriptionAccess($pessoa, $prescricao);
+
+        if (! $prescricao->especialista_externo) {
+            abort(403, 'Apenas receitas de especialista externo podem ser editadas.');
+        }
+
+        $validatedData = $request->validated();
+
+        try {
+            DB::beginTransaction();
+
+            $prescricao->update([
+                'especialista_externo' => $validatedData['especialista_externo'],
+                'esfera_od' => $validatedData['od_esferico'],
+                'cilindro_od' => $validatedData['od_cilindrico'],
+                'eixo_od' => $validatedData['od_eixo'],
+                'acuidade_od' => $validatedData['od_acuidade'],
+                'dnp_od' => $validatedData['od_dnp'],
+                'altura_od' => $validatedData['od_altura'],
+                'adicao_od' => $validatedData['od_adicao'],
+                'esfera_oe' => $validatedData['oe_esferico'],
+                'cilindro_oe' => $validatedData['oe_cilindrico'],
+                'eixo_oe' => $validatedData['oe_eixo'],
+                'acuidade_oe' => $validatedData['oe_acuidade'],
+                'dnp_oe' => $validatedData['oe_dnp'],
+                'altura_oe' => $validatedData['oe_altura'],
+                'adicao_oe' => $validatedData['oe_adicao'],
+                'tipo_lente' => $validatedData['tipo_lente'],
+                'validade_dias' => $validatedData['validade_dias'],
+                'diagnostico' => $validatedData['diagnostico'],
+                'recomendacoes' => $validatedData['recomendacoes'],
+                'observacoes' => $validatedData['observacoes_receita'],
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('pessoas.receitas', $pessoa->id)
+                ->with('success', 'Receita atualizada com sucesso!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return back()->withInput()->with('error', 'Erro ao atualizar receita: ' . $e->getMessage());
+        }
+    }
+
+    private function checkPrescriptionAccess(Pessoa $pessoa, Prescricao $prescricao): void
+    {
+        if ((int) $prescricao->pessoa_paciente_id !== (int) $pessoa->id) {
+            abort(404);
+        }
+
+        $tenantId = session('tenant_id');
+        if ($tenantId && (int) $prescricao->tenant_id !== (int) $tenantId) {
+            abort(403, 'Acesso negado. Esta receita não pertence ao seu tenant.');
+        }
+
+        $locationId = session('location_id');
+        if ($locationId && $prescricao->location_id !== null && (int) $prescricao->location_id !== (int) $locationId) {
+            abort(403, 'Acesso negado. Esta receita não pertence à sua localização.');
         }
     }
 }

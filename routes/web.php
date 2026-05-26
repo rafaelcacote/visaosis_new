@@ -124,6 +124,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
     Route::post('pessoas/{pessoa}/receitas', [PessoaController::class, 'storePrescription'])->name('pessoas.receitas.store');
+    Route::get('pessoas/{pessoa}/receitas/{prescricao}/edit', [PessoaController::class, 'editPrescription'])->name('pessoas.receitas.edit');
+    Route::patch('pessoas/{pessoa}/receitas/{prescricao}', [PessoaController::class, 'updatePrescription'])->name('pessoas.receitas.update');
     Route::resource('pessoas', PessoaController::class)->parameters([
         'pessoas' => 'pessoa',
     ]);

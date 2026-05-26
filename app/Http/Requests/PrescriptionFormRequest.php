@@ -108,7 +108,7 @@ class PrescriptionFormRequest extends FormRequest
             );
 
             $rules['validade_dias'] = ['nullable', 'integer', 'in:180,365'];
-        } elseif ($routeName === 'pessoas.receitas.store') {
+        } elseif (in_array($routeName, ['pessoas.receitas.store', 'pessoas.receitas.update'], true)) {
             $rules = array_merge(
                 [
                     'especialista_externo' => ['required', 'string', 'max:255'],
@@ -278,4 +278,3 @@ class PrescriptionFormRequest extends FormRequest
         return $raw;
     }
 }
-
