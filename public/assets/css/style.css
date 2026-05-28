@@ -3556,22 +3556,22 @@ progress {
   .tt-hint::-webkit-date-and-time-value {
     height: 1em; }
   .form-control::-webkit-input-placeholder, .select2-container--default .select2-selection--single::-webkit-input-placeholder, .select2-container--default .select2-selection--single .select2-search__field::-webkit-input-placeholder, .typeahead::-webkit-input-placeholder, .tt-query::-webkit-input-placeholder, .tt-hint::-webkit-input-placeholder {
-    color: #181824;
-    opacity: 1; }
+    color: #4da3ff;
+    opacity: 0.85; }
   .form-control::-moz-placeholder, .select2-container--default .select2-selection--single::-moz-placeholder, .select2-container--default .select2-selection--single .select2-search__field::-moz-placeholder, .typeahead::-moz-placeholder, .tt-query::-moz-placeholder, .tt-hint::-moz-placeholder {
-    color: #181824;
-    opacity: 1; }
+    color: #4da3ff;
+    opacity: 0.85; }
   .form-control:-ms-input-placeholder, .select2-container--default .select2-selection--single:-ms-input-placeholder, .select2-container--default .select2-selection--single .select2-search__field:-ms-input-placeholder, .typeahead:-ms-input-placeholder, .tt-query:-ms-input-placeholder, .tt-hint:-ms-input-placeholder {
-    color: #181824;
-    opacity: 1; }
+    color: #4da3ff;
+    opacity: 0.85; }
   .form-control::-ms-input-placeholder, .select2-container--default .select2-selection--single::-ms-input-placeholder, .select2-container--default .select2-selection--single .select2-search__field::-ms-input-placeholder, .typeahead::-ms-input-placeholder, .tt-query::-ms-input-placeholder, .tt-hint::-ms-input-placeholder {
-    color: #181824;
-    opacity: 1; }
+    color: #4da3ff;
+    opacity: 0.85; }
   .form-control::placeholder, .select2-container--default .select2-selection--single::placeholder, .select2-container--default .select2-selection--single .select2-search__field::placeholder, .typeahead::placeholder,
   .tt-query::placeholder,
   .tt-hint::placeholder {
-    color: #181824;
-    opacity: 1; }
+    color: #4da3ff;
+    opacity: 0.85; }
   .form-control:disabled, .select2-container--default .select2-selection--single:disabled, .select2-container--default .select2-selection--single .select2-search__field:disabled, .typeahead:disabled,
   .tt-query:disabled,
   .tt-hint:disabled, .form-control[readonly], .select2-container--default .select2-selection--single[readonly], .select2-container--default .select2-selection--single .select2-search__field[readonly], .typeahead[readonly],

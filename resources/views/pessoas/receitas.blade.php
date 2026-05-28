@@ -65,6 +65,7 @@
                 </div>
 
                 <div class="table-responsive mb-3">
+                    <div class="fw-semibold text-muted mb-2">Longe</div>
                     <table class="table table-sm align-middle">
                         <thead>
                             <tr>
@@ -207,6 +208,172 @@
                                         value="{{ old('oe_adicao', $isEditing ? $prescricaoForm->adicao_oe : null) }}"
                                         placeholder="+0.00">
                                     @error('oe_adicao')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-responsive mb-3">
+                    <div class="fw-semibold text-muted mb-2">Perto</div>
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 6%">Olho</th>
+                                <th style="width: 11%">Esférico</th>
+                                <th style="width: 11%">Cilíndrico</th>
+                                <th style="width: 10%">Eixo</th>
+                                <th style="width: 12%">AV (Acuidade)</th>
+                                <th style="width: 10%">DNP</th>
+                                <th style="width: 10%">Altura</th>
+                                <th style="width: 10%">Adição</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-center fw-semibold">OD</td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('od_esferico_perto') is-invalid @enderror"
+                                        name="od_esferico_perto"
+                                        value="{{ old('od_esferico_perto', $isEditing ? $prescricaoForm->esfera_od_perto : null) }}"
+                                        placeholder="+/-0.00">
+                                    @error('od_esferico_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('od_cilindrico_perto') is-invalid @enderror"
+                                        name="od_cilindrico_perto"
+                                        value="{{ old('od_cilindrico_perto', $isEditing ? $prescricaoForm->cilindro_od_perto : null) }}"
+                                        placeholder="+/-0.00">
+                                    @error('od_cilindrico_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('od_eixo_perto') is-invalid @enderror"
+                                        name="od_eixo_perto"
+                                        value="{{ old('od_eixo_perto', $isEditing ? $prescricaoForm->eixo_od_perto : null) }}"
+                                        placeholder="0-180">
+                                    @error('od_eixo_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('od_acuidade_perto') is-invalid @enderror"
+                                        name="od_acuidade_perto"
+                                        value="{{ old('od_acuidade_perto', $isEditing ? $prescricaoForm->acuidade_od_perto : null) }}"
+                                        placeholder="20/20">
+                                    @error('od_acuidade_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('od_dnp_perto') is-invalid @enderror"
+                                        name="od_dnp_perto"
+                                        value="{{ old('od_dnp_perto', $isEditing ? $prescricaoForm->dnp_od_perto : null) }}"
+                                        placeholder="62">
+                                    @error('od_dnp_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('od_altura_perto') is-invalid @enderror"
+                                        name="od_altura_perto"
+                                        value="{{ old('od_altura_perto', $isEditing ? $prescricaoForm->altura_od_perto : null) }}"
+                                        placeholder="0.00">
+                                    @error('od_altura_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('od_adicao_perto') is-invalid @enderror"
+                                        name="od_adicao_perto"
+                                        value="{{ old('od_adicao_perto', $isEditing ? $prescricaoForm->adicao_od_perto : null) }}"
+                                        placeholder="+0.00">
+                                    @error('od_adicao_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-center fw-semibold">OE</td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('oe_esferico_perto') is-invalid @enderror"
+                                        name="oe_esferico_perto"
+                                        value="{{ old('oe_esferico_perto', $isEditing ? $prescricaoForm->esfera_oe_perto : null) }}"
+                                        placeholder="+/-0.00">
+                                    @error('oe_esferico_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('oe_cilindrico_perto') is-invalid @enderror"
+                                        name="oe_cilindrico_perto"
+                                        value="{{ old('oe_cilindrico_perto', $isEditing ? $prescricaoForm->cilindro_oe_perto : null) }}"
+                                        placeholder="+/-0.00">
+                                    @error('oe_cilindrico_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('oe_eixo_perto') is-invalid @enderror"
+                                        name="oe_eixo_perto"
+                                        value="{{ old('oe_eixo_perto', $isEditing ? $prescricaoForm->eixo_oe_perto : null) }}"
+                                        placeholder="0-180">
+                                    @error('oe_eixo_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('oe_acuidade_perto') is-invalid @enderror"
+                                        name="oe_acuidade_perto"
+                                        value="{{ old('oe_acuidade_perto', $isEditing ? $prescricaoForm->acuidade_oe_perto : null) }}"
+                                        placeholder="20/20">
+                                    @error('oe_acuidade_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('oe_dnp_perto') is-invalid @enderror"
+                                        name="oe_dnp_perto"
+                                        value="{{ old('oe_dnp_perto', $isEditing ? $prescricaoForm->dnp_oe_perto : null) }}"
+                                        placeholder="62">
+                                    @error('oe_dnp_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('oe_altura_perto') is-invalid @enderror"
+                                        name="oe_altura_perto"
+                                        value="{{ old('oe_altura_perto', $isEditing ? $prescricaoForm->altura_oe_perto : null) }}"
+                                        placeholder="0.00">
+                                    @error('oe_altura_perto')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </td>
+                                <td>
+                                    <input type="text"
+                                        class="form-control @error('oe_adicao_perto') is-invalid @enderror"
+                                        name="oe_adicao_perto"
+                                        value="{{ old('oe_adicao_perto', $isEditing ? $prescricaoForm->adicao_oe_perto : null) }}"
+                                        placeholder="+0.00">
+                                    @error('oe_adicao_perto')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
                                 </td>

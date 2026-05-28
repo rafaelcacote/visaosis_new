@@ -30,6 +30,16 @@ class PrescriptionFormRequest extends FormRequest
             'oe_dnp',
             'od_altura',
             'oe_altura',
+            'od_esferico_perto',
+            'od_cilindrico_perto',
+            'oe_esferico_perto',
+            'oe_cilindrico_perto',
+            'od_adicao_perto',
+            'oe_adicao_perto',
+            'od_dnp_perto',
+            'oe_dnp_perto',
+            'od_altura_perto',
+            'oe_altura_perto',
         ];
 
         $normalized = [];
@@ -44,13 +54,19 @@ class PrescriptionFormRequest extends FormRequest
         if ($useProfessionalNormalization) {
             $normalized['od_esferico'] = $this->normalizeEsfericoProfessional($normalized['od_esferico'] ?? $this->input('od_esferico'));
             $normalized['oe_esferico'] = $this->normalizeEsfericoProfessional($normalized['oe_esferico'] ?? $this->input('oe_esferico'));
+            $normalized['od_esferico_perto'] = $this->normalizeEsfericoProfessional($normalized['od_esferico_perto'] ?? $this->input('od_esferico_perto'));
+            $normalized['oe_esferico_perto'] = $this->normalizeEsfericoProfessional($normalized['oe_esferico_perto'] ?? $this->input('oe_esferico_perto'));
         } else {
             $normalized['od_esferico'] = $this->normalizeEsfericoPessoa($normalized['od_esferico'] ?? $this->input('od_esferico'));
             $normalized['oe_esferico'] = $this->normalizeEsfericoPessoa($normalized['oe_esferico'] ?? $this->input('oe_esferico'));
+            $normalized['od_esferico_perto'] = $this->normalizeEsfericoPessoa($normalized['od_esferico_perto'] ?? $this->input('od_esferico_perto'));
+            $normalized['oe_esferico_perto'] = $this->normalizeEsfericoPessoa($normalized['oe_esferico_perto'] ?? $this->input('oe_esferico_perto'));
         }
 
         $normalized['od_cilindrico'] = $this->normalizeCilindrico($normalized['od_cilindrico'] ?? $this->input('od_cilindrico'));
         $normalized['oe_cilindrico'] = $this->normalizeCilindrico($normalized['oe_cilindrico'] ?? $this->input('oe_cilindrico'));
+        $normalized['od_cilindrico_perto'] = $this->normalizeCilindrico($normalized['od_cilindrico_perto'] ?? $this->input('od_cilindrico_perto'));
+        $normalized['oe_cilindrico_perto'] = $this->normalizeCilindrico($normalized['oe_cilindrico_perto'] ?? $this->input('oe_cilindrico_perto'));
 
         $this->merge($normalized);
     }
@@ -75,6 +91,22 @@ class PrescriptionFormRequest extends FormRequest
             'oe_dnp' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
             'oe_altura' => ['nullable', 'numeric', 'between:15,40'],
             'oe_adicao' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
+
+            'od_esferico_perto' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
+            'od_cilindrico_perto' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+            'od_eixo_perto' => ['nullable', 'integer', 'between:0,180'],
+            'od_acuidade_perto' => ['nullable', 'string', 'max:5'],
+            'od_dnp_perto' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
+            'od_altura_perto' => ['nullable', 'numeric', 'between:15,40'],
+            'od_adicao_perto' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
+
+            'oe_esferico_perto' => ['nullable', 'regex:/^-?\d+(\.\d{1,2})?$/'],
+            'oe_cilindrico_perto' => ['nullable', 'regex:/^[+-]?\d+(\.\d{1,2})?$/'],
+            'oe_eixo_perto' => ['nullable', 'integer', 'between:0,180'],
+            'oe_acuidade_perto' => ['nullable', 'string', 'max:5'],
+            'oe_dnp_perto' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'between:12,80'],
+            'oe_altura_perto' => ['nullable', 'numeric', 'between:15,40'],
+            'oe_adicao_perto' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
 
             'tipo_lente' => ['nullable', 'string', 'max:100'],
             'diagnostico' => ['nullable', 'string', 'max:255'],
@@ -164,6 +196,20 @@ class PrescriptionFormRequest extends FormRequest
             'oe_dnp' => 'OE DNP',
             'oe_altura' => 'OE Altura',
             'oe_adicao' => 'OE Adição',
+            'od_esferico_perto' => 'OD Esférico (Perto)',
+            'od_cilindrico_perto' => 'OD Cilíndrico (Perto)',
+            'od_eixo_perto' => 'OD Eixo (Perto)',
+            'od_acuidade_perto' => 'OD AV (Perto)',
+            'od_dnp_perto' => 'OD DNP (Perto)',
+            'od_altura_perto' => 'OD Altura (Perto)',
+            'od_adicao_perto' => 'OD Adição (Perto)',
+            'oe_esferico_perto' => 'OE Esférico (Perto)',
+            'oe_cilindrico_perto' => 'OE Cilíndrico (Perto)',
+            'oe_eixo_perto' => 'OE Eixo (Perto)',
+            'oe_acuidade_perto' => 'OE AV (Perto)',
+            'oe_dnp_perto' => 'OE DNP (Perto)',
+            'oe_altura_perto' => 'OE Altura (Perto)',
+            'oe_adicao_perto' => 'OE Adição (Perto)',
             'tipo_lente' => 'Tipo de Lente',
             'validade_dias' => 'Validade',
             'diagnostico' => 'Diagnóstico',
