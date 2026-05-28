@@ -65,11 +65,11 @@
                 </div>
 
                 <div class="table-responsive mb-3">
-                    <div class="fw-semibold text-muted mb-2">Longe</div>
                     <table class="table table-sm align-middle">
                         <thead>
                             <tr>
-                                <th style="width: 6%">Olho</th>
+                                <th style="width: 6%"></th>
+                                <th style="width: 8%">Olho</th>
                                 <th style="width: 11%">Esférico</th>
                                 <th style="width: 11%">Cilíndrico</th>
                                 <th style="width: 10%">Eixo</th>
@@ -81,7 +81,13 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="text-center fw-semibold">OD</td>
+                                <td rowspan="2" class="text-center fw-bold"
+                                    style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.45);">
+                                    LONGE
+                                </td>
+                                <td class="text-center fw-semibold" style="white-space: nowrap;">
+                                    <i class="mdi mdi-eye-outline me-1"></i>OD
+                                </td>
                                 <td>
                                     <input type="text" class="form-control @error('od_esferico') is-invalid @enderror"
                                         name="od_esferico"
@@ -147,7 +153,9 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="text-center fw-semibold">OE</td>
+                                <td class="text-center fw-semibold" style="white-space: nowrap;">
+                                    <i class="mdi mdi-eye-outline me-1"></i>OE
+                                </td>
                                 <td>
                                     <input type="text" class="form-control @error('oe_esferico') is-invalid @enderror"
                                         name="oe_esferico"
@@ -217,11 +225,11 @@
                 </div>
 
                 <div class="table-responsive mb-3">
-                    <div class="fw-semibold text-muted mb-2">Perto</div>
                     <table class="table table-sm align-middle">
                         <thead>
                             <tr>
-                                <th style="width: 6%">Olho</th>
+                                <th style="width: 6%"></th>
+                                <th style="width: 8%">Olho</th>
                                 <th style="width: 11%">Esférico</th>
                                 <th style="width: 11%">Cilíndrico</th>
                                 <th style="width: 10%">Eixo</th>
@@ -233,7 +241,13 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="text-center fw-semibold">OD</td>
+                                <td rowspan="2" class="text-center fw-bold"
+                                    style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">
+                                    PERTO
+                                </td>
+                                <td class="text-center fw-semibold" style="white-space: nowrap;">
+                                    <i class="mdi mdi-eye-outline me-1"></i>OD
+                                </td>
                                 <td>
                                     <input type="text"
                                         class="form-control @error('od_esferico_perto') is-invalid @enderror"
@@ -306,7 +320,9 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="text-center fw-semibold">OE</td>
+                                <td class="text-center fw-semibold" style="white-space: nowrap;">
+                                    <i class="mdi mdi-eye-outline me-1"></i>OE
+                                </td>
                                 <td>
                                     <input type="text"
                                         class="form-control @error('oe_esferico_perto') is-invalid @enderror"
