@@ -166,6 +166,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/patient-history/{id}', [ProfissionalWorkflowController::class, 'patientHistory'])->name('patientHistory');
         Route::get('/patient-history-full/{id}', [ProfissionalWorkflowController::class, 'patientHistoryFull'])->name('patientHistoryFull');
         Route::get('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescription'])->name('printPrescription');
+        Route::post('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescriptionFromForm'])->name('printPrescriptionFromForm');
         Route::get('/print-exame/{id}', [ProfissionalWorkflowController::class, 'printExamDoc'])->name('print-exame');
         Route::get('/print-referral/{id}', [ProfissionalWorkflowController::class, 'printReferralDoc'])->name('print-referral');
         Route::get('/new-prescription', [ProfissionalWorkflowController::class, 'newPrescription'])->name('newPrescription');

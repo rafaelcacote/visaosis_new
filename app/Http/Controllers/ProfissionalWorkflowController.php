@@ -331,6 +331,20 @@ class ProfissionalWorkflowController extends Controller
                 'oe_adicao' => optional($prescricao ?? null)->adicao_oe,
                 'oe_dnp' => optional($prescricao ?? null)->dnp_oe,
                 'oe_altura' => optional($prescricao ?? null)->altura_oe,
+                'od_esferico_perto' => optional($prescricao ?? null)->esfera_od_perto,
+                'od_cilindrico_perto' => optional($prescricao ?? null)->cilindro_od_perto,
+                'od_eixo_perto' => optional($prescricao ?? null)->eixo_od_perto,
+                'od_acuidade_perto' => optional($prescricao ?? null)->acuidade_od_perto,
+                'od_adicao_perto' => optional($prescricao ?? null)->adicao_od_perto,
+                'od_dnp_perto' => optional($prescricao ?? null)->dnp_od_perto,
+                'od_altura_perto' => optional($prescricao ?? null)->altura_od_perto,
+                'oe_esferico_perto' => optional($prescricao ?? null)->esfera_oe_perto,
+                'oe_cilindrico_perto' => optional($prescricao ?? null)->cilindro_oe_perto,
+                'oe_eixo_perto' => optional($prescricao ?? null)->eixo_oe_perto,
+                'oe_acuidade_perto' => optional($prescricao ?? null)->acuidade_oe_perto,
+                'oe_adicao_perto' => optional($prescricao ?? null)->adicao_oe_perto,
+                'oe_dnp_perto' => optional($prescricao ?? null)->dnp_oe_perto,
+                'oe_altura_perto' => optional($prescricao ?? null)->altura_oe_perto,
                 'observacoes' => optional($prescricao ?? null)->observacoes,
             ] : null,
             // Add: current prescription values to prefill the form
@@ -349,6 +363,20 @@ class ProfissionalWorkflowController extends Controller
                 'oe_dnp' => $prescricaoAtual->dnp_oe,
                 'oe_altura' => $prescricaoAtual->altura_oe,
                 'oe_adicao' => $prescricaoAtual->adicao_oe,
+                'od_esferico_perto' => $prescricaoAtual->esfera_od_perto,
+                'od_cilindrico_perto' => $prescricaoAtual->cilindro_od_perto,
+                'od_eixo_perto' => $prescricaoAtual->eixo_od_perto,
+                'od_acuidade_perto' => $prescricaoAtual->acuidade_od_perto,
+                'od_dnp_perto' => $prescricaoAtual->dnp_od_perto,
+                'od_altura_perto' => $prescricaoAtual->altura_od_perto,
+                'od_adicao_perto' => $prescricaoAtual->adicao_od_perto,
+                'oe_esferico_perto' => $prescricaoAtual->esfera_oe_perto,
+                'oe_cilindrico_perto' => $prescricaoAtual->cilindro_oe_perto,
+                'oe_eixo_perto' => $prescricaoAtual->eixo_oe_perto,
+                'oe_acuidade_perto' => $prescricaoAtual->acuidade_oe_perto,
+                'oe_dnp_perto' => $prescricaoAtual->dnp_oe_perto,
+                'oe_altura_perto' => $prescricaoAtual->altura_oe_perto,
+                'oe_adicao_perto' => $prescricaoAtual->adicao_oe_perto,
                 'tipo_lente' => $prescricaoAtual->tipo_lente,
                 'validade_dias' => $prescricaoAtual->validade_dias,
                 'diagnostico' => $prescricaoAtual->diagnostico,
@@ -425,6 +453,22 @@ class ProfissionalWorkflowController extends Controller
                 'oe_dnp' => $request->input('oe_dnp', optional($prescricao)->dnp_oe),
                 'oe_altura' => $request->input('oe_altura', optional($prescricao)->altura_oe),
                 'oe_adicao' => $request->input('oe_adicao', optional($prescricao)->adicao_oe),
+
+                'od_esferico_perto' => $request->input('od_esferico_perto', optional($prescricao)->esfera_od_perto),
+                'od_cilindrico_perto' => $request->input('od_cilindrico_perto', optional($prescricao)->cilindro_od_perto),
+                'od_eixo_perto' => $request->input('od_eixo_perto', optional($prescricao)->eixo_od_perto),
+                'od_acuidade_perto' => $request->input('od_acuidade_perto', optional($prescricao)->acuidade_od_perto),
+                'od_dnp_perto' => $request->input('od_dnp_perto', optional($prescricao)->dnp_od_perto),
+                'od_altura_perto' => $request->input('od_altura_perto', optional($prescricao)->altura_od_perto),
+                'od_adicao_perto' => $request->input('od_adicao_perto', optional($prescricao)->adicao_od_perto),
+
+                'oe_esferico_perto' => $request->input('oe_esferico_perto', optional($prescricao)->esfera_oe_perto),
+                'oe_cilindrico_perto' => $request->input('oe_cilindrico_perto', optional($prescricao)->cilindro_oe_perto),
+                'oe_eixo_perto' => $request->input('oe_eixo_perto', optional($prescricao)->eixo_oe_perto),
+                'oe_acuidade_perto' => $request->input('oe_acuidade_perto', optional($prescricao)->acuidade_oe_perto),
+                'oe_dnp_perto' => $request->input('oe_dnp_perto', optional($prescricao)->dnp_oe_perto),
+                'oe_altura_perto' => $request->input('oe_altura_perto', optional($prescricao)->altura_oe_perto),
+                'oe_adicao_perto' => $request->input('oe_adicao_perto', optional($prescricao)->adicao_oe_perto),
 
                 'tipo_lente' => $request->input('tipo_lente', optional($prescricao)->tipo_lente),
                 'validade_dias' => $request->input('validade_dias', optional($prescricao)->validade_dias),
@@ -882,6 +926,22 @@ class ProfissionalWorkflowController extends Controller
                 'oe_altura' => optional($prescricao)->altura_oe,
                 'oe_adicao' => optional($prescricao)->adicao_oe,
 
+                'od_esferico_perto' => optional($prescricao)->esfera_od_perto,
+                'od_cilindrico_perto' => optional($prescricao)->cilindro_od_perto,
+                'od_eixo_perto' => optional($prescricao)->eixo_od_perto,
+                'od_acuidade_perto' => optional($prescricao)->acuidade_od_perto,
+                'od_dnp_perto' => optional($prescricao)->dnp_od_perto,
+                'od_altura_perto' => optional($prescricao)->altura_od_perto,
+                'od_adicao_perto' => optional($prescricao)->adicao_od_perto,
+
+                'oe_esferico_perto' => optional($prescricao)->esfera_oe_perto,
+                'oe_cilindrico_perto' => optional($prescricao)->cilindro_oe_perto,
+                'oe_eixo_perto' => optional($prescricao)->eixo_oe_perto,
+                'oe_acuidade_perto' => optional($prescricao)->acuidade_oe_perto,
+                'oe_dnp_perto' => optional($prescricao)->dnp_oe_perto,
+                'oe_altura_perto' => optional($prescricao)->altura_oe_perto,
+                'oe_adicao_perto' => optional($prescricao)->adicao_oe_perto,
+
                 'tipo_lente' => optional($prescricao)->tipo_lente,
                 'validade_dias' => optional($prescricao)->validade_dias,
             ],
@@ -1070,6 +1130,84 @@ class ProfissionalWorkflowController extends Controller
         return $pdf->stream('receita-' . $consulta->id . '.pdf');
     }
 
+    public function printPrescriptionFromForm(Request $request, $id)
+    {
+        $consulta = Consulta::with(['paciente', 'profissional'])
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $prescricao = \App\Models\Prescricao::where('consulta_id', $consulta->id)
+            ->where('tenant_id', $consulta->tenant_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        $paciente = $consulta->paciente;
+        $profissional = $consulta->profissional;
+
+        $dataReceita = $consulta->atendido_em
+            ? \Carbon\Carbon::parse($consulta->atendido_em)->format('Y-m-d')
+            : \Carbon\Carbon::now('America/Manaus')->format('Y-m-d');
+
+        $prescription = [
+            'numero' => 'RX-' . date('Y') . '-' . str_pad($consulta->id, 4, '0', STR_PAD_LEFT),
+            'data' => $dataReceita,
+            'paciente' => [
+                'nome' => $paciente->nome ?? '',
+                'idade' => $paciente->idade ?? null,
+                'cpf' => $paciente->cpf_formatado ?? '',
+                'telefone' => $paciente->telefone_formatado ?? '',
+            ],
+            'profissional' => [
+                'nome' => $profissional->nome ?? '',
+                'registro_conselho' => $profissional->registro_conselho ?? null,
+                'especialidade' => $profissional->especialidade->descricao ?? null,
+            ],
+            'prescricao' => [
+                'od_esferico' => $request->input('od_esferico', optional($prescricao)->esfera_od),
+                'od_cilindrico' => $request->input('od_cilindrico', optional($prescricao)->cilindro_od),
+                'od_eixo' => $request->input('od_eixo', optional($prescricao)->eixo_od),
+                'od_acuidade' => $request->input('od_acuidade', optional($prescricao)->acuidade_od),
+                'od_dnp' => $request->input('od_dnp', optional($prescricao)->dnp_od),
+                'od_altura' => $request->input('od_altura', optional($prescricao)->altura_od),
+                'od_adicao' => $request->input('od_adicao', optional($prescricao)->adicao_od),
+
+                'oe_esferico' => $request->input('oe_esferico', optional($prescricao)->esfera_oe),
+                'oe_cilindrico' => $request->input('oe_cilindrico', optional($prescricao)->cilindro_oe),
+                'oe_eixo' => $request->input('oe_eixo', optional($prescricao)->eixo_oe),
+                'oe_acuidade' => $request->input('oe_acuidade', optional($prescricao)->acuidade_oe),
+                'oe_dnp' => $request->input('oe_dnp', optional($prescricao)->dnp_oe),
+                'oe_altura' => $request->input('oe_altura', optional($prescricao)->altura_oe),
+                'oe_adicao' => $request->input('oe_adicao', optional($prescricao)->adicao_oe),
+
+                'od_esferico_perto' => $request->input('od_esferico_perto', optional($prescricao)->esfera_od_perto),
+                'od_cilindrico_perto' => $request->input('od_cilindrico_perto', optional($prescricao)->cilindro_od_perto),
+                'od_eixo_perto' => $request->input('od_eixo_perto', optional($prescricao)->eixo_od_perto),
+                'od_acuidade_perto' => $request->input('od_acuidade_perto', optional($prescricao)->acuidade_od_perto),
+                'od_dnp_perto' => $request->input('od_dnp_perto', optional($prescricao)->dnp_od_perto),
+                'od_altura_perto' => $request->input('od_altura_perto', optional($prescricao)->altura_od_perto),
+                'od_adicao_perto' => $request->input('od_adicao_perto', optional($prescricao)->adicao_od_perto),
+
+                'oe_esferico_perto' => $request->input('oe_esferico_perto', optional($prescricao)->esfera_oe_perto),
+                'oe_cilindrico_perto' => $request->input('oe_cilindrico_perto', optional($prescricao)->cilindro_oe_perto),
+                'oe_eixo_perto' => $request->input('oe_eixo_perto', optional($prescricao)->eixo_oe_perto),
+                'oe_acuidade_perto' => $request->input('oe_acuidade_perto', optional($prescricao)->acuidade_oe_perto),
+                'oe_dnp_perto' => $request->input('oe_dnp_perto', optional($prescricao)->dnp_oe_perto),
+                'oe_altura_perto' => $request->input('oe_altura_perto', optional($prescricao)->altura_oe_perto),
+                'oe_adicao_perto' => $request->input('oe_adicao_perto', optional($prescricao)->adicao_oe_perto),
+
+                'tipo_lente' => $request->input('tipo_lente', optional($prescricao)->tipo_lente),
+                'validade_dias' => $request->input('validade_dias', optional($prescricao)->validade_dias),
+            ],
+            'diagnostico' => $request->input('diagnostico', optional($prescricao)->diagnostico),
+            'recomendacoes' => $request->input('recomendacoes', optional($prescricao)->recomendacoes),
+            'observacoes' => $request->input('observacoes_receita', optional($prescricao)->observacoes),
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
+
+        return $pdf->stream('receita-' . $consulta->id . '.pdf');
+    }
+
     public function newPrescription()
     {
         $tenantId = AuthHelper::tenantId() ?? 1;
@@ -1219,6 +1357,20 @@ class ProfissionalWorkflowController extends Controller
             'altura_oe' => $data['oe_altura'] ?? null,
             'adicao_od' => $data['od_adicao'] ?? null,
             'adicao_oe' => $data['oe_adicao'] ?? null,
+            'esfera_od_perto' => $data['od_esferico_perto'] ?? null,
+            'cilindro_od_perto' => $data['od_cilindrico_perto'] ?? null,
+            'eixo_od_perto' => $data['od_eixo_perto'] ?? null,
+            'acuidade_od_perto' => $data['od_acuidade_perto'] ?? null,
+            'dnp_od_perto' => $data['od_dnp_perto'] ?? null,
+            'altura_od_perto' => $data['od_altura_perto'] ?? null,
+            'adicao_od_perto' => $data['od_adicao_perto'] ?? null,
+            'esfera_oe_perto' => $data['oe_esferico_perto'] ?? null,
+            'cilindro_oe_perto' => $data['oe_cilindrico_perto'] ?? null,
+            'eixo_oe_perto' => $data['oe_eixo_perto'] ?? null,
+            'acuidade_oe_perto' => $data['oe_acuidade_perto'] ?? null,
+            'dnp_oe_perto' => $data['oe_dnp_perto'] ?? null,
+            'altura_oe_perto' => $data['oe_altura_perto'] ?? null,
+            'adicao_oe_perto' => $data['oe_adicao_perto'] ?? null,
             'tipo_lente' => $data['tipo_lente'] ?? null,
             'validade_dias' => $data['validade_dias'] ?? null,
             'diagnostico' => $data['diagnostico'] ?? null,
@@ -1304,6 +1456,20 @@ class ProfissionalWorkflowController extends Controller
                     'altura_oe' => $requestData['oe_altura'] ?? null,
                     'adicao_od' => $requestData['od_adicao'] ?? null,
                     'adicao_oe' => $requestData['oe_adicao'] ?? null,
+                    'esfera_od_perto' => $requestData['od_esferico_perto'] ?? null,
+                    'cilindro_od_perto' => $requestData['od_cilindrico_perto'] ?? null,
+                    'eixo_od_perto' => $requestData['od_eixo_perto'] ?? null,
+                    'acuidade_od_perto' => $requestData['od_acuidade_perto'] ?? null,
+                    'dnp_od_perto' => $requestData['od_dnp_perto'] ?? null,
+                    'altura_od_perto' => $requestData['od_altura_perto'] ?? null,
+                    'adicao_od_perto' => $requestData['od_adicao_perto'] ?? null,
+                    'esfera_oe_perto' => $requestData['oe_esferico_perto'] ?? null,
+                    'cilindro_oe_perto' => $requestData['oe_cilindrico_perto'] ?? null,
+                    'eixo_oe_perto' => $requestData['oe_eixo_perto'] ?? null,
+                    'acuidade_oe_perto' => $requestData['oe_acuidade_perto'] ?? null,
+                    'dnp_oe_perto' => $requestData['oe_dnp_perto'] ?? null,
+                    'altura_oe_perto' => $requestData['oe_altura_perto'] ?? null,
+                    'adicao_oe_perto' => $requestData['oe_adicao_perto'] ?? null,
                     'tipo_lente' => $requestData['tipo_lente'] ?? null,
                     'validade_dias' => $requestData['validade_dias'] ?? null,
                     'diagnostico' => $requestData['diagnostico'] ?? null,

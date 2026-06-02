@@ -189,6 +189,13 @@
             display: inline-block;
             vertical-align: top;
         }
+
+        .rx-side__text {
+            writing-mode: initial !important;
+            transform: rotate(-90deg) !important;
+            transform-origin: center;
+            white-space: nowrap;
+        }
     </style>
 </head>
 

@@ -49,7 +49,7 @@ class PrescriptionFormRequest extends FormRequest
             }
         }
 
-        $useProfessionalNormalization = in_array($routeName, ['professional.storeNewPrescription', 'professional.savePrescriptionDraft'], true);
+        $useProfessionalNormalization = in_array($routeName, ['professional.storeNewPrescription', 'professional.savePrescriptionDraft', 'professional.generatePrescription'], true);
 
         if ($useProfessionalNormalization) {
             $normalized['od_esferico'] = $this->normalizeEsfericoProfessional($normalized['od_esferico'] ?? $this->input('od_esferico'));
