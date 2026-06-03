@@ -98,13 +98,14 @@
                     <div id="selected_prescricao" class="mt-3" style="display: none;">
                         <div class="alert alert-info d-flex align-items-start">
                             <i class="mdi mdi-glasses me-2"></i>
-                            <div class="flex-grow-1">
+                            <div class="flex-grow-1" style="min-width: 0;">
                                 <strong>Prescrição #<span id="prescricao_id_display"></span></strong><br>
                                 <small class="d-block text-muted">Paciente: <span
                                         id="prescricao_paciente_nome"></span></small>
                                 <small class="d-block text-muted">Data: <span id="prescricao_data"></span></small>
                                 <small class="d-block text-muted">CPF: <span id="prescricao_paciente_cpf"></span></small>
-                                <div class="mt-2" id="prescricao_graduacao_info">
+                                <div class="mt-2" id="prescricao_graduacao_info"
+                                    style="max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
                                     <!-- Informações da graduação serão exibidas aqui -->
                                 </div>
                             </div>
@@ -781,6 +782,18 @@
             if (!prescricoes.length) {
                 suggestions.innerHTML = '<div class="list-group-item text-muted">Nenhuma prescrição encontrada.</div>';
             } else {
+                function fmt(value, fallback = '-') {
+                    if (value === null || value === undefined) return fallback;
+                    const s = String(value).trim();
+                    return s === '' ? fallback : s;
+                }
+
+                function shortTriplet(side, eye) {
+                    const s = side && side[eye] ? side[eye] : null;
+                    if (!s) return '-';
+                    return `${fmt(s.esfera, '0.00')}/${fmt(s.cilindro, '0.00')}/${fmt(s.eixo, '0')}`;
+                }
+
                 suggestions.innerHTML = prescricoes.map(prescricao => `
                     <button type="button" class="list-group-item list-group-item-action" onclick="selectPrescricao(${JSON.stringify(prescricao).replace(/"/g, '&quot;')})">
                         <div class="fw-semibold">Prescrição #${prescricao.id} - ${prescricao.paciente_nome}</div>
@@ -789,11 +802,16 @@
                         </small>
                         <div class="mt-1">
                             <small class="text-info">
-                                OD: ${prescricao.graduacao.od.esfera || '0.00'}/${prescricao.graduacao.od.cilindro || '0.00'}/${prescricao.graduacao.od.eixo || '0'} •
-                                OE: ${prescricao.graduacao.oe.esfera || '0.00'}/${prescricao.graduacao.oe.cilindro || '0.00'}/${prescricao.graduacao.oe.eixo || '0'}
+                                LONGE OD: ${shortTriplet(prescricao.longe, 'od')} • OE: ${shortTriplet(prescricao.longe, 'oe')}
                             </small>
                         </div>
-                        ${prescricao.diagnostico ? `<small class="text-muted d-block">Diagnóstico: ${prescricao.diagnostico}</small>` : ''}
+                        ${(prescricao.perto && (prescricao.perto.od?.esfera || prescricao.perto.oe?.esfera || prescricao.perto.od?.cilindro || prescricao.perto.oe?.cilindro || prescricao.perto.od?.eixo || prescricao.perto.oe?.eixo)) ? `
+                                    <div class="mt-1">
+                                        <small class="text-danger">
+                                            PERTO OD: ${shortTriplet(prescricao.perto, 'od')} • OE: ${shortTriplet(prescricao.perto, 'oe')}
+                                        </small>
+                                    </div>
+                                ` : ''}
                     </button>
                 `).join('');
             }
@@ -815,38 +833,102 @@
             document.getElementById('prescricao_paciente_cpf').textContent = prescricao.paciente_cpf || 'Não informado';
             document.getElementById('prescricao_id').value = prescricao.id;
 
-            // Exibir informações da graduação
-            const graduacaoInfo = `
-                <div class="row">
-                    <div class="col-6">
-                        <strong>Olho Direito (OD):</strong><br>
-                        <small>Esfera: ${prescricao.graduacao.od.esfera || '0.00'}</small><br>
-                        <small>Cilindro: ${prescricao.graduacao.od.cilindro || '0.00'}</small><br>
-                        <small>Eixo: ${prescricao.graduacao.od.eixo || '0'}°</small>
-                    </div>
-                    <div class="col-6">
-                        <strong>Olho Esquerdo (OE):</strong><br>
-                        <small>Esfera: ${prescricao.graduacao.oe.esfera || '0.00'}</small><br>
-                        <small>Cilindro: ${prescricao.graduacao.oe.cilindro || '0.00'}</small><br>
-                        <small>Eixo: ${prescricao.graduacao.oe.eixo || '0'}°</small>
-                    </div>
-                </div>
-                ${prescricao.diagnostico ? `<div class="mt-2"><strong>Diagnóstico:</strong><br><small>${prescricao.diagnostico}</small></div>` : ''}
-                ${prescricao.observacoes ? `<div class="mt-2"><strong>Observações:</strong><br><small>${prescricao.observacoes}</small></div>` : ''}
-            `;
+            function fmt(value, fallback = '-') {
+                if (value === null || value === undefined) return fallback;
+                const s = String(value).trim();
+                return s === '' ? fallback : s;
+            }
+
+            function cell(value) {
+                return fmt(value, '-');
+            }
+
+            const lo = prescricao.longe || {};
+            const pe = prescricao.perto || {};
+
+            const graduacaoInfo =
+                '<div class="table-responsive">' +
+                '<table class="table table-bordered table-sm align-middle mb-0">' +
+                '<thead class="table-light">' +
+                '<tr>' +
+                '<th style="width: 44px;"></th>' +
+                '<th style="width: 90px;"></th>' +
+                '<th class="text-center">Esférico</th>' +
+                '<th class="text-center">Cilíndrico</th>' +
+                '<th class="text-center">Eixo</th>' +
+                '<th class="text-center">AV</th>' +
+                '<th class="text-center">DNP</th>' +
+                '<th class="text-center">Altura</th>' +
+                '<th class="text-center">Adição</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                '<tr>' +
+                '<td rowspan="2" class="text-center fw-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.45);">LONGE</td>' +
+                '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OD</td>' +
+                '<td class="text-center">' + cell(lo.od && lo.od.esfera) + '</td>' +
+                '<td class="text-center">' + cell(lo.od && lo.od.cilindro) + '</td>' +
+                '<td class="text-center">' + cell(lo.od && lo.od.eixo) + '</td>' +
+                '<td class="text-center">' + cell(lo.od && lo.od.av) + '</td>' +
+                '<td class="text-center">' + cell(lo.od && lo.od.dnp) + '</td>' +
+                '<td class="text-center">' + cell(lo.od && lo.od.altura) + '</td>' +
+                '<td class="text-center">' + cell(lo.od && lo.od.adicao) + '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OE</td>' +
+                '<td class="text-center">' + cell(lo.oe && lo.oe.esfera) + '</td>' +
+                '<td class="text-center">' + cell(lo.oe && lo.oe.cilindro) + '</td>' +
+                '<td class="text-center">' + cell(lo.oe && lo.oe.eixo) + '</td>' +
+                '<td class="text-center">' + cell(lo.oe && lo.oe.av) + '</td>' +
+                '<td class="text-center">' + cell(lo.oe && lo.oe.dnp) + '</td>' +
+                '<td class="text-center">' + cell(lo.oe && lo.oe.altura) + '</td>' +
+                '<td class="text-center">' + cell(lo.oe && lo.oe.adicao) + '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td rowspan="2" class="text-center fw-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">PERTO</td>' +
+                '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OD</td>' +
+                '<td class="text-center">' + cell(pe.od && pe.od.esfera) + '</td>' +
+                '<td class="text-center">' + cell(pe.od && pe.od.cilindro) + '</td>' +
+                '<td class="text-center">' + cell(pe.od && pe.od.eixo) + '</td>' +
+                '<td class="text-center">' + cell(pe.od && pe.od.av) + '</td>' +
+                '<td class="text-center">' + cell(pe.od && pe.od.dnp) + '</td>' +
+                '<td class="text-center">' + cell(pe.od && pe.od.altura) + '</td>' +
+                '<td class="text-center">' + cell(pe.od && pe.od.adicao) + '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OE</td>' +
+                '<td class="text-center">' + cell(pe.oe && pe.oe.esfera) + '</td>' +
+                '<td class="text-center">' + cell(pe.oe && pe.oe.cilindro) + '</td>' +
+                '<td class="text-center">' + cell(pe.oe && pe.oe.eixo) + '</td>' +
+                '<td class="text-center">' + cell(pe.oe && pe.oe.av) + '</td>' +
+                '<td class="text-center">' + cell(pe.oe && pe.oe.dnp) + '</td>' +
+                '<td class="text-center">' + cell(pe.oe && pe.oe.altura) + '</td>' +
+                '<td class="text-center">' + cell(pe.oe && pe.oe.adicao) + '</td>' +
+                '</tr>' +
+                '</tbody>' +
+                '</table>' +
+                '</div>' +
+                (prescricao.observacoes ? '<div class="mt-2"><strong>Observações:</strong><br><small>' + prescricao
+                    .observacoes + '</small></div>' : '');
 
             document.getElementById('prescricao_graduacao_info').innerHTML = graduacaoInfo;
             document.getElementById('selected_prescricao').style.display = 'block';
 
             // Atualizar também o campo no card "Dados da Ordem de Serviço"
-            const prescricaoInfoOrdem = `
-                <strong>Prescrição #${prescricao.id} - ${prescricao.paciente_nome}</strong><br>
-                <small class="text-muted">Data: ${prescricao.data_criacao} • CPF: ${prescricao.paciente_cpf || 'Não informado'}</small><br>
-                <small class="text-info">
-                    OD: ${prescricao.graduacao.od.esfera || '0.00'}/${prescricao.graduacao.od.cilindro || '0.00'}/${prescricao.graduacao.od.eixo || '0'}° •
-                    OE: ${prescricao.graduacao.oe.esfera || '0.00'}/${prescricao.graduacao.oe.cilindro || '0.00'}/${prescricao.graduacao.oe.eixo || '0'}°
-                </small>
-            `;
+            function shortTriplet(side, eye) {
+                const s = side && side[eye] ? side[eye] : null;
+                if (!s) return '-';
+                return `${fmt(s.esfera, '0.00')}/${fmt(s.cilindro, '0.00')}/${fmt(s.eixo, '0')}`;
+            }
+
+            const prescricaoInfoOrdem =
+                '<strong>Prescrição #' + prescricao.id + ' - ' + prescricao.paciente_nome + '</strong><br>' +
+                '<small class="text-muted">Data: ' + prescricao.data_criacao + ' • CPF: ' + (prescricao.paciente_cpf ||
+                    'Não informado') + '</small><br>' +
+                '<small class="text-info">LONGE OD: ' + shortTriplet(prescricao.longe, 'od') + ' • OE: ' + shortTriplet(
+                    prescricao.longe, 'oe') + '</small>' +
+                (prescricao.perto ? '<br><small class="text-danger">PERTO OD: ' + shortTriplet(prescricao.perto, 'od') +
+                    ' • OE: ' + shortTriplet(prescricao.perto, 'oe') + '</small>' : '');
 
             document.getElementById('info_prescricao_selecionada').innerHTML = prescricaoInfoOrdem;
             document.getElementById('prescricao_selecionada_ordem').style.display = 'block';
@@ -914,8 +996,8 @@
                                 </small>
                                 <div class="itens-preview" style="max-height: 60px; overflow-y: auto; font-size: 0.8em;">
                                     ${venda.itens.slice(0, 3).map(item => `
-                                                                                                                                                                    <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
-                                                                                                                                                                `).join('')}
+                                                                                                                                                                            <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
+                                                                                                                                                                        `).join('')}
                                     ${venda.itens.length > 3 ? `<div class="text-muted">... e mais ${venda.itens.length - 3} produto(s)</div>` : ''}
                                 </div>
                             </div>
@@ -969,20 +1051,20 @@
                     </h6>
                     <div style="max-height: 60vh; overflow-y: auto; overflow-x: hidden; width: 100%;">
                         ${venda.itens.map(item => `
-                                                                                                                                                    <div class="border rounded p-2 mb-2 item-checkbox d-flex align-items-start" style="cursor: pointer;">
-                                                                                                                                                        <input class="form-check-input me-3" type="checkbox" name="itens_selecionados[]"
-                                                                                                                                                               value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()" style="margin-top: 2px;">
-                                                                                                                                                        <div class="flex-grow-1">
-                                                                                                                                                            <label class="form-check-label w-100" for="item_${item.id}" style="cursor: pointer;">
-                                                                                                                                                                <strong style="display: block; font-size: 0.9rem; line-height: 1.3; margin-bottom: 2px;">${item.produto_nome}</strong>
-                                                                                                                                                                <small class="text-muted" style="font-size: 0.75rem; line-height: 1.2;">
-                                                                                                                                                                    Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
-                                                                                                                                                                    ${item.desconto_raw > 0 ? ` • Desc: ${item.desconto}` : ''}
-                                                                                                                                                                </small>
-                                                                                                                                                            </label>
-                                                                                                                                                        </div>
-                                                                                                                                                    </div>
-                                                                                                                                                `).join('')}
+                                                                                                                                                            <div class="border rounded p-2 mb-2 item-checkbox d-flex align-items-start" style="cursor: pointer;">
+                                                                                                                                                                <input class="form-check-input me-3" type="checkbox" name="itens_selecionados[]"
+                                                                                                                                                                       value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()" style="margin-top: 2px;">
+                                                                                                                                                                <div class="flex-grow-1">
+                                                                                                                                                                    <label class="form-check-label w-100" for="item_${item.id}" style="cursor: pointer;">
+                                                                                                                                                                        <strong style="display: block; font-size: 0.9rem; line-height: 1.3; margin-bottom: 2px;">${item.produto_nome}</strong>
+                                                                                                                                                                        <small class="text-muted" style="font-size: 0.75rem; line-height: 1.2;">
+                                                                                                                                                                            Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
+                                                                                                                                                                            ${item.desconto_raw > 0 ? ` • Desc: ${item.desconto}` : ''}
+                                                                                                                                                                        </small>
+                                                                                                                                                                    </label>
+                                                                                                                                                                </div>
+                                                                                                                                                            </div>
+                                                                                                                                                        `).join('')}
                     </div>
                     <div class="mt-3 text-center">
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllItems()">
@@ -994,11 +1076,11 @@
                     </div>
                 </div>
                 ${venda.observacoes ? `
-                                                                                                                                            <div class="mt-3">
-                                                                                                                                                <h6 class="mb-1">Observações da Venda:</h6>
-                                                                                                                                                <p class="mb-0 text-muted small">${venda.observacoes}</p>
-                                                                                                                                            </div>
-                                                                                                                                        ` : ''}
+                                                                                                                                                    <div class="mt-3">
+                                                                                                                                                        <h6 class="mb-1">Observações da Venda:</h6>
+                                                                                                                                                        <p class="mb-0 text-muted small">${venda.observacoes}</p>
+                                                                                                                                                    </div>
+                                                                                                                                                ` : ''}
             `;
             document.getElementById('venda_selecionada').style.display = 'block';
             document.getElementById('btnSalvar').disabled = false;

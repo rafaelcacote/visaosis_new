@@ -363,21 +363,48 @@ class OrdemServicoController extends Controller
                     'paciente_nome' => $prescricao->paciente ? $prescricao->paciente->nome : 'N/A',
                     'paciente_cpf' => $prescricao->paciente && $prescricao->paciente->cpf ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $prescricao->paciente->cpf) : 'Não informado',
                     'paciente_telefone' => $prescricao->paciente ? $prescricao->paciente->telefone : '',
-                    'diagnostico' => $prescricao->diagnostico,
                     'observacoes' => $prescricao->observacoes,
                     'validade_dias' => $prescricao->validade_dias,
-                    'graduacao' => [
+                    'longe' => [
                         'od' => [
                             'esfera' => $prescricao->esfera_od,
                             'cilindro' => $prescricao->cilindro_od,
-                            'eixo' => $prescricao->eixo_od
+                            'eixo' => $prescricao->eixo_od,
+                            'av' => $prescricao->acuidade_od,
+                            'dnp' => $prescricao->dnp_od,
+                            'altura' => $prescricao->altura_od,
+                            'adicao' => $prescricao->adicao_od,
                         ],
                         'oe' => [
                             'esfera' => $prescricao->esfera_oe,
                             'cilindro' => $prescricao->cilindro_oe,
-                            'eixo' => $prescricao->eixo_oe
-                        ]
-                    ]
+                            'eixo' => $prescricao->eixo_oe,
+                            'av' => $prescricao->acuidade_oe,
+                            'dnp' => $prescricao->dnp_oe,
+                            'altura' => $prescricao->altura_oe,
+                            'adicao' => $prescricao->adicao_oe,
+                        ],
+                    ],
+                    'perto' => [
+                        'od' => [
+                            'esfera' => $prescricao->esfera_od_perto,
+                            'cilindro' => $prescricao->cilindro_od_perto,
+                            'eixo' => $prescricao->eixo_od_perto,
+                            'av' => $prescricao->acuidade_od_perto,
+                            'dnp' => $prescricao->dnp_od_perto,
+                            'altura' => $prescricao->altura_od_perto,
+                            'adicao' => $prescricao->adicao_od_perto,
+                        ],
+                        'oe' => [
+                            'esfera' => $prescricao->esfera_oe_perto,
+                            'cilindro' => $prescricao->cilindro_oe_perto,
+                            'eixo' => $prescricao->eixo_oe_perto,
+                            'av' => $prescricao->acuidade_oe_perto,
+                            'dnp' => $prescricao->dnp_oe_perto,
+                            'altura' => $prescricao->altura_oe_perto,
+                            'adicao' => $prescricao->adicao_oe_perto,
+                        ],
+                    ],
                 ];
             });
 
