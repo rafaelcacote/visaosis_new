@@ -174,69 +174,120 @@
                                 <i class="mdi mdi-eye-settings text-primary me-1"></i>
                                 Graduação
                             </h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <strong class="text-primary">Olho Direito (OD)</strong>
-                                    <div class="mt-1">
-                                        <small class="text-muted d-block">Esfera:
-                                            <span
-                                                class="fw-medium">{{ $ordemServico->prescricao->esfera_od ?? '0.00' }}</span>
-                                        </small>
-                                        <small class="text-muted d-block">Cilindro:
-                                            <span
-                                                class="fw-medium">{{ $ordemServico->prescricao->cilindro_od ?? '0.00' }}</span>
-                                        </small>
-                                        <small class="text-muted d-block">Eixo:
-                                            <span class="fw-medium">{{ $ordemServico->prescricao->eixo_od ?? '0' }}°</span>
-                                        </small>
-                                        @if ($ordemServico->prescricao->dnp_od)
-                                            <small class="text-muted d-block">DNP:
-                                                <span class="fw-medium">{{ $ordemServico->prescricao->dnp_od }}</span>
-                                            </small>
-                                        @endif
-                                        @if ($ordemServico->prescricao->altura_od)
-                                            <small class="text-muted d-block">Altura:
-                                                <span class="fw-medium">{{ $ordemServico->prescricao->altura_od }}</span>
-                                            </small>
-                                        @endif
-                                        @if ($ordemServico->prescricao->adicao_od)
-                                            <small class="text-muted d-block">Adição:
-                                                <span class="fw-medium">{{ $ordemServico->prescricao->adicao_od }}</span>
-                                            </small>
-                                        @endif
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <strong class="text-success">Olho Esquerdo (OE)</strong>
-                                    <div class="mt-1">
-                                        <small class="text-muted d-block">Esfera:
-                                            <span
-                                                class="fw-medium">{{ $ordemServico->prescricao->esfera_oe ?? '0.00' }}</span>
-                                        </small>
-                                        <small class="text-muted d-block">Cilindro:
-                                            <span
-                                                class="fw-medium">{{ $ordemServico->prescricao->cilindro_oe ?? '0.00' }}</span>
-                                        </small>
-                                        <small class="text-muted d-block">Eixo:
-                                            <span class="fw-medium">{{ $ordemServico->prescricao->eixo_oe ?? '0' }}°</span>
-                                        </small>
-                                        @if ($ordemServico->prescricao->dnp_oe)
-                                            <small class="text-muted d-block">DNP:
-                                                <span class="fw-medium">{{ $ordemServico->prescricao->dnp_oe }}</span>
-                                            </small>
-                                        @endif
-                                        @if ($ordemServico->prescricao->altura_oe)
-                                            <small class="text-muted d-block">Altura:
-                                                <span class="fw-medium">{{ $ordemServico->prescricao->altura_oe }}</span>
-                                            </small>
-                                        @endif
-                                        @if ($ordemServico->prescricao->adicao_oe)
-                                            <small class="text-muted d-block">Adição:
-                                                <span class="fw-medium">{{ $ordemServico->prescricao->adicao_oe }}</span>
-                                            </small>
-                                        @endif
-                                    </div>
-                                </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 44px;"></th>
+                                            <th style="width: 90px;"></th>
+                                            <th class="text-center">Esférico</th>
+                                            <th class="text-center">Cilíndrico</th>
+                                            <th class="text-center">Eixo</th>
+                                            <th class="text-center">AV</th>
+                                            <th class="text-center">DNP</th>
+                                            <th class="text-center">Altura</th>
+                                            <th class="text-center">Adição</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td rowspan="2" class="text-center fw-bold"
+                                                style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.45);">
+                                                LONGE
+                                            </td>
+                                            <td class="text-center fw-semibold" style="white-space: nowrap;">
+                                                <i class="mdi mdi-eye-outline me-1"></i>OD
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->esfera_od ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->cilindro_od ?? '-' }}
+                                            </td>
+                                            <td class="text-center">
+                                                @if (!is_null($ordemServico->prescricao->eixo_od))
+                                                    {{ $ordemServico->prescricao->eixo_od }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->acuidade_od ?? '-' }}
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->dnp_od ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->altura_od ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_od ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center fw-semibold" style="white-space: nowrap;">
+                                                <i class="mdi mdi-eye-outline me-1"></i>OE
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->esfera_oe ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->cilindro_oe ?? '-' }}
+                                            </td>
+                                            <td class="text-center">
+                                                @if (!is_null($ordemServico->prescricao->eixo_oe))
+                                                    {{ $ordemServico->prescricao->eixo_oe }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->acuidade_oe ?? '-' }}
+                                            </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->dnp_oe ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->altura_oe ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_oe ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td rowspan="2" class="text-center fw-bold"
+                                                style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">
+                                                PERTO
+                                            </td>
+                                            <td class="text-center fw-semibold" style="white-space: nowrap;">
+                                                <i class="mdi mdi-eye-outline me-1"></i>OD
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->esfera_od_perto ?? '-' }}</td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->cilindro_od_perto ?? '-' }}</td>
+                                            <td class="text-center">
+                                                @if (!is_null($ordemServico->prescricao->eixo_od_perto))
+                                                    {{ $ordemServico->prescricao->eixo_od_perto }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->acuidade_od_perto ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->dnp_od_perto ?? '-' }}
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->altura_od_perto ?? '-' }}</td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->adicao_od_perto ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center fw-semibold" style="white-space: nowrap;">
+                                                <i class="mdi mdi-eye-outline me-1"></i>OE
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->esfera_oe_perto ?? '-' }}</td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->cilindro_oe_perto ?? '-' }}</td>
+                                            <td class="text-center">
+                                                @if (!is_null($ordemServico->prescricao->eixo_oe_perto))
+                                                    {{ $ordemServico->prescricao->eixo_oe_perto }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->acuidade_oe_perto ?? '-' }}</td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->dnp_oe_perto ?? '-' }}
+                                            </td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->altura_oe_perto ?? '-' }}</td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->adicao_oe_perto ?? '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
