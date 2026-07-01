@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Helpers\AuthHelper;
 use App\Http\Requests\PrescriptionFormRequest;
 use App\Models\Pessoa;
+use App\Models\PedidoVenda;
 use App\Models\Prescricao;
+use App\Models\OrdemServico;
 use App\Rules\ValidCpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -233,6 +235,34 @@ class PessoaController extends Controller
         $prescricoes = $query->orderByDesc('created_at')->get();
 
         return view('pessoas.receitas', compact('pessoa', 'prescricoes'));
+    }
+
+    public function vendas(Pessoa $pessoa)
+    {
+        $this->checkTenantAccess($pessoa);
+
+        $query = PedidoVenda::with(['cliente', 'itens.produto'])
+            ->where('pessoa_cliente_id', $pessoa->id)
+            ->whereNull('deleted_at');
+
+        $tenantId = session('tenant_id');
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        $locationId = session('location_id');
+        if ($locationId) {
+            $query->where('location_id', $locationId);
+        }
+
+        $vendas = $query->orderByDesc('data_pedido')->get();
+
+        $ordensServicoPorVenda = OrdemServico::whereIn('pedido_id', $vendas->pluck('id'))
+            ->whereNull('deleted_at')
+            ->get()
+            ->groupBy('pedido_id');
+
+        return view('pessoas.vendas', compact('pessoa', 'vendas', 'ordensServicoPorVenda'));
     }
 
     /**

@@ -453,6 +453,7 @@ class SaleController extends Controller
     public function show(string $id)
     {
         $tenantId = session('tenant_id');
+        $tz = 'America/Manaus';
 
         $pedidoVenda = PedidoVenda::with(['cliente', 'itens.produto'])
             ->where('ativo', true);
@@ -514,6 +515,56 @@ class SaleController extends Controller
         // Forma de pagamento do banco
         $formaPagamento = $pedidoVenda->forma_pagamento ?? 'Não informado';
 
+        $today = Carbon::today($tz)->startOfDay();
+        $tomorrow = $today->copy()->addDay();
+        $weekEnd = $today->copy()->addDays(7);
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $parcelas = PedidoVendaParcela::query()
+            ->where('pedido_venda_id', $pedidoVenda->id)
+            ->when($tenantId, fn($query) => $query->where('tenant_id', $tenantId))
+            ->orderBy('numero_parcela')
+            ->get()
+            ->map(function ($parcela) use ($today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
+                $venc = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em, $tz)->startOfDay() : null;
+                $isPaid = !empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+
+                $status = 'em_dia';
+                if ($isPaid) {
+                    $status = 'paga';
+                } elseif ($venc && $venc->lt($today)) {
+                    $status = 'vencida';
+                } elseif ($venc && $venc->equalTo($today)) {
+                    $status = 'vence_hoje';
+                } elseif ($venc && $venc->gte($tomorrow) && $venc->lte($weekEnd)) {
+                    $status = 'vence_semana';
+                }
+
+                $diasAtraso = 0;
+                if (!$isPaid && $venc && $venc->lt($today)) {
+                    $diasAtraso = $venc->diffInDays($today);
+                }
+
+                $valor = (float) ($parcela->valor ?? 0);
+                $juros = 0.0;
+
+                return [
+                    'id' => $parcela->id,
+                    'parcela' => (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
+                    'numero_parcela' => (int) $parcela->numero_parcela,
+                    'total_parcelas' => (int) $parcela->total_parcelas,
+                    'valor_parcela' => $valor,
+                    'valor_atualizado' => $valor + $juros,
+                    'juros' => $juros,
+                    'vencimento' => $venc ? $venc->toDateString() : null,
+                    'pago_em' => $parcela->pago_em ? Carbon::parse($parcela->pago_em, $tz) : null,
+                    'status' => $status,
+                    'status_original' => $parcela->status,
+                    'dias_atraso' => $diasAtraso,
+                    'forma_pagamento' => $parcela->forma_pagamento,
+                ];
+            });
+
         $sale = [
             'id' => $pedidoVenda->id,
             'numero' => $numero,
@@ -525,8 +576,9 @@ class SaleController extends Controller
             'desconto' => $descontoTotal,
             'total' => $total,
             'forma_pagamento' => $formaPagamento,
-            'parcelas' => 1, // Pode ser adicionado na tabela se necessário
-            'valor_parcela' => $total,
+            'parcelas' => $parcelas->count() > 0 ? $parcelas->count() : 1,
+            'valor_parcela' => $parcelas->count() > 0 ? (float) $parcelas->first()['valor_parcela'] : $total,
+            'parcelas_detalhes' => $parcelas,
             'status' => $status,
             'status_original' => $pedidoVenda->status,
             'observacoes' => $pedidoVenda->observacoes,

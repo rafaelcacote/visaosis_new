@@ -21,6 +21,10 @@
                     <i class="mdi mdi-file-document-outline me-2"></i>
                     Receitas
                 </a>
+                <a href="{{ route('pessoas.vendas', $pessoa) }}" class="btn btn-outline-dark">
+                    <i class="mdi mdi-cart-outline me-2"></i>
+                    Histórico de Vendas
+                </a>
                 <button type="button" class="btn {{ $pessoa->ativo ? 'btn-outline-warning' : 'btn-outline-success' }}"
                     data-toggle-status data-pessoa-id="{{ $pessoa->id }}"
                     data-novo-status="{{ $pessoa->ativo ? 'false' : 'true' }}" data-pessoa-nome="{{ $pessoa->nome }}">

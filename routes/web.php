@@ -123,6 +123,7 @@ Route::middleware(['auth'])->group(function () {
     // Rotas de pacientes (pessoas)
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
+    Route::get('pessoas/{pessoa}/vendas', [PessoaController::class, 'vendas'])->name('pessoas.vendas');
     Route::post('pessoas/{pessoa}/receitas', [PessoaController::class, 'storePrescription'])->name('pessoas.receitas.store');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/edit', [PessoaController::class, 'editPrescription'])->name('pessoas.receitas.edit');
     Route::patch('pessoas/{pessoa}/receitas/{prescricao}', [PessoaController::class, 'updatePrescription'])->name('pessoas.receitas.update');
