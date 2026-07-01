@@ -122,45 +122,41 @@ class PessoaController extends Controller
                 ->with('error', 'Nenhuma localização disponível para criar o paciente.');
         }
 
+        $cpfRules = ['nullable', 'string', new ValidCpf];
+        if ($cpfLimpo) {
+            $cpfRules[] = Rule::unique('pessoa', 'cpf')
+                ->where(function ($query) use ($cpfLimpo, $tenantId) {
+                    return $query->where('tenant_id', $tenantId)
+                        ->where('cpf', $cpfLimpo)
+                        ->whereNull('deleted_at');
+                });
+        }
+
         $request->validate([
             'nome' => 'required|string|max:255',
-            'cpf' => [
-                'required',
-                'string',
-                new ValidCpf,
-                Rule::unique('pessoa', 'cpf')
-                    ->where(function ($query) use ($cpfLimpo, $tenantId) {
-                        return $query->where('tenant_id', $tenantId)
-                            ->where('cpf', $cpfLimpo)
-                            ->whereNull('deleted_at');
-                    }),
-            ],
+            'apelido' => 'required|string|max:255',
+            'cpf' => $cpfRules,
             'nome_mae' => 'nullable|string|max:255',
             'nome_pai' => 'nullable|string|max:255',
             'sexo' => 'nullable|in:1,2',
             'nascimento_em' => 'nullable|date|before:today',
             'deficiencia' => 'nullable|string|max:200',
             'cep' => 'nullable|string|size:8',
-            'logradouro' => 'required|string|max:100',
+            'logradouro' => 'nullable|string|max:100',
             'complemento' => 'nullable|string|max:100',
-            'bairro' => 'required|string|max:100',
-            'localidade' => 'required|string|max:50',
-            'uf' => 'required|string|max:50',
-            'numero' => 'required|string|max:25',
+            'bairro' => 'nullable|string|max:100',
+            'localidade' => 'nullable|string|max:50',
+            'uf' => 'nullable|string|max:50',
+            'numero' => 'nullable|string|max:25',
             'telefone' => 'nullable|string|min:10|max:11',
             'email' => 'nullable|email|max:255',
         ], [
             'nome.required' => 'O nome é obrigatório.',
-            'cpf.required' => 'O CPF é obrigatório.',
+            'apelido.required' => 'O apelido é obrigatório.',
             'cpf.unique' => 'Este CPF já está cadastrado no sistema.',
             'sexo.in' => 'Sexo deve ser Masculino ou Feminino.',
             'nascimento_em.before' => 'A data de nascimento deve ser anterior ao dia de hoje.',
             'nascimento_em.date' => 'A data de nascimento deve ser uma data válida.',
-            'logradouro.required' => 'O logradouro é obrigatório.',
-            'bairro.required' => 'O bairro é obrigatório.',
-            'localidade.required' => 'A cidade é obrigatória.',
-            'uf.required' => 'O UF é obrigatório.',
-            'numero.required' => 'O número é obrigatório.',
             'email.email' => 'Por favor, insira um e-mail válido.',
             'cep.size' => 'O CEP deve conter exatamente 8 dígitos.',
             'telefone.min' => 'O telefone deve conter pelo menos 10 dígitos.',
@@ -172,6 +168,7 @@ class PessoaController extends Controller
 
             Pessoa::create([
                 'nome' => $request->nome,
+                'apelido' => $request->apelido,
                 'cpf' => $cpfLimpo,
                 'nome_mae' => $request->nome_mae,
                 'nome_pai' => $request->nome_pai,
@@ -274,46 +271,42 @@ class PessoaController extends Controller
 
         $tenantId = session('tenant_id');
 
+        $cpfRules = ['nullable', 'string', new ValidCpf];
+        if ($cpfLimpo) {
+            $cpfRules[] = Rule::unique('pessoa', 'cpf')
+                ->ignore($pessoa->id)
+                ->where(function ($query) use ($cpfLimpo, $tenantId) {
+                    return $query->where('tenant_id', $tenantId)
+                        ->where('cpf', $cpfLimpo)
+                        ->whereNull('deleted_at');
+                });
+        }
+
         $request->validate([
             'nome' => 'required|string|max:255',
-            'cpf' => [
-                'required',
-                'string',
-                new ValidCpf,
-                Rule::unique('pessoa', 'cpf')
-                    ->ignore($pessoa->id)
-                    ->where(function ($query) use ($cpfLimpo, $tenantId) {
-                        return $query->where('tenant_id', $tenantId)
-                            ->where('cpf', $cpfLimpo)
-                            ->whereNull('deleted_at');
-                    }),
-            ],
+            'apelido' => 'required|string|max:255',
+            'cpf' => $cpfRules,
             'nome_mae' => 'nullable|string|max:255',
             'nome_pai' => 'nullable|string|max:255',
             'sexo' => 'nullable|in:1,2',
             'nascimento_em' => 'nullable|date|before:today',
             'deficiencia' => 'nullable|string|max:200',
             'cep' => 'nullable|string|size:8',
-            'logradouro' => 'required|string|max:100',
+            'logradouro' => 'nullable|string|max:100',
             'complemento' => 'nullable|string|max:100',
-            'bairro' => 'required|string|max:100',
-            'localidade' => 'required|string|max:50',
-            'uf' => 'required|string|max:50',
-            'numero' => 'required|string|max:25',
+            'bairro' => 'nullable|string|max:100',
+            'localidade' => 'nullable|string|max:50',
+            'uf' => 'nullable|string|max:50',
+            'numero' => 'nullable|string|max:25',
             'telefone' => 'nullable|string|min:10|max:11',
             'email' => 'nullable|email|max:255',
         ], [
             'nome.required' => 'O nome é obrigatório.',
-            'cpf.required' => 'O CPF é obrigatório.',
+            'apelido.required' => 'O apelido é obrigatório.',
             'cpf.unique' => 'Este CPF já está cadastrado no sistema.',
             'sexo.in' => 'Sexo deve ser Masculino ou Feminino.',
             'nascimento_em.before' => 'A data de nascimento deve ser anterior ao dia de hoje.',
             'nascimento_em.date' => 'A data de nascimento deve ser uma data válida.',
-            'logradouro.required' => 'O logradouro é obrigatório.',
-            'bairro.required' => 'O bairro é obrigatório.',
-            'localidade.required' => 'A cidade é obrigatória.',
-            'uf.required' => 'O UF é obrigatório.',
-            'numero.required' => 'O número é obrigatório.',
             'email.email' => 'Por favor, insira um e-mail válido.',
             'cep.size' => 'O CEP deve conter exatamente 8 dígitos.',
             'telefone.min' => 'O telefone deve conter pelo menos 10 dígitos.',
@@ -325,6 +318,7 @@ class PessoaController extends Controller
 
             $pessoa->update([
                 'nome' => $request->nome,
+                'apelido' => $request->apelido,
                 'cpf' => $cpfLimpo,
                 'nome_mae' => $request->nome_mae,
                 'nome_pai' => $request->nome_pai,
