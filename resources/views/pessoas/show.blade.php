@@ -55,11 +55,15 @@
                         </h5>
 
                         <div class="row">
-                            <div class="col-md-7 mb-3">
+                            <div class="col-md-5 mb-3">
                                 <label class="text-muted small">Nome</label>
                                 <div class="fw-bold">{{ $pessoa->nome }}</div>
                             </div>
-                            <div class="col-md-5 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="text-muted small">Apelido</label>
+                                <div>{{ $pessoa->apelido ?? 'Não informado' }}</div>
+                            </div>
+                            <div class="col-md-3 mb-3">
                                 <label class="text-muted small">Status</label>
                                 <div>
                                     @if ($pessoa->ativo)
