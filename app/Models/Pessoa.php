@@ -29,6 +29,7 @@ class Pessoa extends Model
 
     protected $fillable = [
         'nome',
+        'apelido',
         'cpf',
         'nome_mae',
         'nome_pai',
@@ -194,6 +195,13 @@ class Pessoa extends Model
     public function setNomeAttribute($value)
     {
         $this->attributes['nome'] = mb_strtoupper($value, 'UTF-8');
+    }
+
+    public function setApelidoAttribute($value)
+    {
+        $this->attributes['apelido'] = $value !== null && $value !== ''
+            ? mb_strtoupper($value, 'UTF-8')
+            : null;
     }
 
     public function setCpfAttribute($value)

@@ -25,7 +25,7 @@
                     @csrf
 
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="nome">Nome Completo <span class="text-danger">*</span></label>
                                 <input
@@ -41,9 +41,25 @@
                                 @enderror
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
-                                <label for="cpf">CPF <span class="text-danger">*</span></label>
+                                <label for="apelido">Apelido <span class="text-danger">*</span></label>
+                                <input
+                                    type="text"
+                                    class="form-control @error('apelido') is-invalid @enderror"
+                                    id="apelido"
+                                    name="apelido"
+                                    value="{{ old('apelido') }}"
+                                    required
+                                >
+                                @error('apelido')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="cpf">CPF</label>
                                 <input
                                     type="text"
                                     class="form-control @error('cpf') is-invalid @enderror"
@@ -52,7 +68,6 @@
                                     value="{{ old('cpf') }}"
                                     placeholder="000.000.000-00"
                                     maxlength="14"
-                                    required
                                 >
                                 @error('cpf')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -175,7 +190,7 @@
                         </div>
                         <div class="col-md-8">
                             <div class="form-group">
-                                <label for="logradouro">Logradouro <span class="text-danger">*</span></label>
+                                <label for="logradouro">Logradouro</label>
                                 <input
                                     type="text"
                                     class="form-control @error('logradouro') is-invalid @enderror"
@@ -183,7 +198,6 @@
                                     name="logradouro"
                                     value="{{ old('logradouro') }}"
                                     placeholder="Rua, Avenida, etc."
-                                    required
                                 >
                                 @error('logradouro')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -192,14 +206,13 @@
                         </div>
                         <div class="col-md-1">
                             <div class="form-group">
-                                <label for="numero">Número <span class="text-danger">*</span></label>
+                                <label for="numero">Número</label>
                                 <input
                                     type="text"
                                     class="form-control @error('numero') is-invalid @enderror"
                                     id="numero"
                                     name="numero"
                                     value="{{ old('numero') }}"
-                                    required
                                 >
                                 @error('numero')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -211,14 +224,13 @@
                     <div class="row mt-3">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="bairro">Bairro <span class="text-danger">*</span></label>
+                                <label for="bairro">Bairro</label>
                                 <input
                                     type="text"
                                     class="form-control @error('bairro') is-invalid @enderror"
                                     id="bairro"
                                     name="bairro"
                                     value="{{ old('bairro') }}"
-                                    required
                                 >
                                 @error('bairro')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -243,14 +255,13 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="localidade">Cidade <span class="text-danger">*</span></label>
+                                <label for="localidade">Cidade</label>
                                 <input
                                     type="text"
                                     class="form-control @error('localidade') is-invalid @enderror"
                                     id="localidade"
                                     name="localidade"
                                     value="{{ old('localidade') }}"
-                                    required
                                 >
                                 @error('localidade')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -259,7 +270,7 @@
                         </div>
                         <div class="col-md-1">
                             <div class="form-group">
-                                <label for="uf">UF <span class="text-danger">*</span></label>
+                                <label for="uf">UF</label>
                                 <input
                                     type="text"
                                     class="form-control @error('uf') is-invalid @enderror"
@@ -267,7 +278,6 @@
                                     name="uf"
                                     value="{{ old('uf') }}"
                                     maxlength="2"
-                                    required
                                 >
                                 @error('uf')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -316,8 +326,9 @@
                         <div class="col-12">
                             <div class="alert alert-info">
                                 <i class="mdi mdi-information-outline me-2"></i>
-                                <strong>Informação:</strong> Os campos marcados com
-                                <span class="text-danger">*</span> são obrigatórios.
+                                <strong>Informação:</strong> Apenas os campos
+                                <span class="text-danger">Nome</span> e
+                                <span class="text-danger">Apelido</span> são obrigatórios.
                             </div>
                         </div>
                     </div>

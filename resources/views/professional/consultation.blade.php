@@ -200,6 +200,12 @@
                                         'oe_altura',
                                         'od_adicao',
                                         'oe_adicao',
+                                        'od_dnp_perto',
+                                        'oe_dnp_perto',
+                                        'od_altura_perto',
+                                        'oe_altura_perto',
+                                        'od_adicao_perto',
+                                        'oe_adicao_perto',
                                     ];
                                     $showGlassesFields = false;
                                     foreach ($glassesFields as $f) {
@@ -223,7 +229,8 @@
                                     <table class="table table-bordered prescription-table">
                                         <thead class="table-light">
                                             <tr>
-                                                <th width="50">Olho</th>
+                                                <th style="width: 44px;"></th>
+                                                <th style="width: 90px;">Olho</th>
                                                 <th>Esférico</th>
                                                 <th>Cilíndrico</th>
                                                 <th>Eixo</th>
@@ -238,7 +245,13 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td class="text-center fw-bold">OD</td>
+                                                <td rowspan="2" class="text-center fw-bold"
+                                                    style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.45);">
+                                                    LONGE
+                                                </td>
+                                                <td class="text-center fw-bold" style="white-space: nowrap;">
+                                                    <i class="mdi mdi-eye-outline me-1"></i>OD
+                                                </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="od_esferico"
                                                         placeholder="+/-0.00"
@@ -297,7 +310,9 @@
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td class="text-center fw-bold">OE</td>
+                                                <td class="text-center fw-bold" style="white-space: nowrap;">
+                                                    <i class="mdi mdi-eye-outline me-1"></i>OE
+                                                </td>
                                                 <td>
                                                     <input type="text" class="form-control" name="oe_esferico"
                                                         placeholder="+/-0.00"
@@ -355,6 +370,132 @@
                                                     @enderror
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <td rowspan="2" class="text-center fw-bold"
+                                                    style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">
+                                                    PERTO
+                                                </td>
+                                                <td class="text-center fw-bold" style="white-space: nowrap;">
+                                                    <i class="mdi mdi-eye-outline me-1"></i>OD
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="od_esferico_perto"
+                                                        placeholder="+/-0.00"
+                                                        value="{{ old('od_esferico_perto', $patient['prescricao']['od_esferico_perto'] ?? '') }}">
+                                                    @error('od_esferico_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="od_cilindrico_perto"
+                                                        placeholder="-0.00"
+                                                        value="{{ old('od_cilindrico_perto', $patient['prescricao']['od_cilindrico_perto'] ?? '') }}">
+                                                    @error('od_cilindrico_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="od_eixo_perto"
+                                                        placeholder="180°"
+                                                        value="{{ old('od_eixo_perto', $patient['prescricao']['od_eixo_perto'] ?? '') }}">
+                                                    @error('od_eixo_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="od_acuidade_perto"
+                                                        placeholder="20/20"
+                                                        value="{{ old('od_acuidade_perto', $patient['prescricao']['od_acuidade_perto'] ?? '') }}">
+                                                    @error('od_acuidade_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
+                                                    <input type="text" class="form-control" name="od_dnp_perto"
+                                                        placeholder="62"
+                                                        value="{{ old('od_dnp_perto', $patient['prescricao']['od_dnp_perto'] ?? '') }}">
+                                                    @error('od_dnp_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
+                                                    <input type="text" class="form-control" name="od_altura_perto"
+                                                        placeholder="40"
+                                                        value="{{ old('od_altura_perto', $patient['prescricao']['od_altura_perto'] ?? '') }}">
+                                                    @error('od_altura_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
+                                                    <input type="text" class="form-control" name="od_adicao_perto"
+                                                        placeholder="+0.00"
+                                                        value="{{ old('od_adicao_perto', $patient['prescricao']['od_adicao_perto'] ?? '') }}">
+                                                    @error('od_adicao_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-center fw-bold" style="white-space: nowrap;">
+                                                    <i class="mdi mdi-eye-outline me-1"></i>OE
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="oe_esferico_perto"
+                                                        placeholder="+/-0.00"
+                                                        value="{{ old('oe_esferico_perto', $patient['prescricao']['oe_esferico_perto'] ?? '') }}">
+                                                    @error('oe_esferico_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="oe_cilindrico_perto"
+                                                        placeholder="-0.00"
+                                                        value="{{ old('oe_cilindrico_perto', $patient['prescricao']['oe_cilindrico_perto'] ?? '') }}">
+                                                    @error('oe_cilindrico_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="oe_eixo_perto"
+                                                        placeholder="180°"
+                                                        value="{{ old('oe_eixo_perto', $patient['prescricao']['oe_eixo_perto'] ?? '') }}">
+                                                    @error('oe_eixo_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="oe_acuidade_perto"
+                                                        placeholder="20/20"
+                                                        value="{{ old('oe_acuidade_perto', $patient['prescricao']['oe_acuidade_perto'] ?? '') }}">
+                                                    @error('oe_acuidade_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
+                                                    <input type="text" class="form-control" name="oe_dnp_perto"
+                                                        placeholder="62"
+                                                        value="{{ old('oe_dnp_perto', $patient['prescricao']['oe_dnp_perto'] ?? '') }}">
+                                                    @error('oe_dnp_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
+                                                    <input type="text" class="form-control" name="oe_altura_perto"
+                                                        placeholder="100"
+                                                        value="{{ old('oe_altura_perto', $patient['prescricao']['oe_altura_perto'] ?? '') }}">
+                                                    @error('oe_altura_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
+                                                    <input type="text" class="form-control" name="oe_adicao_perto"
+                                                        placeholder="+0.00"
+                                                        value="{{ old('oe_adicao_perto', $patient['prescricao']['oe_adicao_perto'] ?? '') }}">
+                                                    @error('oe_adicao_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -380,7 +521,8 @@
                                         <select class="form-select" name="validade_dias">
                                             @php $val = (string) old('validade_dias',  $patient['prescricao']['validade_dias'] ?? '') @endphp
                                             <option value="365" {{ $val === '365' ? 'selected' : '' }}>1 Ano</option>
-                                            <option value="180" {{ $val === '180' ? 'selected' : '' }}>6 Meses</option>
+                                            <option value="180" {{ $val === '180' ? 'selected' : '' }}>6 Meses
+                                            </option>
 
                                         </select>
                                         @error('validade_dias')
@@ -437,7 +579,8 @@
                             <h5 class="card-title mb-0">Exame</h5>
                         </div>
                         <div class="card-body">
-                            <form id="exameForm" action="/professional/save-exame/{{ $consulta['id'] }}" method="POST">
+                            <form id="exameForm" action="/professional/save-exame/{{ $consulta['id'] }}"
+                                method="POST">
                                 @csrf
 
                                 <div class="row mb-3">
@@ -1056,6 +1199,51 @@
                 document.querySelector('input[name="oe_dnp"]').value = '{{ $patient['ultima_receita']['oe_dnp'] }}';
                 document.querySelector('input[name="od_altura"]').value = '{{ $patient['ultima_receita']['od_altura'] }}';
                 document.querySelector('input[name="oe_altura"]').value = '{{ $patient['ultima_receita']['oe_altura'] }}';
+                @if (
+                    !empty($patient['ultima_receita']['od_esferico_perto']) ||
+                        !empty($patient['ultima_receita']['oe_esferico_perto']) ||
+                        !empty($patient['ultima_receita']['od_cilindrico_perto']) ||
+                        !empty($patient['ultima_receita']['oe_cilindrico_perto']) ||
+                        !empty($patient['ultima_receita']['od_eixo_perto']) ||
+                        !empty($patient['ultima_receita']['oe_eixo_perto']) ||
+                        !empty($patient['ultima_receita']['od_acuidade_perto']) ||
+                        !empty($patient['ultima_receita']['oe_acuidade_perto']) ||
+                        !empty($patient['ultima_receita']['od_dnp_perto']) ||
+                        !empty($patient['ultima_receita']['oe_dnp_perto']) ||
+                        !empty($patient['ultima_receita']['od_altura_perto']) ||
+                        !empty($patient['ultima_receita']['oe_altura_perto']) ||
+                        !empty($patient['ultima_receita']['od_adicao_perto']) ||
+                        !empty($patient['ultima_receita']['oe_adicao_perto']))
+                    document.querySelector('input[name="od_esferico_perto"]').value =
+                        '{{ $patient['ultima_receita']['od_esferico_perto'] ?? '' }}';
+                    document.querySelector('input[name="od_cilindrico_perto"]').value =
+                        '{{ $patient['ultima_receita']['od_cilindrico_perto'] ?? '' }}';
+                    document.querySelector('input[name="od_eixo_perto"]').value =
+                        '{{ $patient['ultima_receita']['od_eixo_perto'] ?? '' }}';
+                    document.querySelector('input[name="od_acuidade_perto"]').value =
+                        '{{ $patient['ultima_receita']['od_acuidade_perto'] ?? '' }}';
+                    document.querySelector('input[name="od_dnp_perto"]').value =
+                        '{{ $patient['ultima_receita']['od_dnp_perto'] ?? '' }}';
+                    document.querySelector('input[name="od_altura_perto"]').value =
+                        '{{ $patient['ultima_receita']['od_altura_perto'] ?? '' }}';
+                    document.querySelector('input[name="od_adicao_perto"]').value =
+                        '{{ $patient['ultima_receita']['od_adicao_perto'] ?? '' }}';
+
+                    document.querySelector('input[name="oe_esferico_perto"]').value =
+                        '{{ $patient['ultima_receita']['oe_esferico_perto'] ?? '' }}';
+                    document.querySelector('input[name="oe_cilindrico_perto"]').value =
+                        '{{ $patient['ultima_receita']['oe_cilindrico_perto'] ?? '' }}';
+                    document.querySelector('input[name="oe_eixo_perto"]').value =
+                        '{{ $patient['ultima_receita']['oe_eixo_perto'] ?? '' }}';
+                    document.querySelector('input[name="oe_acuidade_perto"]').value =
+                        '{{ $patient['ultima_receita']['oe_acuidade_perto'] ?? '' }}';
+                    document.querySelector('input[name="oe_dnp_perto"]').value =
+                        '{{ $patient['ultima_receita']['oe_dnp_perto'] ?? '' }}';
+                    document.querySelector('input[name="oe_altura_perto"]').value =
+                        '{{ $patient['ultima_receita']['oe_altura_perto'] ?? '' }}';
+                    document.querySelector('input[name="oe_adicao_perto"]').value =
+                        '{{ $patient['ultima_receita']['oe_adicao_perto'] ?? '' }}';
+                @endif
                 document.querySelector('select[name="tipo_lente"]').value =
                     '{{ $patient['ultima_receita']['tipo_lente'] ?? '' }}';
                 document.querySelector('select[name="validade_dias"]').value =
@@ -1070,7 +1258,20 @@
 
             const toggle = document.getElementById('toggleGlassesFields');
             if (toggle) {
-                const glassesFields = ['od_dnp', 'oe_dnp', 'od_altura', 'oe_altura', 'od_adicao', 'oe_adicao'];
+                const glassesFields = [
+                    'od_dnp',
+                    'oe_dnp',
+                    'od_altura',
+                    'oe_altura',
+                    'od_adicao',
+                    'oe_adicao',
+                    'od_dnp_perto',
+                    'oe_dnp_perto',
+                    'od_altura_perto',
+                    'oe_altura_perto',
+                    'od_adicao_perto',
+                    'oe_adicao_perto',
+                ];
                 const hasGlassesValues = glassesFields.some((name) => {
                     const input = document.querySelector(`input[name="${name}"]`);
                     return input && input.value.trim() !== '';
@@ -1115,39 +1316,79 @@
         function previewPrescription() {
             const formData = new FormData(document.getElementById('prescriptionForm'));
 
-            // Criar preview simples
-            const preview = `
-        <div class="prescription-preview">
-            <h6>Preview da Receita</h6>
-            <table class="table table-bordered">
-                <thead>
-                <tr>
-                    <td>Olho</td>
-                    <td>Esférico</td>
-                    <td>Cilíndrico</td>
-                    <td>Eixo</td>
-                    <td>AV</td>
-                </tr>
-                </thead>
+            function v(name, fallback) {
+                const value = formData.get(name);
+                if (value == null) return fallback;
+                const s = String(value).trim();
+                return s === '' ? fallback : s;
+            }
 
-                <tr>
-                    <td>OD:</td>
-                    <td>${formData.get('od_esferico') || '0.00'}</td>
-                    <td>${formData.get('od_cilindrico') || '0.00'}</td>
-                    <td>${formData.get('od_eixo') || '0'}°</td>
-                    <td>${formData.get('od_acuidade') || 'N/A'}</td>
-                </tr>
-                <tr>
-                    <td>OE:</td>
-                    <td>${formData.get('oe_esferico') || '0.00'}</td>
-                    <td>${formData.get('oe_cilindrico') || '0.00'}</td>
-                    <td>${formData.get('oe_eixo') || '0'}°</td>
-                    <td>${formData.get('oe_acuidade') || 'N/A'}</td>
-                </tr>
-            </table>
-             <p><strong>Diagnóstico:</strong> ${formData.get('diagnostico') || 'N/A'}</p>
-        </div>
-    `;
+            const preview =
+                '<div class="prescription-preview">' +
+                '<h6>Preview da Receita</h6>' +
+                '<div class="table-responsive">' +
+                '<table class="table table-bordered table-sm align-middle mb-0">' +
+                '<thead class="table-light">' +
+                '<tr>' +
+                '<th style="width: 44px;"></th>' +
+                '<th style="width: 90px;"></th>' +
+                '<th class="text-center">Esférico</th>' +
+                '<th class="text-center">Cilíndrico</th>' +
+                '<th class="text-center">Eixo</th>' +
+                '<th class="text-center">AV</th>' +
+                '<th class="text-center">DNP</th>' +
+                '<th class="text-center">Altura</th>' +
+                '<th class="text-center">Adição</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                '<tr>' +
+                '<td rowspan="2" class="text-center fw-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.45);">LONGE</td>' +
+                '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OD</td>' +
+                '<td class="text-center">' + v('od_esferico', '-') + '</td>' +
+                '<td class="text-center">' + v('od_cilindrico', '-') + '</td>' +
+                '<td class="text-center">' + v('od_eixo', '-') + '</td>' +
+                '<td class="text-center">' + v('od_acuidade', '-') + '</td>' +
+                '<td class="text-center">' + v('od_dnp', '-') + '</td>' +
+                '<td class="text-center">' + v('od_altura', '-') + '</td>' +
+                '<td class="text-center">' + v('od_adicao', '-') + '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OE</td>' +
+                '<td class="text-center">' + v('oe_esferico', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_cilindrico', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_eixo', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_acuidade', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_dnp', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_altura', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_adicao', '-') + '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td rowspan="2" class="text-center fw-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">PERTO</td>' +
+                '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OD</td>' +
+                '<td class="text-center">' + v('od_esferico_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('od_cilindrico_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('od_eixo_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('od_acuidade_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('od_dnp_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('od_altura_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('od_adicao_perto', '-') + '</td>' +
+                '</tr>' +
+                '<tr>' +
+                '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OE</td>' +
+                '<td class="text-center">' + v('oe_esferico_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_cilindrico_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_eixo_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_acuidade_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_dnp_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_altura_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_adicao_perto', '-') + '</td>' +
+                '</tr>' +
+                '</tbody>' +
+                '</table>' +
+                '</div>' +
+                '<div class="mt-3"><strong>Diagnóstico:</strong> ' + v('diagnostico', '-') + '</div>' +
+                '</div>';
 
             document.getElementById('prescriptionContent').innerHTML = preview;
             const modal = new bootstrap.Modal(document.getElementById('prescriptionModal'));
@@ -1155,7 +1396,30 @@
         }
 
         function printPrescription() {
-            window.open('/professional/print-prescription/{{ $consulta['id'] }}', '_blank');
+            const win = window.open('about:blank', '_blank');
+            const form = document.getElementById('prescriptionForm');
+            if (!form) {
+                win.location.href = '/professional/print-prescription/{{ $consulta['id'] }}';
+                return;
+            }
+
+            const formData = new FormData(form);
+            fetch('{{ route('professional.printPrescriptionFromForm', $consulta->id) }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then((r) => r.blob())
+                .then((blob) => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    win.location.href = blobUrl;
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                })
+                .catch(() => {
+                    win.location.href = '/professional/print-prescription/{{ $consulta['id'] }}';
+                });
         }
 
         function sendWhatsApp() {

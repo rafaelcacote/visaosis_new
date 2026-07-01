@@ -37,6 +37,20 @@ class Prescricao extends Model
         'altura_oe',
         'adicao_od',
         'adicao_oe',
+        'esfera_od_perto',
+        'cilindro_od_perto',
+        'eixo_od_perto',
+        'esfera_oe_perto',
+        'cilindro_oe_perto',
+        'eixo_oe_perto',
+        'dnp_od_perto',
+        'dnp_oe_perto',
+        'altura_od_perto',
+        'altura_oe_perto',
+        'adicao_od_perto',
+        'adicao_oe_perto',
+        'acuidade_od_perto',
+        'acuidade_oe_perto',
         'validade_dias',
         'diagnostico',
         'observacoes',
@@ -53,6 +67,8 @@ class Prescricao extends Model
         'validade_dias' => 'integer',
         'eixo_od' => 'integer',
         'eixo_oe' => 'integer',
+        'eixo_od_perto' => 'integer',
+        'eixo_oe_perto' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -132,12 +148,32 @@ class Prescricao extends Model
         $this->attributes['esfera_oe'] = self::normalizeEsfericoToStorage($value);
     }
 
+    public function setEsferaOdPertoAttribute($value): void
+    {
+        $this->attributes['esfera_od_perto'] = self::normalizeEsfericoToStorage($value);
+    }
+
+    public function setEsferaOePertoAttribute($value): void
+    {
+        $this->attributes['esfera_oe_perto'] = self::normalizeEsfericoToStorage($value);
+    }
+
     public function getEsferaOdAttribute($value): ?string
     {
         return self::formatEsfericoForDisplay($value);
     }
 
     public function getEsferaOeAttribute($value): ?string
+    {
+        return self::formatEsfericoForDisplay($value);
+    }
+
+    public function getEsferaOdPertoAttribute($value): ?string
+    {
+        return self::formatEsfericoForDisplay($value);
+    }
+
+    public function getEsferaOePertoAttribute($value): ?string
     {
         return self::formatEsfericoForDisplay($value);
     }

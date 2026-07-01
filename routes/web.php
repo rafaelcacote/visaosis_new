@@ -123,6 +123,7 @@ Route::middleware(['auth'])->group(function () {
     // Rotas de pacientes (pessoas)
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
+    Route::get('pessoas/{pessoa}/vendas', [PessoaController::class, 'vendas'])->name('pessoas.vendas');
     Route::post('pessoas/{pessoa}/receitas', [PessoaController::class, 'storePrescription'])->name('pessoas.receitas.store');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/edit', [PessoaController::class, 'editPrescription'])->name('pessoas.receitas.edit');
     Route::patch('pessoas/{pessoa}/receitas/{prescricao}', [PessoaController::class, 'updatePrescription'])->name('pessoas.receitas.update');
@@ -166,6 +167,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/patient-history/{id}', [ProfissionalWorkflowController::class, 'patientHistory'])->name('patientHistory');
         Route::get('/patient-history-full/{id}', [ProfissionalWorkflowController::class, 'patientHistoryFull'])->name('patientHistoryFull');
         Route::get('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescription'])->name('printPrescription');
+        Route::post('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescriptionFromForm'])->name('printPrescriptionFromForm');
         Route::get('/print-exame/{id}', [ProfissionalWorkflowController::class, 'printExamDoc'])->name('print-exame');
         Route::get('/print-referral/{id}', [ProfissionalWorkflowController::class, 'printReferralDoc'])->name('print-referral');
         Route::get('/new-prescription', [ProfissionalWorkflowController::class, 'newPrescription'])->name('newPrescription');

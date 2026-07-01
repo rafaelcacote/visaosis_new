@@ -52,24 +52,6 @@
             <a href="{{ route('pessoas.show', $pessoa->id) }}" class="btn-action btn-action-view" title="Visualizar">
                 <i class="mdi mdi-eye"></i>
             </a>
-            <a href="{{ route('pessoas.edit', $pessoa->id) }}" class="btn-action btn-action-edit" title="Editar">
-                <i class="mdi mdi-pencil"></i>
-            </a>
-            <a href="{{ route('pessoas.receitas', $pessoa->id) }}" class="btn-action btn-action-view" title="Receitas">
-                <i class="mdi mdi-file-document-outline"></i>
-            </a>
-            <button type="button"
-                class="btn-action {{ $pessoa->ativo ? 'btn-action-status-desativar' : 'btn-action-status-ativar' }}"
-                title="{{ $pessoa->ativo ? 'Desativar' : 'Ativar' }}" data-toggle-status
-                data-pessoa-id="{{ $pessoa->id }}" data-novo-status="{{ $pessoa->ativo ? 'false' : 'true' }}"
-                data-pessoa-nome="{{ $pessoa->nome }}">
-                <i class="mdi mdi-{{ $pessoa->ativo ? 'close-circle' : 'check-circle' }}"></i>
-            </button>
-            <button type="button" class="btn-action btn-action-delete" title="Excluir" data-bs-toggle="modal"
-                data-bs-target="#deletePacienteModal" data-pessoa-id="{{ $pessoa->id }}"
-                data-pessoa-nome="{{ $pessoa->nome }}">
-                <i class="mdi mdi-delete"></i>
-            </button>
         </div>
     </td>
 </tr>

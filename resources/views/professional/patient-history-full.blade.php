@@ -72,76 +72,109 @@
                                                 </a>
                                             </div>
                                             <div class="card-body">
-                                                <!-- Tabela de Prescrição -->
                                                 <div class="table-responsive mb-3">
-                                                    <table class="table table-bordered">
+                                                    <table class="table table-bordered table-sm align-middle mb-0">
                                                         <thead class="table-light">
                                                             <tr>
-                                                                <th width="80">Olho</th>
-                                                                <th>Esférico</th>
-                                                                <th>Cilíndrico</th>
-                                                                <th>Eixo</th>
-                                                                <th>AV</th>
-                                                                <th>DNP</th>
-                                                                <th>Altura </th>
-                                                                <th>Adição</th>
+                                                                <th style="width: 44px;"></th>
+                                                                <th style="width: 90px;"></th>
+                                                                <th class="text-center">Esférico</th>
+                                                                <th class="text-center">Cilíndrico</th>
+                                                                <th class="text-center">Eixo</th>
+                                                                <th class="text-center">AV</th>
+                                                                <th class="text-center">DNP</th>
+                                                                <th class="text-center">Altura</th>
+                                                                <th class="text-center">Adição</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td class="text-center fw-bold">OD</td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['od_esferico'] }}</strong>
+                                                                <td rowspan="2" class="text-center fw-bold"
+                                                                    style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.45);">
+                                                                    LONGE
                                                                 </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['od_cilindrico'] }} </strong>
+                                                                <td class="text-center fw-semibold"
+                                                                    style="white-space: nowrap;">
+                                                                    <i class="mdi mdi-eye-outline me-1"></i>OD
                                                                 </td>
-                                                                <td>
-                                                                    <strong> {{ $consultation['od_eixo'] }}°</strong>
-                                                                </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['od_acuidade'] }}</strong>
-                                                                </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['od_dnp'] }}</strong>
-
-                                                                </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['od_altura'] }}</strong>
-
-                                                                </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['od_adicao'] }}</strong>
-
-                                                                </td>
-
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_esferico'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_cilindrico'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_eixo'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_acuidade'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_dnp'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_altura'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_adicao'] ?? '-' }}</td>
                                                             </tr>
                                                             <tr>
-                                                                <td class="text-center fw-bold">OE</td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['oe_esferico'] }}</strong>
+                                                                <td class="text-center fw-semibold"
+                                                                    style="white-space: nowrap;">
+                                                                    <i class="mdi mdi-eye-outline me-1"></i>OE
                                                                 </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['oe_cilindrico'] }} </strong>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_esferico'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_cilindrico'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_eixo'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_acuidade'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_dnp'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_altura'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_adicao'] ?? '-' }}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td rowspan="2" class="text-center fw-bold"
+                                                                    style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">
+                                                                    PERTO
                                                                 </td>
-                                                                <td>
-                                                                    <strong> {{ $consultation['oe_eixo'] }}°</strong>
+                                                                <td class="text-center fw-semibold"
+                                                                    style="white-space: nowrap;">
+                                                                    <i class="mdi mdi-eye-outline me-1"></i>OD
                                                                 </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['oe_acuidade'] }}</strong>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_esferico_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_cilindrico_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_eixo_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_acuidade_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_dnp_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_altura_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['od_adicao_perto'] ?? '-' }}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td class="text-center fw-semibold"
+                                                                    style="white-space: nowrap;">
+                                                                    <i class="mdi mdi-eye-outline me-1"></i>OE
                                                                 </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['oe_dnp'] }}</strong>
-
-                                                                </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['oe_dnp'] }}</strong>
-
-                                                                </td>
-                                                                <td>
-                                                                    <strong>{{ $consultation['oe_altura'] }}</strong>
-
-                                                                </td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_esferico_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_cilindrico_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_eixo_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_acuidade_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_dnp_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_altura_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
+                                                                    {{ $consultation['oe_adicao_perto'] ?? '-' }}</td>
                                                             </tr>
                                                         </tbody>
                                                     </table>
