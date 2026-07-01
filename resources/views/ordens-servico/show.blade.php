@@ -25,6 +25,12 @@
                 <i class="mdi mdi-pencil me-2"></i>
                 Editar
             </a>
+            @if (request()->boolean('from_history') && request()->filled('return_url'))
+                <a href="{{ request('return_url') }}" class="btn btn-outline-info">
+                    <i class="mdi mdi-history me-2"></i>
+                    Voltar Historico
+                </a>
+            @endif
             <a href="{{ route('ordens-servico.index') }}" class="btn btn-outline-secondary">
                 <i class="mdi mdi-arrow-left me-2"></i>
                 Voltar

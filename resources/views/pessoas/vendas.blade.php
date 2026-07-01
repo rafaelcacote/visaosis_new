@@ -154,7 +154,8 @@
                                         @if ($ordensDaVenda->isNotEmpty())
                                             @foreach ($ordensDaVenda as $ordemServico)
                                                 <div>
-                                                    <a href="{{ route('ordens-servico.show', $ordemServico) }}">
+                                                    <a
+                                                        href="{{ route('ordens-servico.show', ['ordemServico' => $ordemServico, 'from_history' => 1, 'return_url' => url()->full()]) }}">
                                                         OS #{{ $ordemServico->id }}
                                                     </a>
                                                 </div>
