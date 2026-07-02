@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialController;
 use App\Http\Controllers\LaboratorioController;
@@ -107,6 +108,11 @@ Route::middleware(['auth'])->group(function () {
         'categorias' => 'categoria',
     ]);
     Route::post('categorias/{categoria}/toggle-status', [CategoriaController::class, 'toggleStatus'])->name('categorias.toggle-status');
+
+    // Rotas de especialidades
+    Route::resource('especialidades', EspecialidadeController::class)->parameters([
+        'especialidades' => 'especialidade',
+    ]);
 
     // Rotas de laboratórios
     Route::resource('laboratorios', LaboratorioController::class)->parameters([
