@@ -238,76 +238,62 @@
 
     <!-- Modal de Confirmação de Venda -->
     <div class="modal fade" id="confirmSaleModal" tabindex="-1" aria-labelledby="confirmSaleModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="confirmSaleModalLabel">
-                        <i class="mdi mdi-check-circle me-2"></i>
-                        Confirmar Venda
-                    </h5>
-                    <!-- Botão de fechar removido - modal só fecha ao confirmar ou cancelar -->
+        <div class="modal-dialog modal-dialog-centered confirm-sale-dialog">
+            <div class="modal-content confirm-sale-content border-0 shadow">
+                <div class="modal-header confirm-sale-header">
+                    <h6 class="modal-title mb-0" id="confirmSaleModalLabel">
+                        <i class="mdi mdi-receipt-text-outline me-1"></i>
+                        Confirmar venda
+                    </h6>
                 </div>
-                <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-2">Cliente</h6>
-                            <p class="mb-0 fw-semibold" id="confirm_client_name">-</p>
-                            <small class="text-muted" id="confirm_client_document">-</small>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-2">Forma de Pagamento</h6>
-                            <p class="mb-0 fw-semibold" id="confirm_payment_method">-</p>
-                            <small class="text-muted" id="confirm_installments">-</small>
-                        </div>
-                    </div>
-                    <hr>
-                    <h6 class="text-muted mb-3">Itens do Pedido</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Produto</th>
-                                    <th class="text-center">Qtd</th>
-                                    <th class="text-end">Preço Unit.</th>
-                                    <th class="text-end">Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody id="confirm_items_list">
-                            </tbody>
-                        </table>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-8"></div>
-                        <div class="col-md-4">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Subtotal:</span>
-                                <span id="confirm_subtotal">R$ 0,00</span>
+                <div class="modal-body confirm-sale-body">
+                    <div class="confirm-sale-meta">
+                        <div class="confirm-sale-meta-item">
+                            <i class="mdi mdi-account-outline"></i>
+                            <div class="confirm-sale-meta-text">
+                                <span class="confirm-sale-meta-value" id="confirm_client_name">-</span>
+                                <small class="text-muted" id="confirm_client_document">-</small>
                             </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Desconto:</span>
-                                <span class="text-danger" id="confirm_discount">R$ 0,00</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <strong>Total:</strong>
-                                <strong class="text-success fs-5" id="confirm_total">R$ 0,00</strong>
+                        </div>
+                        <div class="confirm-sale-meta-item">
+                            <i class="mdi mdi-credit-card-outline"></i>
+                            <div class="confirm-sale-meta-text">
+                                <span class="confirm-sale-meta-value" id="confirm_payment_method">-</span>
+                                <small class="text-muted" id="confirm_installments">-</small>
                             </div>
                         </div>
                     </div>
-                    <div id="confirm_observations_section" style="display: none;">
-                        <hr>
-                        <h6 class="text-muted mb-2">Observações</h6>
-                        <p class="mb-0 text-muted" id="confirm_observations">-</p>
+
+                    <div class="confirm-sale-items" id="confirm_items_list"></div>
+
+                    <div id="confirm_observations_section" class="confirm-sale-obs" style="display: none;">
+                        <small class="text-muted d-block mb-1">Observações</small>
+                        <small class="text-muted" id="confirm_observations">-</small>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" id="cancel_sale_btn" onclick="cancelSale()">
-                        <i class="mdi mdi-close-circle me-2"></i>
+
+                <div class="confirm-sale-totals">
+                    <div class="confirm-sale-total-row" id="confirm_subtotal_row">
+                        <span>Subtotal</span>
+                        <span id="confirm_subtotal">R$ 0,00</span>
+                    </div>
+                    <div class="confirm-sale-total-row" id="confirm_discount_row" style="display: none;">
+                        <span>Desconto</span>
+                        <span class="text-danger" id="confirm_discount">- R$ 0,00</span>
+                    </div>
+                    <div class="confirm-sale-total-row confirm-sale-total-final">
+                        <span>Total</span>
+                        <span id="confirm_total">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <div class="modal-footer confirm-sale-footer">
+                    <button type="button" class="btn btn-sm btn-light" id="cancel_sale_btn" onclick="cancelSale()">
                         Cancelar
                     </button>
-                    <button type="button" class="btn btn-success" id="confirm_sale_btn" onclick="processSale()">
-                        <i class="mdi mdi-check-circle me-2"></i>
-                        Confirmar Venda
+                    <button type="button" class="btn btn-sm btn-success" id="confirm_sale_btn" onclick="processSale()">
+                        <i class="mdi mdi-check me-1"></i>
+                        Confirmar
                     </button>
                 </div>
             </div>
@@ -372,6 +358,33 @@
                         <i class="mdi mdi-check-circle me-2"></i>
                         Entendi
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação para Sair da Tela -->
+    <div class="modal fade" id="confirmLeavePageModal" tabindex="-1" aria-labelledby="confirmLeavePageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-body text-center py-5">
+                    <div class="mb-4">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="mdi mdi-exit-to-app text-warning" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                    <h4 class="modal-title mb-3" id="confirmLeavePageModalLabel">Sair da venda?</h4>
+                    <p class="text-muted mb-4">Você tem produtos no carrinho e/ou um cliente selecionado. Se sair agora, essas informações serão perdidas.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                            <i class="mdi mdi-arrow-left me-2"></i>
+                            Continuar na venda
+                        </button>
+                        <button type="button" class="btn btn-warning px-4" id="confirm_leave_page_btn" onclick="confirmLeavePage()">
+                            <i class="mdi mdi-exit-to-app me-2"></i>
+                            Sair mesmo assim
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -473,27 +486,160 @@
             cursor: pointer;
         }
 
-        /* Estilos para os modais */
-        .modal-content {
-            border-radius: 12px;
+        /* Modal de confirmação de venda — compacto */
+        .confirm-sale-dialog {
+            max-width: 420px;
+        }
+
+        .confirm-sale-content {
+            border-radius: 10px;
             overflow: hidden;
         }
 
-        .modal-header.bg-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        .confirm-sale-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #eef0f3;
+            background: #fafbfc;
         }
 
-        #confirmSaleModal .modal-body {
-            max-height: 70vh;
+        .confirm-sale-header .modal-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .confirm-sale-body {
+            padding: 0.875rem 1rem;
+            max-height: 50vh;
             overflow-y: auto;
         }
 
-        #confirmSaleModal .table {
-            font-size: 0.9rem;
+        .confirm-sale-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
         }
 
-        #confirmSaleModal .table thead {
-            background-color: #f8f9fa;
+        .confirm-sale-meta-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.4rem;
+            padding: 0.5rem 0.6rem;
+            background: #f8f9fb;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            min-width: 0;
+        }
+
+        .confirm-sale-meta-item > i {
+            font-size: 1rem;
+            color: #9ca3af;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+        .confirm-sale-meta-text {
+            min-width: 0;
+            line-height: 1.3;
+        }
+
+        .confirm-sale-meta-value {
+            display: block;
+            font-weight: 600;
+            color: #1f2937;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .confirm-sale-meta-text small {
+            font-size: 0.72rem;
+        }
+
+        .confirm-sale-items {
+            border-top: 1px dashed #e5e7eb;
+            padding-top: 0.5rem;
+        }
+
+        .confirm-sale-item {
+            padding: 0.35rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .confirm-sale-item:last-child {
+            border-bottom: none;
+        }
+
+        .confirm-sale-item-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #374151;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .confirm-sale-item-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            margin-top: 1px;
+        }
+
+        .confirm-sale-obs {
+            margin-top: 0.5rem;
+            padding: 0.45rem 0.6rem;
+            background: #fffbeb;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+
+        .confirm-sale-totals {
+            padding: 0.6rem 1rem;
+            background: #f8f9fb;
+            border-top: 1px solid #eef0f3;
+        }
+
+        .confirm-sale-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            color: #6b7280;
+            padding: 0.1rem 0;
+        }
+
+        .confirm-sale-total-final {
+            margin-top: 0.25rem;
+            padding-top: 0.35rem;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .confirm-sale-total-final span:last-child {
+            color: #16a34a;
+            font-size: 1rem;
+        }
+
+        .confirm-sale-footer {
+            padding: 0.6rem 1rem;
+            border-top: none;
+            gap: 0.5rem;
+        }
+
+        .confirm-sale-footer .btn {
+            font-size: 0.8rem;
+            padding: 0.35rem 0.85rem;
+        }
+
+        /* Estilos gerais para modais */
+        .modal-content {
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .modal-body .bg-success,
@@ -543,6 +689,9 @@
         let clientSearchTimeout = null;
         let clientSuggestionsData = [];
         let clientSuggestionIndex = -1;
+        let allowNavigation = false;
+        let pendingNavigationUrl = null;
+        let pendingNavigationAction = null;
 
         const clientSearchInput = document.getElementById('client_search');
         const clientSuggestions = document.getElementById('client_suggestions');
@@ -859,6 +1008,37 @@
             finalizeBtn.disabled = !(hasClient && hasProducts && hasPayment);
         }
 
+        function hasSaleInProgress() {
+            return cart.length > 0 || selectedClient !== null;
+        }
+
+        function shouldConfirmLeave() {
+            return hasSaleInProgress() && !allowNavigation;
+        }
+
+        function showConfirmLeaveModal() {
+            const modal = new bootstrap.Modal(document.getElementById('confirmLeavePageModal'));
+            modal.show();
+        }
+
+        function confirmLeavePage() {
+            allowNavigation = true;
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmLeavePageModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            if (pendingNavigationUrl) {
+                window.location.href = pendingNavigationUrl;
+            } else if (pendingNavigationAction === 'back') {
+                history.back();
+            }
+
+            pendingNavigationUrl = null;
+            pendingNavigationAction = null;
+        }
+
         function clearCart() {
             const modal = new bootstrap.Modal(document.getElementById('confirmClearCartModal'));
             modal.show();
@@ -923,12 +1103,13 @@
             // Preencher itens
             const itemsList = document.getElementById('confirm_items_list');
             itemsList.innerHTML = cart.map(item => `
-                <tr>
-                    <td>${item.name}</td>
-                    <td class="text-center">${item.quantity}</td>
-                    <td class="text-end">R$ ${item.price.toFixed(2).replace('.', ',')}</td>
-                    <td class="text-end fw-semibold">R$ ${item.subtotal.toFixed(2).replace('.', ',')}</td>
-                </tr>
+                <div class="confirm-sale-item">
+                    <div class="confirm-sale-item-name" title="${item.name}">${item.name}</div>
+                    <div class="confirm-sale-item-detail">
+                        <span class="text-muted">${item.quantity}x R$ ${item.price.toFixed(2).replace('.', ',')}</span>
+                        <span class="fw-semibold">R$ ${item.subtotal.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                </div>
             `).join('');
 
             // Preencher totais
@@ -940,6 +1121,7 @@
             document.getElementById('confirm_subtotal').textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
             document.getElementById('confirm_discount').textContent = `- R$ ${discountAmount.toFixed(2).replace('.', ',')}`;
             document.getElementById('confirm_total').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+            document.getElementById('confirm_discount_row').style.display = discountAmount > 0 ? 'flex' : 'none';
 
             // Observações
             const observations = document.getElementById('observations').value;
@@ -1054,6 +1236,7 @@
                 }
 
                 // Sucesso - mostrar modal de sucesso
+                allowNavigation = true;
                 showSuccessModal('A venda foi registrada com sucesso no sistema.');
                 
                 // Redirecionar após 2 segundos
@@ -1109,6 +1292,69 @@
                 noProductsMessage.style.display = visibleCount === 0 ? 'block' : 'none';
             }
         }
+
+        // Confirmação ao sair da tela com venda em andamento
+        window.addEventListener('beforeunload', event => {
+            if (!shouldConfirmLeave()) {
+                return;
+            }
+
+            event.preventDefault();
+            event.returnValue = '';
+        });
+
+        history.pushState({ saleCreate: true }, '');
+
+        window.addEventListener('popstate', () => {
+            if (!shouldConfirmLeave()) {
+                return;
+            }
+
+            history.pushState({ saleCreate: true }, '');
+            pendingNavigationUrl = null;
+            pendingNavigationAction = 'back';
+            showConfirmLeaveModal();
+        });
+
+        document.addEventListener('click', event => {
+            const link = event.target.closest('a[href]');
+            if (!link || !shouldConfirmLeave()) {
+                return;
+            }
+
+            const href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:')) {
+                return;
+            }
+
+            if (link.target === '_blank' || link.hasAttribute('download')) {
+                return;
+            }
+
+            let url;
+            try {
+                url = new URL(link.href, window.location.origin);
+            } catch {
+                return;
+            }
+
+            if (url.pathname === window.location.pathname && url.search === window.location.search) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            pendingNavigationUrl = link.href;
+            pendingNavigationAction = null;
+            showConfirmLeaveModal();
+        }, true);
+
+        document.getElementById('confirmLeavePageModal').addEventListener('hidden.bs.modal', () => {
+            if (!allowNavigation) {
+                pendingNavigationUrl = null;
+                pendingNavigationAction = null;
+            }
+        });
 
         // Event listeners
         document.getElementById('discount').addEventListener('input', updateTotal);
