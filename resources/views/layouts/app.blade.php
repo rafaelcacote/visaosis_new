@@ -96,6 +96,183 @@
             margin-top: 0.5rem !important;
         }
     </style>
+
+    {{-- Estilos do menu de perfil (aqui pois o navbar é @include no body, após o @stack) --}}
+    <style>
+        /* ── Posicionamento base ─────────────────────────────────── */
+        .navbar-menu-wrapper { overflow: visible !important; }
+        .navbar-nav { overflow: visible !important; }
+        li.nav-item.nav-profile { position: relative !important; }
+
+        /* ── Trigger: botão do menu de usuário ──────────────────── */
+        li.nav-item.nav-profile a.nav-profile-trigger {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.45rem !important;
+            padding: 0.3rem 0.75rem 0.3rem 0.6rem !important;
+            border-radius: 8px !important;
+            border: 1px solid transparent !important;
+            background: transparent !important;
+            text-decoration: none !important;
+            color: #343a40 !important;
+            cursor: pointer;
+            transition: background 0.18s ease, border-color 0.18s ease;
+            line-height: 1 !important;
+        }
+
+        li.nav-item.nav-profile a.nav-profile-trigger:hover,
+        li.nav-item.nav-profile a.nav-profile-trigger.open {
+            background: #f4f5f8 !important;
+            border-color: #e2e5ef !important;
+        }
+
+        /* Remove o caret padrão do Bootstrap */
+        li.nav-item.nav-profile a.nav-profile-trigger::after {
+            display: none !important;
+        }
+
+        li.nav-item.nav-profile a.nav-profile-trigger .trigger-icon {
+            font-size: 1.4rem;
+            color: #6c757d;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        li.nav-item.nav-profile a.nav-profile-trigger .trigger-name {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: #343a40;
+            max-width: 140px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1;
+        }
+
+        li.nav-item.nav-profile a.nav-profile-trigger .trigger-chevron {
+            font-size: 1rem;
+            color: #adb5bd;
+            line-height: 1;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        li.nav-item.nav-profile a.nav-profile-trigger.open .trigger-chevron {
+            transform: rotate(180deg);
+        }
+
+        /* ── Dropdown ────────────────────────────────────────────── */
+        li.nav-item.nav-profile .profile-dropdown-menu {
+            position: absolute !important;
+            top: 100% !important;
+            right: 0 !important;
+            left: auto !important;
+            min-width: 240px !important;
+            margin-top: 10px !important;
+            padding: 0 !important;
+            border: 1px solid #e4e6ef !important;
+            border-radius: 12px !important;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.10) !important;
+            overflow: hidden !important;
+        }
+
+        /* Cabeçalho */
+        .pd-header {
+            padding: 1rem 1.1rem 0.9rem;
+            background: #f8f9fb;
+            border-bottom: 1px solid #eef0f5;
+        }
+
+        .pd-header-name {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #1a1d23;
+            margin: 0 0 0.15rem;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .pd-header-email {
+            font-size: 0.74rem;
+            color: #8b93a5;
+            margin: 0;
+            line-height: 1.3;
+            word-break: break-all;
+        }
+
+        /* Itens */
+        .pd-items {
+            padding: 0.4rem 0.45rem;
+        }
+
+        .pd-item {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.6rem !important;
+            padding: 0.6rem 0.75rem !important;
+            border-radius: 8px !important;
+            font-size: 0.84rem !important;
+            font-weight: 500 !important;
+            color: #343a40 !important;
+            text-decoration: none !important;
+            background: transparent !important;
+            border: none !important;
+            width: 100% !important;
+            text-align: left !important;
+            cursor: pointer;
+            transition: background 0.14s ease, color 0.14s ease;
+            line-height: 1.2 !important;
+        }
+
+        .pd-item:hover {
+            background: #f1f3f9 !important;
+            color: #1a1d23 !important;
+        }
+
+        .pd-item i {
+            font-size: 1.05rem;
+            color: #8b93a5;
+            flex-shrink: 0;
+            width: 18px;
+            text-align: center;
+            transition: color 0.14s ease;
+            line-height: 1;
+        }
+
+        .pd-item:hover i {
+            color: #495057;
+        }
+
+        .pd-divider {
+            height: 1px;
+            background: #eef0f5;
+            margin: 0.35rem 0.45rem;
+        }
+
+        .pd-item--danger:hover {
+            background: #fff5f5 !important;
+            color: #dc3545 !important;
+        }
+
+        .pd-item--danger:hover i {
+            color: #dc3545 !important;
+        }
+
+        /* Form dentro do pd-items não quebra layout */
+        .pd-items form {
+            display: block;
+        }
+
+        @media (max-width: 991px) {
+            li.nav-item.nav-profile .profile-dropdown-menu {
+                right: 4px !important;
+            }
+            li.nav-item.nav-profile a.nav-profile-trigger .trigger-name {
+                display: none !important;
+            }
+        }
+    </style>
+
     @stack('styles')
 </head>
 
@@ -133,6 +310,10 @@
         </div>
         <!-- page-body-wrapper ends -->
     </div>
+
+    @auth
+        @include('components.profile-change-password-modal')
+    @endauth
 
     <!-- Toasts (Connect Plus / Bootstrap) -->
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1080;">

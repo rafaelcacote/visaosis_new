@@ -9,6 +9,7 @@ use App\Http\Controllers\FinancialController;
 use App\Http\Controllers\LaboratorioController;
 use App\Http\Controllers\OrdemServicoController;
 use App\Http\Controllers\PessoaController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\ProfissionalController;
 use App\Http\Controllers\ProfissionalWorkflowController;
@@ -90,6 +91,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Rota para seleção de location
     Route::post('/location/select', [AuthController::class, 'selectLocation'])->name('location.select');
+
+    // Rotas de perfil do usuário logado
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/change-password', [ProfileController::class, 'changePassword'])->name('profile.change-password');
 
     // Rotas de usuários
     Route::resource('users', UserController::class);

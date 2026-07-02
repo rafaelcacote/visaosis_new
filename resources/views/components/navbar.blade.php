@@ -138,36 +138,6 @@
     max-width: 200px;
   }
 
-  /* Fix para dropdown do perfil não ser cortado na lateral direita */
-  .navbar-nav .nav-item.nav-profile {
-    position: relative;
-  }
-
-  .navbar-nav .nav-item.nav-profile .dropdown-menu {
-    right: 0 !important;
-    left: auto !important;
-    margin-right: 0;
-    margin-top: 0.5rem;
-    min-width: 250px;
-    max-width: 300px;
-  }
-
-  /* Garantir que o dropdown não seja cortado pelo container */
-  .navbar-menu-wrapper {
-    overflow: visible !important;
-  }
-
-  .navbar-nav {
-    overflow: visible !important;
-  }
-
-  /* Ajustar posicionamento do dropdown em telas menores */
-  @media (max-width: 991px) {
-    .navbar-nav .nav-item.nav-profile .dropdown-menu {
-      right: 10px !important;
-      left: auto !important;
-    }
-  }
 
 </style>
 @endpush
@@ -175,6 +145,17 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Chevron animado no trigger do perfil
+    const profileTrigger = document.getElementById('profileDropdown');
+    if (profileTrigger) {
+        profileTrigger.addEventListener('show.bs.dropdown', function() {
+            this.classList.add('open');
+        });
+        profileTrigger.addEventListener('hide.bs.dropdown', function() {
+            this.classList.remove('open');
+        });
+    }
+
     // Adicionar loading ao trocar location
     const locationForms = document.querySelectorAll('.location-switch-form');
     
@@ -284,93 +265,62 @@ document.addEventListener('DOMContentLoaded', function() {
       </li>
       @endif
       @endauth
+      @auth
+      @php
+        $navUserName  = Auth::user()->name;
+        $navUserEmail = Auth::user()->email;
+      @endphp
       <li class="nav-item nav-profile dropdown">
-        <a class="nav-link dropdown-toggle" id="profileDropdown" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-          <div class="nav-profile-img">
-            @auth
-              @php
-                $userName = Auth::user()->name;
-                $initials = '';
-                $nameParts = explode(' ', $userName);
-                if (count($nameParts) >= 2) {
-                  $initials = strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[count($nameParts) - 1], 0, 1));
-                } else {
-                  $initials = strtoupper(substr($userName, 0, 2));
-                }
-              @endphp
-              <div class="text-avatar bg-primary text-white" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">
-                {{ $initials }}
-              </div>
-            @else
-              <div class="text-avatar bg-primary text-white" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">
-                U
-              </div>
-            @endauth
-          </div>
-          <div class="nav-profile-text">
-            <p class="mb-1 text-black">@auth{{ Auth::user()->name }}@else User @endauth</p>
-          </div>
+        <a class="nav-link nav-profile-trigger dropdown-toggle"
+           id="profileDropdown"
+           href="#"
+           data-bs-toggle="dropdown"
+           aria-expanded="false"
+           data-bs-popper="static">
+          <i class="mdi mdi-account-circle-outline trigger-icon"></i>
+          <span class="trigger-name">{{ $navUserName }}</span>
+          <i class="mdi mdi-chevron-down trigger-chevron"></i>
         </a>
-        <div class="dropdown-menu navbar-dropdown dropdown-menu-end p-0 border-0 font-size-sm" aria-labelledby="profileDropdown" data-bs-popper="static">
-          <div class="p-3 text-center bg-primary">
-            @auth
-              @php
-                $userName = Auth::user()->name;
-                $initials = '';
-                $nameParts = explode(' ', $userName);
-                if (count($nameParts) >= 2) {
-                  $initials = strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[count($nameParts) - 1], 0, 1));
-                } else {
-                  $initials = strtoupper(substr($userName, 0, 2));
-                }
-              @endphp
-              <div class="img-avatar img-avatar48 img-avatar-thumb text-avatar bg-white text-primary d-inline-flex align-items-center justify-content-center" style="font-weight: 600; font-size: 18px;">
-                {{ $initials }}
-              </div>
-            @else
-              <div class="img-avatar img-avatar48 img-avatar-thumb text-avatar bg-white text-primary d-inline-flex align-items-center justify-content-center" style="font-weight: 600; font-size: 18px;">
-                U
-              </div>
-            @endauth
+
+        <div class="dropdown-menu profile-dropdown-menu"
+             aria-labelledby="profileDropdown"
+             data-bs-popper="static">
+
+          {{-- Cabeçalho --}}
+          <div class="pd-header">
+            <p class="pd-header-name">{{ $navUserName }}</p>
+            <p class="pd-header-email">{{ $navUserEmail }}</p>
           </div>
-          <div class="p-3">
-            <h5 class="dropdown-header text-uppercase ps-2 pe-2 text-dark mb-2">User Options</h5>
-            <a class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between" href="#">
-              <span>Inbox</span>
-              <span class="p-0">
-                <span class="badge badge-primary">3</span>
-                <i class="mdi mdi-email-open-outline ms-1"></i>
-              </span>
+
+          {{-- Ações --}}
+          <div class="pd-items">
+            <a href="{{ route('profile.show') }}" class="pd-item">
+              <i class="mdi mdi-account-outline"></i>
+              Meu Perfil
             </a>
-            <a class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between" href="#">
-              <span>Profile</span>
-              <span class="p-0">
-                <span class="badge badge-success">1</span>
-                <i class="mdi mdi-account-outline ms-1"></i>
-              </span>
+
+            <a href="#"
+               class="pd-item"
+               data-bs-toggle="modal"
+               data-bs-target="#profileChangePasswordModal">
+              <i class="mdi mdi-lock-outline"></i>
+              Alterar Senha
             </a>
-            <a class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between" href="javascript:void(0)">
-              <span>Settings</span>
-              <i class="mdi mdi-settings"></i>
-            </a>
-            <div role="separator" class="dropdown-divider my-2"></div>
-            <h5 class="dropdown-header text-uppercase ps-2 pe-2 text-dark mt-2 mb-2">Actions</h5>
-            <a class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between" href="#">
-              <span>Lock Account</span>
-              <i class="mdi mdi-lock ms-1"></i>
-            </a>
-            @auth
-            <form method="POST" action="{{ route('logout') }}" class="d-inline w-100">
+
+            <div class="pd-divider"></div>
+
+            <form method="POST" action="{{ route('logout') }}">
               @csrf
-              <button type="submit" class="dropdown-item py-2 px-3 d-flex align-items-center justify-content-between w-100 border-0 bg-transparent text-start" style="cursor: pointer;">
-                <span>Sair</span>
-                <i class="mdi mdi-logout ms-1"></i>
+              <button type="submit" class="pd-item pd-item--danger">
+                <i class="mdi mdi-logout"></i>
+                Sair
               </button>
             </form>
-            @endauth
           </div>
+
         </div>
       </li>
+      @endauth
      
     </ul>
     <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
