@@ -80,7 +80,9 @@ class Produto extends Model
     /** Preço de venda formatado. */
     public function getPrecoVendaFormatadoAttribute()
     {
-        return 'R$ ' . number_format($this->preco_venda, 2, ',', '.');
+        return $this->preco_venda !== null
+            ? 'R$ ' . number_format($this->preco_venda, 2, ',', '.')
+            : '—';
     }
 
     public function categoria()
@@ -96,5 +98,34 @@ class Produto extends Model
     public function images()
     {
         return $this->hasMany(ProductImage::class, 'produto_id');
+    }
+
+    public function primaryImage()
+    {
+        return $this->hasOne(ProductImage::class, 'produto_id')
+            ->whereNull('deleted_at')
+            ->orderByDesc('principal')
+            ->orderBy('ordem')
+            ->orderBy('id');
+    }
+
+    public function getImagemPrincipalUrlAttribute(): ?string
+    {
+        if ($this->relationLoaded('primaryImage')) {
+            return $this->primaryImage?->url;
+        }
+
+        if ($this->relationLoaded('images')) {
+            return $this->images->first()?->url;
+        }
+
+        $image = $this->images()
+            ->whereNull('deleted_at')
+            ->orderByDesc('principal')
+            ->orderBy('ordem')
+            ->orderBy('id')
+            ->first();
+
+        return $image?->url;
     }
 }

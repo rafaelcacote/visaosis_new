@@ -28,6 +28,9 @@ class PedidoVenda extends Model
         'status',
         'data_pedido',
         'valor_total',
+        'desconto_valor',
+        'desconto_percentual',
+        'desconto_autorizado_por',
         'forma_pagamento',
         'observacoes',
         'ativo'
@@ -36,6 +39,8 @@ class PedidoVenda extends Model
     protected $casts = [
         'data_pedido' => 'datetime',
         'valor_total' => 'decimal:2',
+        'desconto_valor' => 'decimal:2',
+        'desconto_percentual' => 'decimal:2',
         'ativo' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -68,6 +73,14 @@ class PedidoVenda extends Model
     public function itens()
     {
         return $this->hasMany(ItemPedido::class, 'pedido_id');
+    }
+
+    /**
+     * Relacionamento com as formas de pagamento da venda
+     */
+    public function pagamentos()
+    {
+        return $this->hasMany(PedidoVendaPagamento::class, 'pedido_venda_id');
     }
 
     /**

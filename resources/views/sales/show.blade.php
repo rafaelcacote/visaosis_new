@@ -89,12 +89,29 @@
                                     <i class="mdi mdi-credit-card me-1"></i>
                                     Forma de Pagamento
                                 </label>
-                                <div class="fw-medium">{{ $sale['forma_pagamento'] }}</div>
-                                @if ($sale['parcelas'] > 1)
-                                    <small class="text-muted">
-                                        {{ $sale['parcelas'] }}x de R$
-                                        {{ number_format($sale['valor_parcela'], 2, ',', '.') }}
-                                    </small>
+                                @if (!empty($sale['pagamentos']))
+                                    @foreach ($sale['pagamentos'] as $pag)
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="fw-medium">{{ $pag['forma_pagamento'] }}</span>
+                                            <span class="text-success fw-semibold">
+                                                R$ {{ number_format($pag['valor'], 2, ',', '.') }}
+                                            </span>
+                                        </div>
+                                        @if ($pag['parcelas'] > 1)
+                                            <small class="text-muted d-block mb-1">
+                                                {{ $pag['parcelas'] }}x de
+                                                R$ {{ number_format($pag['valor'] / $pag['parcelas'], 2, ',', '.') }}
+                                            </small>
+                                        @endif
+                                    @endforeach
+                                @else
+                                    <div class="fw-medium">{{ $sale['forma_pagamento'] }}</div>
+                                    @if ($sale['parcelas'] > 1)
+                                        <small class="text-muted">
+                                            {{ $sale['parcelas'] }}x de R$
+                                            {{ number_format($sale['valor_parcela'], 2, ',', '.') }}
+                                        </small>
+                                    @endif
                                 @endif
                             </div>
                         </div>

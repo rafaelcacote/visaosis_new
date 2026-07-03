@@ -165,6 +165,92 @@ class AuthHelper
     }
 
     /**
+     * Verifica se o usuário logado pode conceder desconto sem autorização de supervisor.
+     */
+    public static function canApplyDiscountWithoutAuthorization(): bool
+    {
+        return self::sessionHasPrivilegedProfile();
+    }
+
+    /**
+     * Verifica se um usuário (sessão ou modelo) possui perfil privilegiado para desconto.
+     */
+    public static function userHasPrivilegedProfile($user = null): bool
+    {
+        if ($user === null) {
+            return self::sessionHasPrivilegedProfile();
+        }
+
+        $privilegedNames = config('sales.discount_privileged_profiles', []);
+        if (empty($privilegedNames)) {
+            return false;
+        }
+
+        try {
+            $profileIds = \Illuminate\Support\Facades\DB::connection('cerberus')
+                ->table('seguranca.user_profile')
+                ->where('user_id', $user->id)
+                ->where('status', 1)
+                ->pluck('profile_id');
+
+            if ($profileIds->isEmpty()) {
+                return false;
+            }
+
+            $profiles = \Illuminate\Support\Facades\DB::connection('cerberus')
+                ->table('seguranca.profiles')
+                ->whereIn('id', $profileIds)
+                ->where('status', 1)
+                ->get(['name', 'short_name']);
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        foreach ($profiles as $profile) {
+            if (self::profileMatchesPrivilegedList($profile->name ?? '', $profile->short_name ?? '', $privilegedNames)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function sessionHasPrivilegedProfile(): bool
+    {
+        $privilegedNames = config('sales.discount_privileged_profiles', []);
+
+        foreach (self::profiles() as $profile) {
+            $name = is_array($profile) ? ($profile['name'] ?? $profile['nome'] ?? '') : (string) $profile;
+            $shortName = is_array($profile) ? ($profile['short_name'] ?? '') : '';
+
+            if (self::profileMatchesPrivilegedList($name, $shortName, $privilegedNames)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function profileMatchesPrivilegedList(string $name, string $shortName, array $privilegedNames): bool
+    {
+        $candidates = array_filter([$name, $shortName]);
+
+        foreach ($candidates as $candidate) {
+            $normalized = mb_strtolower(trim($candidate));
+
+            foreach ($privilegedNames as $allowed) {
+                $allowedNormalized = mb_strtolower(trim((string) $allowed));
+
+                if ($normalized === $allowedNormalized || str_contains($normalized, $allowedNormalized)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Obtém o tenant_id do usuário autenticado
      */
     public static function tenantId()

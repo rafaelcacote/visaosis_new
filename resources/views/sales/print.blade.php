@@ -203,7 +203,19 @@
 
                     <td>
                         <span class="label">Forma de Pagamento:</span>
-                        <span class="value">{{ $sale['forma_pagamento'] ?? 'Nao informado' }}</span>
+                        @if (!empty($sale['pagamentos']))
+                            @foreach ($sale['pagamentos'] as $pag)
+                                <span class="value">
+                                    {{ $pag['forma_pagamento'] }}
+                                    — R$ {{ number_format($pag['valor'], 2, ',', '.') }}
+                                    @if ($pag['parcelas'] > 1)
+                                        ({{ $pag['parcelas'] }}x de R$ {{ number_format($pag['valor'] / $pag['parcelas'], 2, ',', '.') }})
+                                    @endif
+                                </span><br>
+                            @endforeach
+                        @else
+                            <span class="value">{{ $sale['forma_pagamento'] ?? 'Nao informado' }}</span>
+                        @endif
                     </td>
                 </tr>
                 @if (!empty($sale['parcelas']) && $sale['parcelas'] > 1)
@@ -261,10 +273,11 @@
                 <thead>
                     <tr>
                         <th style="width: 5%;" class="text-center">#</th>
-                        <th style="width: 50%;">Descricao</th>
+                        <th style="width: 43%;">Descricao</th>
                         <th style="width: 10%;" class="text-center">Qtd</th>
-                        <th style="width: 18%;" class="text-right">Preco Unit.</th>
-                        <th style="width: 17%;" class="text-right">Total</th>
+                        <th style="width: 15%;" class="text-right">Preco Unit.</th>
+                        <th style="width: 12%;" class="text-right">Desconto</th>
+                        <th style="width: 15%;" class="text-right">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -274,6 +287,13 @@
                             <td><strong>{{ $produto['nome'] }}</strong></td>
                             <td class="text-center">{{ $produto['quantidade'] }}</td>
                             <td class="text-right">R$ {{ number_format($produto['preco_unitario'], 2, ',', '.') }}</td>
+                            <td class="text-right">
+                                @if (!empty($produto['desconto']) && $produto['desconto'] > 0)
+                                    R$ {{ number_format($produto['desconto'], 2, ',', '.') }}
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td class="text-right"><strong>R$
                                     {{ number_format($produto['subtotal'], 2, ',', '.') }}</strong></td>
                         </tr>

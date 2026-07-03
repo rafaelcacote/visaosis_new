@@ -95,15 +95,14 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="preco_venda">Preço de venda <span class="text-danger">*</span></label>
+                                <label for="preco_venda">Preço de venda</label>
                                 <input type="text"
                                        class="form-control @error('preco_venda') is-invalid @enderror"
                                        id="preco_venda"
                                        name="preco_venda"
                                        value="{{ old('preco_venda') ? 'R$ ' . number_format(old('preco_venda'), 2, ',', '.') : '' }}"
                                        placeholder="R$ 0,00"
-                                       data-mask="currency"
-                                       required>
+                                       data-mask="currency">
                                 @error('preco_venda')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

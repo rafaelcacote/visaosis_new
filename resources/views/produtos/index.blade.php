@@ -4,6 +4,7 @@
 
 @push('plugin-css')
 <link rel="stylesheet" href="{{ asset('assets/css/users.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/produtos.css') }}">
 @endpush
 
 @section('content')
