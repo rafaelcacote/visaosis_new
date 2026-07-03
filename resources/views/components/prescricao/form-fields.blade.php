@@ -53,8 +53,7 @@
                 </td>
                 <td>
                     <input type="text" class="form-control @error('od_eixo') is-invalid @enderror" name="od_eixo"
-                        value="{{ old('od_eixo', $isEditing && $prescricaoForm ? $prescricaoForm->eixo_od : null) }}"
-                        placeholder="0-180">
+                        value="{{ old('od_eixo', $isEditing && $prescricaoForm ? $prescricaoForm->eixo_od : null) }}">
                     @error('od_eixo')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
@@ -62,16 +61,14 @@
                 <td>
                     <input type="text" class="form-control @error('od_acuidade') is-invalid @enderror"
                         name="od_acuidade"
-                        value="{{ old('od_acuidade', $isEditing && $prescricaoForm ? $prescricaoForm->acuidade_od : null) }}"
-                        placeholder="20/20">
+                        value="{{ old('od_acuidade', $isEditing && $prescricaoForm ? $prescricaoForm->acuidade_od : null) }}">
                     @error('od_acuidade')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </td>
                 <td>
                     <input type="text" class="form-control @error('od_dnp') is-invalid @enderror" name="od_dnp"
-                        value="{{ old('od_dnp', $isEditing && $prescricaoForm ? $prescricaoForm->dnp_od : null) }}"
-                        placeholder="62">
+                        value="{{ old('od_dnp', $isEditing && $prescricaoForm ? $prescricaoForm->dnp_od : null) }}">
                     @error('od_dnp')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
@@ -117,8 +114,7 @@
                 </td>
                 <td>
                     <input type="text" class="form-control @error('oe_eixo') is-invalid @enderror" name="oe_eixo"
-                        value="{{ old('oe_eixo', $isEditing && $prescricaoForm ? $prescricaoForm->eixo_oe : null) }}"
-                        placeholder="0-180">
+                        value="{{ old('oe_eixo', $isEditing && $prescricaoForm ? $prescricaoForm->eixo_oe : null) }}">
                     @error('oe_eixo')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
@@ -126,16 +122,14 @@
                 <td>
                     <input type="text" class="form-control @error('oe_acuidade') is-invalid @enderror"
                         name="oe_acuidade"
-                        value="{{ old('oe_acuidade', $isEditing && $prescricaoForm ? $prescricaoForm->acuidade_oe : null) }}"
-                        placeholder="20/20">
+                        value="{{ old('oe_acuidade', $isEditing && $prescricaoForm ? $prescricaoForm->acuidade_oe : null) }}">
                     @error('oe_acuidade')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </td>
                 <td>
                     <input type="text" class="form-control @error('oe_dnp') is-invalid @enderror" name="oe_dnp"
-                        value="{{ old('oe_dnp', $isEditing && $prescricaoForm ? $prescricaoForm->dnp_oe : null) }}"
-                        placeholder="62">
+                        value="{{ old('oe_dnp', $isEditing && $prescricaoForm ? $prescricaoForm->dnp_oe : null) }}">
                     @error('oe_dnp')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
@@ -197,8 +191,7 @@
                     <td>
                         <input type="text" class="form-control @error('od_eixo_perto') is-invalid @enderror"
                             name="od_eixo_perto"
-                            value="{{ old('od_eixo_perto', $isEditing && $prescricaoForm ? $prescricaoForm->eixo_od_perto : null) }}"
-                            placeholder="0-180">
+                            value="{{ old('od_eixo_perto', $isEditing && $prescricaoForm ? $prescricaoForm->eixo_od_perto : null) }}">
                         @error('od_eixo_perto')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
@@ -206,8 +199,7 @@
                     <td>
                         <input type="text" class="form-control @error('od_acuidade_perto') is-invalid @enderror"
                             name="od_acuidade_perto"
-                            value="{{ old('od_acuidade_perto', $isEditing && $prescricaoForm ? $prescricaoForm->acuidade_od_perto : null) }}"
-                            placeholder="20/20">
+                            value="{{ old('od_acuidade_perto', $isEditing && $prescricaoForm ? $prescricaoForm->acuidade_od_perto : null) }}">
                         @error('od_acuidade_perto')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
@@ -215,8 +207,7 @@
                     <td>
                         <input type="text" class="form-control @error('od_dnp_perto') is-invalid @enderror"
                             name="od_dnp_perto"
-                            value="{{ old('od_dnp_perto', $isEditing && $prescricaoForm ? $prescricaoForm->dnp_od_perto : null) }}"
-                            placeholder="62">
+                            value="{{ old('od_dnp_perto', $isEditing && $prescricaoForm ? $prescricaoForm->dnp_od_perto : null) }}">
                         @error('od_dnp_perto')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
@@ -265,8 +256,7 @@
                     <td>
                         <input type="text" class="form-control @error('oe_eixo_perto') is-invalid @enderror"
                             name="oe_eixo_perto"
-                            value="{{ old('oe_eixo_perto', $isEditing && $prescricaoForm ? $prescricaoForm->eixo_oe_perto : null) }}"
-                            placeholder="0-180">
+                            value="{{ old('oe_eixo_perto', $isEditing && $prescricaoForm ? $prescricaoForm->eixo_oe_perto : null) }}">
                         @error('oe_eixo_perto')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
@@ -274,8 +264,7 @@
                     <td>
                         <input type="text" class="form-control @error('oe_acuidade_perto') is-invalid @enderror"
                             name="oe_acuidade_perto"
-                            value="{{ old('oe_acuidade_perto', $isEditing && $prescricaoForm ? $prescricaoForm->acuidade_oe_perto : null) }}"
-                            placeholder="20/20">
+                            value="{{ old('oe_acuidade_perto', $isEditing && $prescricaoForm ? $prescricaoForm->acuidade_oe_perto : null) }}">
                         @error('oe_acuidade_perto')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
@@ -283,8 +272,7 @@
                     <td>
                         <input type="text" class="form-control @error('oe_dnp_perto') is-invalid @enderror"
                             name="oe_dnp_perto"
-                            value="{{ old('oe_dnp_perto', $isEditing && $prescricaoForm ? $prescricaoForm->dnp_oe_perto : null) }}"
-                            placeholder="62">
+                            value="{{ old('oe_dnp_perto', $isEditing && $prescricaoForm ? $prescricaoForm->dnp_oe_perto : null) }}">
                         @error('oe_dnp_perto')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
