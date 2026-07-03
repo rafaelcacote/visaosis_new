@@ -1,0 +1,112 @@
+@page {
+    margin: 8mm 12mm 18mm 12mm;
+}
+
+.pdf-header {
+    border-bottom: 1px solid #d7dde5;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+
+.pdf-header-top {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pdf-header-top td {
+    vertical-align: middle;
+}
+
+.brand-wrap {
+    width: 58%;
+}
+
+.title-wrap {
+    width: 42%;
+    text-align: right;
+}
+
+.brand-block {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.brand-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border: 1px solid #d7dde5;
+    border-radius: 6px;
+    background: #ffffff;
+    padding: 3px;
+    margin-right: 8px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.brand-logo-fallback {
+    width: 48px;
+    height: 48px;
+    border: 1px solid #d7dde5;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #4b5563;
+    text-align: center;
+    line-height: 48px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 8px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.brand-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.brand-subtitle {
+    margin: 2px 0 0;
+    font-size: 10px;
+    color: #6b7280;
+}
+
+.doc-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 0.3px;
+}
+
+.doc-subtitle {
+    margin-top: 4px;
+    font-size: 10px;
+    color: #6b7280;
+}
+
+.pdf-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: -8mm;
+    border-top: 1px solid #d7dde5;
+    padding-top: 5px;
+    font-size: 9px;
+    color: #6b7280;
+}
+
+.pdf-footer-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pdf-footer-left {
+    text-align: left;
+}
+
+.pdf-footer-right {
+    text-align: right;
+}

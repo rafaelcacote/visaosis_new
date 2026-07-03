@@ -1,5 +1,35 @@
 @php
     use App\Helpers\AuthHelper;
+
+    $pedido = $ordemServico->pedido;
+    $cliente = $pedido?->cliente;
+    $fornecedor = $ordemServico->fornecedor;
+    $itensOrdem = $ordemServico->itensOrdem ?? collect();
+
+    $subtotalItens = $itensOrdem->sum(function ($itemOrdem) {
+        return (float) ($itemOrdem->item->total_linha ?? 0);
+    });
+
+    $descontoOS = (float) ($ordemServico->desconto ?? 0);
+    $totalOS =
+        $itensOrdem->count() > 0 ? max(0, $subtotalItens - $descontoOS) : (float) ($ordemServico->total_linha ?? 0);
+
+    $logoBase64 = null;
+    if (AuthHelper::hasTenantLogo()) {
+        try {
+            $logoUrl = AuthHelper::tenantLogoUrl();
+            if ($logoUrl) {
+                $imageData = @file_get_contents($logoUrl);
+                if ($imageData !== false) {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $mimeType = $finfo->buffer($imageData);
+                    $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                }
+            }
+        } catch (Exception $e) {
+            $logoBase64 = null;
+        }
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -7,767 +37,516 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ordem de Serviço #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Ordem de Servico #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            font-size: 10px;
-            line-height: 1.5;
-            color: #212529;
-            background: white;
-            margin: 0;
-            padding: 4px;
+        {!! file_get_contents(resource_path('views/pdf/styles/header-footer.css')) !!} body {
+            font-family: DejaVu Sans, Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.45;
+            color: #111827;
         }
 
-        .card {
-            border: none;
-            border-radius: 0;
-            background-color: #fff;
-            box-shadow: none;
+        .section {
+            margin-bottom: 10px;
+            page-break-inside: avoid;
         }
 
-        .card-header {
-            padding: 0.2rem 1rem;
-            margin-bottom: 0;
-            background-color: #dee2e6;
-            border: 1px solid #dee2e6;
-            border-bottom: 1px solid #dee2e6;
-            border-top-left-radius: 0.375rem;
-            border-top-right-radius: 0.375rem;
+        .section-title {
+            margin: 0 0 6px;
+            padding: 5px 8px;
+            background: #f1f5f9;
+            border-left: 3px solid #1d4ed8;
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
-        .bg-primary {
-            background-color: #0d6efd !important;
-        }
-
-        .text-white {
-            color: #fff !important;
-        }
-
-        .card-body {
-            flex: 1 1 auto;
-            padding: 0.3rem;
-            border: none;
-        }
-
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-            margin-right: -8px;
-            margin-left: -8px;
-        }
-
-        .col-6 {
-            position: relative;
+        .info-grid {
             width: 100%;
-            padding-right: 8px;
-            padding-left: 8px;
-            flex: 0 0 50%;
-            max-width: 50%;
-        }
-
-        .col-md-6 {
-            position: relative;
-            width: 100%;
-            padding-right: 8px;
-            padding-left: 8px;
-            flex: 0 0 50%;
-            max-width: 50%;
-        }
-
-        .col-12 {
-            position: relative;
-            width: 100%;
-            padding-right: 8px;
-            padding-left: 8px;
-            flex: 0 0 100%;
-            max-width: 100%;
-        }
-
-        .text-end {
-            text-align: right !important;
-        }
-
-        .mb-0 {
-            margin-bottom: 0 !important;
-        }
-
-        .mb-2 {
-            margin-bottom: 0.2rem !important;
-        }
-
-        .mb-4 {
-            margin-bottom: 0.2rem !important;
-        }
-
-        .mt-2 {
-            margin-top: 0.5rem !important;
-        }
-
-        .mt-5 {
-            margin-top: 3rem !important;
-        }
-
-        h5 {
-            font-size: 1rem;
-            margin-bottom: 0.1rem;
-            font-weight: 500;
-            line-height: 1.1;
-        }
-
-        h6 {
-            font-size: 0.9rem;
-            margin-bottom: 0.1rem;
-            font-weight: 500;
-            line-height: 1.1;
-        }
-
-        small {
-            font-size: 0.875em;
-        }
-
-        .border {
-            border: 1px solid #dee2e6 !important;
-        }
-
-        .rounded {
-            border-radius: 0.375rem !important;
-        }
-
-        .bg-light {
-            background-color: #f8f9fa !important;
-        }
-
-        .p-3 {
-            padding: 0.2rem !important;
-        }
-
-        .table {
-            width: 100%;
-            margin-bottom: 1rem;
-            color: #212529;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
-        .table th,
-        .table td {
-            padding: 0.3rem;
+        .info-grid td {
+            width: 50%;
             vertical-align: top;
-            border: 1px solid #dee2e6;
+            padding: 3px 8px 3px 0;
         }
 
-        .table-sm th,
-        .table-sm td {
-            padding: 0.15rem;
+        .label {
+            color: #475569;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            font-weight: 400;
         }
 
-        .table-bordered {
-            border: 1px solid #dee2e6;
+        .value {
+            display: inline;
+            color: #111827;
+            font-weight: 600;
+            word-wrap: break-word;
         }
 
-        .table-bordered th,
-        .table-bordered td {
-            border: 1px solid #dee2e6;
+        .info-grid td {
+            padding: 3px 8px 3px 0;
         }
 
-        .table-light {
-            background-color: #f8f9fa;
+        .muted {
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .pill {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-right: 4px;
+            border: 1px solid transparent;
+        }
+
+        .pill-priority-normal {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+
+        .pill-priority-urgente,
+        .pill-priority-expressa {
+            background: #fff7ed;
+            color: #c2410c;
+            border-color: #fed7aa;
+        }
+
+        .pill-status-warning {
+            background: #fff7ed;
+            color: #9a3412;
+            border-color: #fdba74;
+        }
+
+        .pill-status-info,
+        .pill-status-primary {
+            background: #eff6ff;
+            color: #1e40af;
+            border-color: #bfdbfe;
+        }
+
+        .pill-status-success {
+            background: #ecfdf5;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
+        .pill-status-danger {
+            background: #fef2f2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        .pill-status-secondary {
+            background: #f8fafc;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        .table-data {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .table-data th,
+        .table-data td {
+            border: 1px solid #dbe3ee;
+            padding: 6px 7px;
+            font-size: 10px;
+            vertical-align: top;
+        }
+
+        .table-data th {
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 0.3px;
         }
 
         .text-center {
-            text-align: center !important;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.35em 0.65em;
-            font-size: 0.75em;
-            font-weight: 700;
-            line-height: 1;
-            color: #fff;
             text-align: center;
-            white-space: nowrap;
-            vertical-align: baseline;
-            border-radius: 0.375rem;
         }
 
-        .bg-warning {
-            background-color: #ffc107 !important;
-            color: #000 !important;
+        .text-right {
+            text-align: right;
         }
 
-        .bg-info {
-            background-color: #0dcaf0 !important;
+        .summary-block {
+            margin-top: 6px;
+            text-align: right;
+            font-size: 10px;
+            line-height: 1.5;
         }
 
-        .bg-success {
-            background-color: #198754 !important;
+        .summary-line {
+            margin: 0;
+            padding: 1px 0;
         }
 
-        .bg-danger {
-            background-color: #dc3545 !important;
+        .summary-total-line {
+            margin: 3px 0 0;
+            padding: 4px 0 0;
+            border-top: 1px solid #94a3b8;
+            font-size: 11px;
+            color: #0f172a;
         }
 
-        .bg-dark {
-            background-color: #212529 !important;
+        .note-box {
+            border: 1px solid #dbe3ee;
+            background: #fafcff;
+            padding: 8px;
+            font-size: 10px;
+            color: #0f172a;
+            min-height: 30px;
         }
 
-        .bg-secondary {
-            background-color: #6c757d !important;
+        .signatures {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
         }
 
-        .alert {
-            position: relative;
-            padding: 0.75rem 1.25rem;
-            margin-bottom: 1rem;
-            border: 1px solid transparent;
-            border-radius: 0.375rem;
+        .signatures td {
+            width: 50%;
+            padding: 0 12px;
+            text-align: center;
+            vertical-align: top;
         }
 
-        .alert-warning {
-            color: #664d03;
-            background-color: #fff3cd;
-            border-color: #ffecb5;
-        }
-
-        .text-muted {
-            color: #6c757d !important;
-        }
-
-        .align-items-center {
-            align-items: center !important;
-        }
-
-        .d-print-block {
-            display: block !important;
-        }
-
-        /* Específico para as assinaturas */
         .signature-line {
-            border-top: 1px solid #000;
-            margin-top: 25px;
-            padding-top: 4px;
+            border-top: 1px solid #64748b;
+            margin-top: 28px;
+            padding-top: 5px;
+            font-size: 10px;
+            color: #334155;
         }
 
-        /* Melhor layout para PDF */
-        .row {
-            display: table !important;
-            width: 100% !important;
-            table-layout: fixed !important;
-            margin-bottom: 1px !important;
-        }
-
-        .col-md-6 {
-            display: table-cell !important;
-            width: 50% !important;
-            vertical-align: top !important;
-            padding: 4px 8px !important;
-            box-sizing: border-box !important;
-        }
-
-        .col-12 {
-            display: block !important;
-            width: 100% !important;
-            margin-bottom: 1px !important;
-        }
-
-        /* Evitar quebras indevidas */
-        .prescription-section {
-            page-break-inside: avoid;
-            margin-bottom: 1px;
-        }
-
-        .supplier-section {
-            page-break-inside: avoid;
-            margin-bottom: 1px;
-        }
-
-        /* Print styles */
-        @media print {
-            body {
-                margin: 0;
-                padding: 10px;
-                font-size: 10px;
-            }
-
-
+        .pt-6 {
+            padding-top: 6px;
         }
     </style>
 </head>
 
 <body>
-    <!-- Documento da OS -->
-    <div class="card">
-        <div class="card-header d-print-block"
-            style="background-color: #f8f9fa; color: #000; border-bottom: 1px solid #dee2e6;">
-            <!-- Logo e Nome da Ótica -->
-            <div class="row align-items-center">
-                @php
-                    $logoBase64 = null;
-                    if (AuthHelper::hasTenantLogo()) {
-                        try {
-                            $logoUrl = AuthHelper::tenantLogoUrl();
-                            if ($logoUrl) {
-                                $imageData = @file_get_contents($logoUrl);
-                                if ($imageData !== false) {
-                                    $finfo = new finfo(FILEINFO_MIME_TYPE);
-                                    $mimeType = $finfo->buffer($imageData);
-                                    $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-                                }
-                            }
-                        } catch (Exception $e) {
-                            $logoBase64 = null;
-                        }
-                    }
-                @endphp
+    <header class="pdf-header">
+        <table class="pdf-header-top">
+            <tr>
+                <td class="brand-wrap">
+                    @if ($logoBase64)
+                        <img src="{{ $logoBase64 }}" alt="{{ AuthHelper::tenantName() ?? 'Empresa' }}"
+                            class="brand-logo">
+                    @else
+                        <span class="brand-logo-fallback">LOGO</span>
+                    @endif
+                    <span class="brand-block">
+                        <h1 class="brand-title">{{ AuthHelper::tenantName() ?? 'VisaoSis' }}</h1>
+                        <p class="brand-subtitle">
+                            Sistema de Gestao Otica
+                            @if (AuthHelper::locationName())
+                                | {{ AuthHelper::locationName() }}
+                            @endif
+                        </p>
+                    </span>
+                </td>
+                <td class="title-wrap">
+                    <h2 class="doc-title">ORDEM DE SERVICO #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</h2>
+                    <p class="doc-subtitle">Emissao: {{ now('America/Sao_Paulo')->format('d/m/Y H:i') }}</p>
+                </td>
+            </tr>
+        </table>
+    </header>
 
-                <div style="display: table; width: 100%;">
-                    <div style="display: table-cell; vertical-align: middle; width: auto; text-align: left;">
-                        @if ($logoBase64)
-                            <img src="{{ $logoBase64 }}" alt="{{ AuthHelper::tenantName() ?? 'Logo' }}"
-                                style="max-height: 40px; max-width: 40px; object-fit: contain; border: 1px solid #e0e0e0; border-radius: 6px; padding: 4px; background-color: #fff; margin-right: 5px;">
-                        @else
-                            <span style="font-size: 14px; margin-right: 5px;">👓</span>
-                        @endif
-                        <h6 style="font-weight: 600; margin: 0; display: inline-block; vertical-align: middle;">
-                            {{ AuthHelper::tenantName() ?? 'VisaoSis' }}</h6>
-                    </div>
-                </div>
+    <main>
+        <section class="section">
+            <h3 class="section-title">Resumo da Ordem</h3>
+            <table class="info-grid">
+                <tr>
+                    <td>
+                        <span class="label">Numero da Ordem:</span>
+                        <span class="value">#{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</span>
+                    </td>
+                    <td>
+                        <span class="label">Data de Criacao:</span>
+                        <span
+                            class="value">{{ $ordemServico->created_at?->format('d/m/Y H:i') ?? 'Nao informado' }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="label">Entrega Prevista:</span>
+                        <span
+                            class="value">{{ $ordemServico->entrega_em?->format('d/m/Y H:i') ?? 'Nao definida' }}</span>
+                    </td>
+                    <td>
+                        <span class="label">Responsavel:</span>
+                        <span class="value">{{ $ordemServico->user?->name ?? 'Nao informado' }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="label">Cliente:</span>
+                        <span class="value">{{ $cliente->nome ?? 'Nao informado' }}</span>
+                    </td>
+                    <td>
+                        <span class="label">Data da Venda:</span>
+                        <span class="value">{{ $pedido?->data_pedido_formatada ?? 'Nao informado' }}</span>
+                    </td>
+                </tr>
+                <tr>
 
-                <!-- Segunda linha: Sistema de Gestão e Ordem de Serviço -->
-                <div style="display: table; width: 100%; margin-top: 4px;">
-                    <div style="display: table-cell; vertical-align: middle; width: 40%; text-align: left;">
-                        <small style="color: #6c757d;">Sistema de Gestão Ótica</small>
-                        @if (AuthHelper::locationName())
-                            <br><small
-                                style="color: #6c757d; font-size: 0.7rem;">{{ AuthHelper::locationName() }}</small>
-                        @endif
-                    </div>
-                    <div style="display: table-cell; vertical-align: middle; width: 60%; text-align: left;">
-                        <h5 style="margin: 0; font-weight: 600; color: #000;">ORDEM DE SERVIÇO -
-                            {{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</h5>
+                    <td>
+                        <span class="label">Status da Venda:</span>
+                        <span class="value">{{ $pedido?->status_label ?? 'Nao informado' }}</span>
+                    </td>
+                    <td>
+                        <span class="label">Total da Venda:</span>
+                        <span class="value">{{ $pedido?->valor_total_formatado ?? 'R$ 0,00' }}</span>
+                    </td>
+                </tr>
 
-                    </div>
-                </div>
+            </table>
+        </section>
+
+        <section class="section">
+            <h3 class="section-title">Fornecedor / Laboratorio</h3>
+            <table class="info-grid">
+                <tr>
+
+                    <td>
+                        <span class="label">Nome Fantasia:</span>
+                        <span class="value">{{ $fornecedor->nome_fantasia ?? 'Nao informado' }}</span>
+                    </td>
+                    <td>
+                        <span class="label">CNPJ:</span>
+                        <span class="value">{{ $fornecedor->cnpj_formatado ?? 'Nao informado' }}</span>
+                    </td>
+                </tr>
+                <tr>
+
+                    <td>
+                        <span class="label">Telefone:</span>
+                        <span
+                            class="value">{{ $fornecedor->telefone_formatado ?? ($fornecedor->telefone ?? 'Nao informado') }}</span>
+                    </td>
+                    <td>
+                        <span class="label">E-mail:</span>
+                        <span class="value">{{ $fornecedor->email ?? 'Nao informado' }}</span>
+                    </td>
+                </tr>
+
+            </table>
+        </section>
+
+        <section class="section">
+            <h3 class="section-title">Itens da Ordem de Serviço</h3>
+            <table class="table-data">
+                <thead>
+                    <tr>
+                        <th style="width: 46%;">Produto</th>
+                        <th style="width: 8%;" class="text-center">Qtd</th>
+                        <th style="width: 17%;" class="text-right">Valor Unit.</th>
+                        <th style="width: 14%;" class="text-right">Desconto</th>
+                        <th style="width: 15%;" class="text-right">Total</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($itensOrdem as $itemOrdem)
+                        @php
+                            $itemPedido = $itemOrdem->item;
+                            $produto = $itemPedido?->produto;
+                            $totalLinha = (float) ($itemPedido->total_linha ?? 0);
+                            $precoUnit = (float) ($itemPedido->preco_unit ?? 0);
+                            $desconto = (float) ($itemPedido->desconto ?? 0);
+                        @endphp
+                        <tr>
+                            <td>
+                                <strong>{{ $produto->nome ?? 'Produto nao identificado' }}</strong><br>
+
+                            </td>
+                            <td class="text-center">{{ $itemPedido->quantidade ?? 0 }}</td>
+                            <td class="text-right">R$ {{ number_format($precoUnit, 2, ',', '.') }}</td>
+                            <td class="text-right">R$ {{ number_format($desconto, 2, ',', '.') }}</td>
+                            <td class="text-right"><strong>R$ {{ number_format($totalLinha, 2, ',', '.') }}</strong>
+                            </td>
+
+                        </tr>
+                    @empty
+                        <tr>
+                            <td><strong>Ordem de Servico Geral</strong></td>
+                            <td class="text-center">{{ $ordemServico->quantidade ?? 1 }}</td>
+                            <td class="text-right">{{ $ordemServico->preco_unit_formatado ?? 'R$ 0,00' }}</td>
+                            <td class="text-right">{{ $ordemServico->desconto_formatado ?? 'R$ 0,00' }}</td>
+                            <td class="text-right"><strong>{{ $ordemServico->total_formatado ?? 'R$ 0,00' }}</strong>
+                            </td>
+                            <td class="text-center">-</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            <div class="summary-block">
+                <p class="summary-line"><strong>Subtotal:</strong> R$ {{ number_format($subtotalItens, 2, ',', '.') }}
+                </p>
+                <p class="summary-line"><strong>Desconto:</strong> R$ {{ number_format($descontoOS, 2, ',', '.') }}</p>
+                <p class="summary-total-line"><strong>TOTAL DA ORDEM: R$
+                        {{ number_format($totalOS, 2, ',', '.') }}</strong></p>
             </div>
-        </div>
-        <div class="card-body">
-            <!-- Cabeçalho -->
+        </section>
 
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
+        @if (isset($ordemServico->prescricao) && $ordemServico->prescricao)
+            <section class="section">
+                <h3 class="section-title">Prescrição Médica</h3>
+                <table class="info-grid">
+                    <tr>
+                        <td>
+                            <span class="label">Número da Prescrição:</span>
+                            <span
+                                class="value">#{{ str_pad($ordemServico->prescricao->id, 6, '0', STR_PAD_LEFT) }}</span>
+                        </td>
+                        <td>
+                            <span class="label">Data da Prescrição:</span>
+                            <span
+                                class="value">{{ $ordemServico->prescricao->created_at?->format('d/m/Y') ?? 'Não informado' }}</span>
+                        </td>
+                    </tr>
+                </table>
 
-                <div class="row mb-2">
-                    <div class="col-md-6">
-                        <h6>DADOS DO CLIENTE</h6>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>DADOS DA ORDEM</h6>
-                    </div>
-                </div>
+                @php $rx = $ordemServico->prescricao; @endphp
+                <table class="table-data pt-6">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 9%;">Dist.</th>
+                            <th class="text-center" style="width: 6%;">Olho</th>
+                            <th class="text-center" style="width: 9%;">Esferico</th>
+                            <th class="text-center" style="width: 9%;">Cilindrico</th>
+                            <th class="text-center" style="width: 7%;">Eixo</th>
+                            <th class="text-center" style="width: 7%;">AV</th>
+                            <th class="text-center" style="width: 8%;">DNP</th>
+                            <th class="text-center" style="width: 8%;">Altura</th>
+                            <th class="text-center" style="width: 9%;">Adicao</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{-- LONGE OD --}}
+                        <tr>
+                            <td rowspan="2" class="text-center" style="background:#f8fafc;"><strong>Longe</strong>
+                            </td>
+                            <td class="text-center"><strong>OD</strong></td>
+                            <td class="text-center">{{ $rx->esfera_od ?? '-' }}</td>
+                            <td class="text-center">{{ $rx->cilindro_od ?? '-' }}</td>
+                            <td class="text-center">{{ !is_null($rx->eixo_od) ? $rx->eixo_od . '°' : '-' }}</td>
+                            <td class="text-center">{{ $rx->acuidade_od ?? '-' }}</td>
+                            <td class="text-center">{{ !is_null($rx->dnp_od) ? $rx->dnp_od . 'mm' : '-' }}</td>
+                            <td class="text-center">{{ !is_null($rx->altura_od) ? $rx->altura_od . 'mm' : '-' }}</td>
+                            <td class="text-center">{{ $rx->adicao_od ?? '-' }}</td>
+                        </tr>
+                        {{-- LONGE OE --}}
+                        <tr>
+                            <td class="text-center"><strong>OE</strong></td>
+                            <td class="text-center">{{ $rx->esfera_oe ?? '-' }}</td>
+                            <td class="text-center">{{ $rx->cilindro_oe ?? '-' }}</td>
+                            <td class="text-center">{{ !is_null($rx->eixo_oe) ? $rx->eixo_oe . '°' : '-' }}</td>
+                            <td class="text-center">{{ $rx->acuidade_oe ?? '-' }}</td>
+                            <td class="text-center">{{ !is_null($rx->dnp_oe) ? $rx->dnp_oe . 'mm' : '-' }}</td>
+                            <td class="text-center">{{ !is_null($rx->altura_oe) ? $rx->altura_oe . 'mm' : '-' }}</td>
+                            <td class="text-center">{{ $rx->adicao_oe ?? '-' }}</td>
+                        </tr>
+                        {{-- PERTO OD --}}
+                        <tr>
+                            <td rowspan="2" class="text-center" style="background:#f8fafc;"><strong>Perto</strong>
+                            </td>
+                            <td class="text-center"><strong>OD</strong></td>
+                            <td class="text-center">{{ $rx->esfera_od_perto ?? '-' }}</td>
+                            <td class="text-center">{{ $rx->cilindro_od_perto ?? '-' }}</td>
+                            <td class="text-center">
+                                {{ !is_null($rx->eixo_od_perto) ? $rx->eixo_od_perto . '°' : '-' }}</td>
+                            <td class="text-center">{{ $rx->acuidade_od_perto ?? '-' }}</td>
+                            <td class="text-center">{{ !is_null($rx->dnp_od_perto) ? $rx->dnp_od_perto . 'mm' : '-' }}
+                            </td>
+                            <td class="text-center">
+                                {{ !is_null($rx->altura_od_perto) ? $rx->altura_od_perto . 'mm' : '-' }}</td>
+                            <td class="text-center">{{ $rx->adicao_od_perto ?? '-' }}</td>
+                        </tr>
+                        {{-- PERTO OE --}}
+                        <tr>
+                            <td class="text-center"><strong>OE</strong></td>
+                            <td class="text-center">{{ $rx->esfera_oe_perto ?? '-' }}</td>
+                            <td class="text-center">{{ $rx->cilindro_oe_perto ?? '-' }}</td>
+                            <td class="text-center">
+                                {{ !is_null($rx->eixo_oe_perto) ? $rx->eixo_oe_perto . '°' : '-' }}</td>
+                            <td class="text-center">{{ $rx->acuidade_oe_perto ?? '-' }}</td>
+                            <td class="text-center">{{ !is_null($rx->dnp_oe_perto) ? $rx->dnp_oe_perto . 'mm' : '-' }}
+                            </td>
+                            <td class="text-center">
+                                {{ !is_null($rx->altura_oe_perto) ? $rx->altura_oe_perto . 'mm' : '-' }}</td>
+                            <td class="text-center">{{ $rx->adicao_oe_perto ?? '-' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        @endif
 
-                <div class="p-3 header-data-section">
-
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
-                                <strong>{{ $ordemServico->pedido->cliente->nome }}</strong><br>
-                            @endif
-
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Número:</strong> #{{ str_pad($ordemServico->id ?? 0, 6, '0', STR_PAD_LEFT) }}<br>
-                        </div>
-                    </div>
-
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
-                                <strong>CPF:</strong> {{ $ordemServico->pedido->cliente->cpf_formatado ?? 'N/A' }}<br>
-                            @endif
-
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Data Criação:</strong>
-                            {{ $ordemServico->created_at ? $ordemServico->created_at->format('d/m/Y H:i') : 'N/A' }}
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
-                                <strong>Telefone:</strong>
-                                {{ $ordemServico->pedido->cliente->telefone_formatado ?? '-' }}
-                            @endif
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Venda:</strong>
-                            @if ($ordemServico->pedido_id && $ordemServico->pedido)
-                                #{{ str_pad($ordemServico->pedido->id, 6, '0', STR_PAD_LEFT) }}
-                            @else
-                                N/A
-                            @endif
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            @if ($ordemServico->pedido && $ordemServico->pedido->cliente)
-                                @if ($ordemServico->pedido->cliente->endereco_completo)
-                                    <strong>Endereço:</strong> {{ $ordemServico->pedido->cliente->endereco_completo }}
-                                @endif
-                            @endif
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Prioridade:</strong>
-                            <span class="badge bg-{{ $ordemServico->prioridade_class ?? 'secondary' }}">
-                                {{ $ordemServico->prioridade_label ?? 'N/A' }}
-                            </span>
-                            &nbsp;&nbsp;&nbsp;
-                            <strong>Status:</strong>
-                            <span class="badge bg-{{ $currentStatus['class'] }}">
-                                {{ $currentStatus['text'] }}
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-            <!-- Fornecedor -->
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
-                <h6>FORNECEDOR/LABORATÓRIO RESPONSÁVEL</h6>
-                <div class="p-3">
-
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            @if ($ordemServico->fornecedor->cnpj)
-                                <strong>{{ $ordemServico->fornecedor->razao_social ?? 'N/A' }}</strong>
-                                @if ($ordemServico->fornecedor->nome_fantasia)
-                                    <br><em>{{ $ordemServico->fornecedor->nome_fantasia }}</em>
-                                @endif
-                            @endif
-                        </div>
-                        <div class="col-md-6">
-
-                            @if ($ordemServico->fornecedor->cnpj)
-                                <strong> CNPJ:</strong>
-                                {{ preg_replace('/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/', '$1.$2.$3/$4-$5', $ordemServico->fornecedor->cnpj) }}
-                            @endif
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            @if ($ordemServico->fornecedor->telefone)
-                                <strong> Telefone:</strong>
-                                {{ $ordemServico->fornecedor->telefone_formatado ?? $ordemServico->fornecedor->telefone }}<br>
-                            @endif
-                        </div>
-                        <div class="col-md-6">
-
-                            @if ($ordemServico->fornecedor->email)
-                                <strong> Email:</strong> {{ $ordemServico->fornecedor->email }}
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+        <table class="info-grid">
+            <tr>
+                <td>
+                    <span class="label">Observações:</span>
+                    <span class="value">
+                        {{ $ordemServico->observacoes ?: $pedido->observacoes ?? 'Sem observações registradas para esta ordem.' }}</span>
+                </td>
+            </tr>
+        </table>
 
 
 
-            <!-- Produtos -->
-            <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
-                <h6>PRODUTOS E ESPECIFICAÇÕES</h6>
-                <div class="p-3">
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-center">Produto</th>
-                                    <th class="text-center">Qtd</th>
-                                    <th class="text-center">Especificações</th>
-                                    <th class="text-center">Marca</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if ($ordemServico->itensOrdem && $ordemServico->itensOrdem->count() > 0)
-                                    @foreach ($ordemServico->itensOrdem as $itemOrdem)
-                                        @if ($itemOrdem->item && $itemOrdem->item->produto)
-                                            <tr>
-                                                <td><strong>{{ $itemOrdem->item->produto->nome ?? 'N/A' }}</strong>
-                                                </td>
-                                                <td class="text-center">{{ $itemOrdem->item->quantidade ?? 0 }}</td>
-                                                <td>{{ $itemOrdem->item->produto->categoria->descricao ?? '-' }}</td>
-                                                <td>{{ $itemOrdem->item->produto->marca ?? '-' }}</td>
-                                            </tr>
-                                        @endif
-                                    @endforeach
-                                @else
-                                    <tr>
-                                        <td><strong>Ordem de Serviço Geral</strong></td>
-                                        <td class="text-center">{{ $ordemServico->quantidade ?? 1 }}</td>
-                                        <td>{{ $ordemServico->preco_unit_formatado ?? 'N/A' }}</td>
-                                        <td>-</td>
-                                    </tr>
-                                @endif
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Receita Médica -->
-            @if (isset($ordemServico->prescricao) && $ordemServico->prescricao)
-                <div class="prescription-section">
-                    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
-                        <h6>PRESCRIÇÃO MÉDICA</h6>
-                        <div class="p-3">
-                            <div class="row mb-2">
-                                <div class="col-md-6">
-                                    <strong>Prescrição:</strong>
-                                    #{{ str_pad($ordemServico->prescricao->id, 6, '0', STR_PAD_LEFT) }}
-                                </div>
-                                <div class="col-md-6">
-                                    <strong>Data:</strong>
-                                    {{ $ordemServico->prescricao->created_at ? $ordemServico->prescricao->created_at->format('d/m/Y') : 'N/A' }}
-                                </div>
-                            </div>
-                            @if ($ordemServico->prescricao->consulta && $ordemServico->prescricao->consulta->paciente)
-                                <div class="row mb-2">
-                                    <div class="col-12">
-                                        <strong>Paciente:</strong>
-                                        {{ $ordemServico->prescricao->consulta->paciente->nome }}
-                                        @if ($ordemServico->prescricao->consulta->paciente->cpf)
-                                            - CPF:
-                                            {{ preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $ordemServico->prescricao->consulta->paciente->cpf) }}
-                                        @endif
-                                    </div>
-                                </div>
-                            @elseif ($ordemServico->prescricao->paciente)
-                                <div class="row mb-2">
-                                    <div class="col-12">
-                                        <strong>Paciente:</strong> {{ $ordemServico->prescricao->paciente->nome }}
-                                        @if ($ordemServico->prescricao->paciente->cpf)
-                                            - CPF:
-                                            {{ preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $ordemServico->prescricao->paciente->cpf) }}
-                                        @endif
-                                    </div>
-                                </div>
-                            @endif
-
-                            <!-- Graduação (Longe e Perto) -->
-                            <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="text-center" style="width: 70px;">Distância</th>
-                                            <th class="text-center" style="width: 60px;">Olho</th>
-                                            <th class="text-center">Esférico</th>
-                                            <th class="text-center">Cilíndrico</th>
-                                            <th class="text-center">Eixo</th>
-                                            <th class="text-center">AV</th>
-                                            <th class="text-center">DNP</th>
-                                            <th class="text-center">Altura</th>
-                                            <th class="text-center">Adição</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td rowspan="2" class="text-center fw-bold">LONGE</td>
-                                            <td class="text-center fw-bold">OD</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->esfera_od ?? '-' }}
-                                            </td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->cilindro_od ?? '-' }}
-                                            </td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->eixo_od))
-                                                    {{ $ordemServico->prescricao->eixo_od }}°
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->acuidade_od ?? '-' }}
-                                            </td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->dnp_od))
-                                                    {{ $ordemServico->prescricao->dnp_od }}mm
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->altura_od))
-                                                    {{ $ordemServico->prescricao->altura_od }}mm
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_od ?? '-' }}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-center fw-bold">OE</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->esfera_oe ?? '-' }}
-                                            </td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->cilindro_oe ?? '-' }}</td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->eixo_oe))
-                                                    {{ $ordemServico->prescricao->eixo_oe }}°
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->acuidade_oe ?? '-' }}</td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->dnp_oe))
-                                                    {{ $ordemServico->prescricao->dnp_oe }}mm
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->altura_oe))
-                                                    {{ $ordemServico->prescricao->altura_oe }}mm
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_oe ?? '-' }}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td rowspan="2" class="text-center fw-bold">PERTO</td>
-                                            <td class="text-center fw-bold">OD</td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->esfera_od_perto ?? '-' }}</td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->cilindro_od_perto ?? '-' }}</td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->eixo_od_perto))
-                                                    {{ $ordemServico->prescricao->eixo_od_perto }}°
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->acuidade_od_perto ?? '-' }}</td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->dnp_od_perto))
-                                                    {{ $ordemServico->prescricao->dnp_od_perto }}mm
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->altura_od_perto))
-                                                    {{ $ordemServico->prescricao->altura_od_perto }}mm
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->adicao_od_perto ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-center fw-bold">OE</td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->esfera_oe_perto ?? '-' }}</td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->cilindro_oe_perto ?? '-' }}</td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->eixo_oe_perto))
-                                                    {{ $ordemServico->prescricao->eixo_oe_perto }}°
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->acuidade_oe_perto ?? '-' }}</td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->dnp_oe_perto))
-                                                    {{ $ordemServico->prescricao->dnp_oe_perto }}mm
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                @if (!is_null($ordemServico->prescricao->altura_oe_perto))
-                                                    {{ $ordemServico->prescricao->altura_oe_perto }}mm
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->adicao_oe_perto ?? '-' }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Informações Adicionais -->
-                            <div class="row mb-2">
-                                @if ($ordemServico->prescricao->tipo_lente)
-                                    <div class="col-md-6">
-                                        <strong>Tipo de Lente:</strong> {{ $ordemServico->prescricao->tipo_lente }}
-                                    </div>
-                                @endif
-                                <div class="col-md-6">
-                                    <strong>Validade:</strong> {{ $ordemServico->prescricao->validade_dias }} dias
-                                </div>
-                            </div>
-
-                            <div class="row mb-2">
-                                @if ($ordemServico->prescricao->diagnostico)
-                                    <div class="col-md-6">
-                                        <strong>Diagnóstico:</strong> {{ $ordemServico->prescricao->diagnostico }}
-                                    </div>
-                                @endif
-                                <div class="col-md-6">
-                                    <strong>Recomendações:</strong> {{ $ordemServico->prescricao->recomendacoes }}
-                                </div>
-                            </div>
-                            @if ($ordemServico->prescricao->observacoes)
-                                <div class="mt-2">
-                                    <strong>Observações:</strong> {{ $ordemServico->prescricao->observacoes }}
-                                </div>
-                            @endif
-
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Observações -->
-            @if ($ordemServico->observacoes)
-                <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
-                    <h6>OBSERVAÇÕES GERAIS</h6>
-                    <div>
-                        {{ $ordemServico->observacoes }}
-                    </div>
-                </div>
-            @endif
-
-            <!-- Assinaturas -->
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="text-center">
+        <section class="section">
+            <table class="signatures">
+                <tr>
+                    <td>
                         <div class="signature-line">
-                            <strong>Responsável pela Ótica</strong><br>
-                            <small>Data: ___/___/______</small>
+                            <strong>Responsável da Ótica</strong><br>
+                            Data: ____ / ____ / ______
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="text-center">
+                    </td>
+                    <td>
                         <div class="signature-line">
-                            <strong>Responsável do Laboratório</strong><br>
-                            <small>Data: ___/___/______</small>
+                            <strong>Responsável do Laboratorio</strong><br>
+                            Data: ____ / ____ / ______
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    </td>
+                </tr>
+            </table>
+        </section>
+    </main>
+
+    <footer class="pdf-footer">
+        <table class="pdf-footer-table">
+            <tr>
+                <td class="pdf-footer-left">
+                    Documento gerado por {{ AuthHelper::tenantName() ?? 'VisaoSis' }}
+                </td>
+                <td class="pdf-footer-right">
+                    Ordem #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}
+                </td>
+            </tr>
+        </table>
+    </footer>
 </body>
 
 </html>
