@@ -16,9 +16,9 @@ class ProdutoController extends Controller
     public function index(Request $request)
     {
         $filters = [
-            'search' => $request->get('search', ''),
-            'categoria' => $request->get('categoria', ''),
-            'status' => $request->get('status', ''),
+            'search' => trim((string) $request->get('search', '')),
+            'categoria' => trim((string) $request->get('categoria', '')),
+            'status' => trim((string) $request->get('status', '')),
         ];
 
         $tenantId = session('tenant_id');
@@ -41,7 +41,9 @@ class ProdutoController extends Controller
             return view('produtos.index', compact('produtos', 'categorias', 'filters'));
         }
 
-        $query = Produto::where('tenant_id', $tenantId)->with('categoria');
+        $query = Produto::query()
+            ->where('tenant_id', $tenantId)
+            ->with('categoria');
 
         if (!empty($locationIds)) {
             $query->where(function ($q) use ($locationIds) {
@@ -59,16 +61,42 @@ class ProdutoController extends Controller
         }
 
         if ($filters['categoria'] !== '') {
-            $query->where('categoria_id', $filters['categoria']);
+            $categoriaId = (int) $filters['categoria'];
+            $query->where('categoria_id', $categoriaId)
+                ->whereHas('categoria', function ($categoriaQuery) use ($tenantId, $locationIds, $categoriaId) {
+                    $categoriaQuery->where('id', $categoriaId)
+                        ->where('tenant_id', $tenantId);
+
+                    if (!empty($locationIds)) {
+                        $categoriaQuery->where(function ($q) use ($locationIds) {
+                            $q->whereIn('location_id', $locationIds)
+                                ->orWhereNull('location_id');
+                        });
+                    }
+                });
         }
 
         if ($filters['status'] !== '') {
-            $query->where('ativo', $filters['status'] == '1');
+            if (in_array($filters['status'], ['1', 'ativo'], true)) {
+                $query->where('ativo', true);
+            } elseif (in_array($filters['status'], ['0', 'inativo'], true)) {
+                $query->where('ativo', false);
+            }
         }
 
         $produtos = $query->orderBy('nome')->paginate(5);
 
-        $categorias = Categoria::where('ativo', true)->orderBy('descricao')->get();
+        $categorias = Categoria::query()
+            ->where('tenant_id', $tenantId)
+            ->where('ativo', true)
+            ->when(!empty($locationIds), function ($query) use ($locationIds) {
+                $query->where(function ($q) use ($locationIds) {
+                    $q->whereIn('location_id', $locationIds)
+                        ->orWhereNull('location_id');
+                });
+            })
+            ->orderBy('descricao')
+            ->get();
 
         return view('produtos.index', compact('produtos', 'categorias', 'filters'));
     }
