@@ -1357,6 +1357,7 @@ class ProfissionalWorkflowController extends Controller
             'tenant_id' => $tenantId,
             'consulta_id' => $consulta->id,
             'user_id' => $userId,
+            'data_receita' => $data['data_receita'] ?? now()->toDateString(),
             'esfera_od' => $data['od_esferico'] ?? null,
             'cilindro_od' => $data['od_cilindrico'] ?? null,
             'eixo_od' => $data['od_eixo'] ?? null,
