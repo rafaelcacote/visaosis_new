@@ -115,6 +115,17 @@
                     <h6 class="mb-0"><i class="mdi mdi-file-document me-2"></i>Prescrição</h6>
                 </div>
                 <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Data da Receita</label>
+                            <input type="date" class="form-control @error('data_receita') is-invalid @enderror"
+                                name="data_receita" value="{{ old('data_receita', now()->format('Y-m-d')) }}">
+                            @error('data_receita')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
                     @include('components.prescricao.form-fields', [
                         'isEditing' => false,
                         'prescricaoForm' => null,

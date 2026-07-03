@@ -109,6 +109,7 @@ class PrescriptionFormRequest extends FormRequest
             'oe_adicao_perto' => ['nullable', 'numeric', 'between:0.75,3.5', 'regex:/^\+?\d+(\.\d{1,2})?$/'],
 
             'tipo_lente' => ['nullable', 'string', 'max:100'],
+            'data_receita' => ['nullable', 'date'],
             'diagnostico' => ['nullable', 'string', 'max:255'],
             'observacoes_receita' => ['nullable', 'string', 'max:1000'],
             'recomendacoes' => ['nullable', 'string', 'max:1000'],
@@ -211,6 +212,7 @@ class PrescriptionFormRequest extends FormRequest
             'oe_altura_perto' => 'OE Altura (Perto)',
             'oe_adicao_perto' => 'OE Adição (Perto)',
             'tipo_lente' => 'Tipo de Lente',
+            'data_receita' => 'Data da Receita',
             'validade_dias' => 'Validade',
             'diagnostico' => 'Diagnóstico',
             'recomendacoes' => 'Recomendações',

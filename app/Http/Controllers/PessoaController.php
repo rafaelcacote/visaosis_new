@@ -587,6 +587,7 @@ class PessoaController extends Controller
                 'pessoa_paciente_id' => $pessoa->id,
                 'user_id' => auth()->id(),
                 'especialista_externo' => $validatedData['especialista_externo'],
+                'data_receita' => $validatedData['data_receita'] ?? now()->toDateString(),
                 'esfera_od' => $validatedData['od_esferico'],
                 'cilindro_od' => $validatedData['od_cilindrico'],
                 'eixo_od' => $validatedData['od_eixo'],
@@ -681,6 +682,7 @@ class PessoaController extends Controller
 
             $prescricao->update([
                 'especialista_externo' => $validatedData['especialista_externo'],
+                'data_receita' => $validatedData['data_receita'] ?? $prescricao->data_receita ?? now()->toDateString(),
                 'esfera_od' => $validatedData['od_esferico'],
                 'cilindro_od' => $validatedData['od_cilindrico'],
                 'eixo_od' => $validatedData['od_eixo'],

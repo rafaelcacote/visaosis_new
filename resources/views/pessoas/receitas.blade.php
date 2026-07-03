@@ -51,14 +51,22 @@
                 @endif
 
                 <div class="row g-3 mb-3">
-
-                    <div class="col-md-9">
+                    <div class="col-md-8">
                         <label class="form-label">Nome do profissional que prescreveu</label>
                         <input type="text" class="form-control @error('especialista_externo') is-invalid @enderror"
                             name="especialista_externo"
                             value="{{ old('especialista_externo', $isEditing ? $prescricaoForm->especialista_externo : null) }}"
                             placeholder="Ex: Dr(a). Fulano de Tal">
                         @error('especialista_externo')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Data da Receita</label>
+                        <input type="date" class="form-control @error('data_receita') is-invalid @enderror"
+                            name="data_receita"
+                            value="{{ old('data_receita', $isEditing ? optional($prescricaoForm->data_receita)->format('Y-m-d') : now()->format('Y-m-d')) }}">
+                        @error('data_receita')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
@@ -103,9 +111,14 @@
                     $now = \Carbon\Carbon::now();
 
                     $historyItems = $prescricoes->values()->map(function ($prescricao) use ($pessoa, $now) {
-                        $createdAt = $prescricao->created_at ? $prescricao->created_at->copy() : null;
+                        $dataReceita = $prescricao->data_receita
+                            ? \Carbon\Carbon::parse($prescricao->data_receita)->startOfDay()
+                            : ($prescricao->created_at
+                                ? $prescricao->created_at->copy()
+                                : null);
                         $validadeDias = $prescricao->validade_dias ? (int) $prescricao->validade_dias : null;
-                        $validUntil = $createdAt && $validadeDias ? $createdAt->copy()->addDays($validadeDias) : null;
+                        $validUntil =
+                            $dataReceita && $validadeDias ? $dataReceita->copy()->addDays($validadeDias) : null;
 
                         $daysToExpire = null;
                         if ($validUntil) {
@@ -132,8 +145,8 @@
 
                         return [
                             'id' => $prescricao->id,
-                            'data' => $createdAt ? $createdAt->format('d/m/Y') : '-',
-                            'data_hora' => $createdAt ? $createdAt->format('d/m/Y H:i') : '-',
+                            'data' => $dataReceita ? $dataReceita->format('d/m/Y') : '-',
+                            'data_hora' => $dataReceita ? $dataReceita->format('d/m/Y') : '-',
                             'status_label' => $statusLabel,
                             'status_variant' => $statusVariant,
                             'validade_dias' => $validadeDias,
