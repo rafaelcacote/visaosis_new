@@ -3,12 +3,8 @@
 @section('title', 'Produtos')
 
 @push('plugin-css')
-<<<<<<< HEAD
     <link rel="stylesheet" href="{{ asset('assets/css/users.css') }}">
-=======
-<link rel="stylesheet" href="{{ asset('assets/css/users.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/produtos.css') }}">
->>>>>>> 178aa6812636b10775c8bde9031eb9326f36f2bd
+    <link rel="stylesheet" href="{{ asset('assets/css/produtos.css') }}">
 @endpush
 
 @section('content')
