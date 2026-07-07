@@ -127,6 +127,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('laboratorios/{laboratorio}/toggle-status', [LaboratorioController::class, 'toggleStatus'])->name('laboratorios.toggle-status');
 
     // Rotas de produtos
+    Route::get('produtos/importar', [ProdutoController::class, 'importForm'])->name('produtos.import');
+    Route::post('produtos/importar', [ProdutoController::class, 'importStore'])->name('produtos.import.store');
     Route::resource('produtos', ProdutoController::class)->parameters([
         'produtos' => 'produto',
     ]);
