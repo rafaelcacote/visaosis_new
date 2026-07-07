@@ -10,7 +10,7 @@
     <title>Relatório</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
+        {!! file_get_contents(resource_path('views/pdf/styles/header-footer.css')) !!} body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             font-size: 10px;
             line-height: 1.5;
@@ -342,60 +342,52 @@
 </head>
 
 <body>
-    <div class="card">
-        <div class="card-header d-print-block"
-            style="background-color: #f8f9fa; color: #000; border-bottom: 1px solid #dee2e6;">
-            <!-- Logo e Nome da Ótica -->
-            <div class="row align-items-center">
-                @php
-                    $logoBase64 = null;
-                    if (AuthHelper::hasTenantLogo()) {
-                        try {
-                            $logoUrl = AuthHelper::tenantLogoUrl();
-                            if ($logoUrl) {
-                                $imageData = @file_get_contents($logoUrl);
-                                if ($imageData !== false) {
-                                    $finfo = new finfo(FILEINFO_MIME_TYPE);
-                                    $mimeType = $finfo->buffer($imageData);
-                                    $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-                                }
-                            }
-                        } catch (Exception $e) {
-                            $logoBase64 = null;
-                        }
+    @php
+        $logoBase64 = null;
+        if (AuthHelper::hasTenantLogo()) {
+            try {
+                $logoUrl = AuthHelper::tenantLogoUrl();
+                if ($logoUrl) {
+                    $imageData = @file_get_contents($logoUrl);
+                    if ($imageData !== false) {
+                        $finfo = new finfo(FILEINFO_MIME_TYPE);
+                        $mimeType = $finfo->buffer($imageData);
+                        $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
                     }
-                @endphp
+                }
+            } catch (Exception $e) {
+                $logoBase64 = null;
+            }
+        }
+    @endphp
 
-                <div style="display: table; width: 100%;">
-                    <div style="display: table-cell; vertical-align: middle; width: auto; text-align: left;">
-                        @if ($logoBase64)
-                            <img src="{{ $logoBase64 }}" alt="{{ AuthHelper::tenantName() ?? 'Logo' }}"
-                                style="max-height: 40px; max-width: 40px; object-fit: contain; border: 1px solid #e0e0e0; border-radius: 6px; padding: 4px; background-color: #fff; margin-right: 5px;">
-                        @else
-                            <span style="font-size: 14px; margin-right: 5px;">👓</span>
-                        @endif
-                        <h6 style="font-weight: 600; margin: 0; display: inline-block; vertical-align: middle;">
-                            {{ AuthHelper::tenantName() ?? 'VisaoSis' }}</h6>
-                    </div>
-                </div>
-
-                <!-- Segunda linha: Sistema de Gestão e Ordem de Serviço -->
-                <div style="display: table; width: 100%; margin-top: 4px;">
-                    <div style="display: table-cell; vertical-align: middle; width: 40%; text-align: left;">
-                        <small style="color: #6c757d;">Sistema de Gestão Ótica</small>
-                        @if (AuthHelper::locationName())
-                            <br><small
-                                style="color: #6c757d; font-size: 0.7rem;">{{ AuthHelper::locationName() }}</small>
-                        @endif
-                    </div>
-                    <div style="display: table-cell; vertical-align: middle; width: 60%; text-align: left;">
-                        <h5 style="margin: 0; font-weight: 600; color: #000;">RELATÓRIO DE ATENDIMENTOS</h5>
-
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <header class="pdf-header">
+        <table class="pdf-header-top">
+            <tr>
+                <td class="brand-wrap">
+                    @if ($logoBase64)
+                        <img src="{{ $logoBase64 }}" alt="{{ AuthHelper::tenantName() ?? 'Empresa' }}"
+                            class="brand-logo">
+                    @else
+                        <span class="brand-logo-fallback">LOGO</span>
+                    @endif
+                    <span class="brand-block">
+                        <h1 class="brand-title">{{ AuthHelper::tenantName() ?? 'VisaoSis' }}</h1>
+                        <p class="brand-subtitle">
+                            Sistema de Gestao Otica
+                            @if (AuthHelper::locationName())
+                                | {{ AuthHelper::locationName() }}
+                            @endif
+                        </p>
+                    </span>
+                </td>
+                <td class="title-wrap">
+                    <h2 class="doc-title">RELATORIO DE ATENDIMENTOS</h2>
+                    <p class="doc-subtitle">Emissao: {{ now('America/Sao_Paulo')->format('d/m/Y H:i') }}</p>
+                </td>
+            </tr>
+        </table>
+    </header>
 
 
 
@@ -518,9 +510,14 @@
     </div>
 
 
-
-
-
+    <footer class="pdf-footer">
+        <table class="pdf-footer-table">
+            <tr>
+                <td class="pdf-footer-left">Documento gerado por {{ AuthHelper::tenantName() ?? 'VisaoSis' }}</td>
+                <td class="pdf-footer-right">Relatorio de Atendimentos</td>
+            </tr>
+        </table>
+    </footer>
 </body>
 
 </html>

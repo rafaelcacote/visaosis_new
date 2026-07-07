@@ -108,8 +108,12 @@
                                             <span class="badge bg-secondary">{{ $product['categoria'] }}</span>
                                         </p>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="text-success mb-0">R$
-                                                {{ number_format($product['preco'], 2, ',', '.') }}</h5>
+                                            @if (is_null($product['preco']))
+                                                <h6 class="text-muted mb-0">Preço a definir</h6>
+                                            @else
+                                                <h5 class="text-success mb-0">R$
+                                                    {{ number_format($product['preco'], 2, ',', '.') }}</h5>
+                                            @endif
                                             <small class="text-muted">
                                                 @if (is_null($product['stock']))
                                                     Disponível
@@ -123,7 +127,7 @@
                                         <button class="btn btn-primary btn-sm w-100 add-to-cart-btn"
                                             data-product-id="{{ $product['id'] }}"
                                             data-product-name="{{ $product['nome'] }}"
-                                            data-product-price="{{ $product['preco'] }}"
+                                            data-product-price="{{ $product['preco'] ?? '' }}"
                                             data-product-stock="{{ $product['stock'] ?? 'null' }}"
                                             onclick='addToCart(@json($product['id']), @json($product['nome']), @json($product['preco']), @json($product['stock']))'
                                             {{ $product['stock'] === 0 ? 'disabled' : '' }}
@@ -176,43 +180,58 @@
                             <span>Subtotal:</span>
                             <span id="subtotal">R$ 0,00</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Desconto:</span>
-                            <div class="input-group input-group-sm">
-                                <input type="number" class="form-control" id="discount" value="0" min="0"
-                                    max="100" onchange="updateTotal()">
-                                <span class="input-group-text">%</span>
+                        <div class="mb-2">
+                            <span class="d-block small text-muted mb-1">Desconto</span>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control" id="discount_percent" value="0"
+                                            min="0" max="100" step="0.01" placeholder="0">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">R$</span>
+                                        <input type="number" class="form-control" id="discount_value" value="0"
+                                            min="0" step="0.01" placeholder="0,00">
+                                    </div>
+                                </div>
                             </div>
+                            <small id="discount_auth_status" class="text-muted d-none mt-1"></small>
                         </div>
                         <div class="d-flex justify-content-between mb-3">
                             <strong>Total:</strong>
                             <strong class="text-success" id="total">R$ 0,00</strong>
                         </div>
 
-                        <!-- Forma de Pagamento -->
+                        <!-- Formas de Pagamento (múltiplas) -->
                         <div class="mb-3">
-                            <label for="payment_method" class="form-label">Forma de Pagamento</label>
-                            <select class="form-select" id="payment_method" onchange="updatePaymentOptions()">
-                                <option value="">Selecione</option>
-                                <option value="dinheiro">Dinheiro</option>
-                                <option value="cartao_debito">Cartão de Débito</option>
-                                <option value="cartao_credito">Cartão de Crédito</option>
-                                <option value="crediario">Crediário</option>
-                                <option value="pix">PIX</option>
-                            </select>
-                        </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0 fw-semibold">
+                                    <i class="mdi mdi-credit-card-multiple-outline me-1"></i>
+                                    Formas de Pagamento
+                                </label>
+                            </div>
 
-                        <div id="installments_section" style="display: none;">
-                            <label for="installments" class="form-label">Parcelas</label>
-                            <select class="form-select mb-3" id="installments" onchange="updateInstallmentValue()">
-                                <option value="1">1x sem juros</option>
-                                <option value="2">2x sem juros</option>
-                                <option value="3">3x sem juros</option>
-                                <option value="4">4x sem juros</option>
-                                <option value="5">5x sem juros</option>
-                                <option value="6">6x sem juros</option>
-                            </select>
-                            <small class="text-muted" id="installment_value"></small>
+                            <div id="payment_entries"></div>
+
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-1" id="add_payment_btn" onclick="addPaymentEntry()">
+                                <i class="mdi mdi-plus me-1"></i>
+                                Adicionar outra forma de pagamento
+                            </button>
+
+                            <div class="mt-2 p-2 rounded d-none" id="payment_summary_bar"
+                                 style="background:#f8f9fb; border:1px solid #e5e7eb;">
+                                <div class="d-flex justify-content-between align-items-center small">
+                                    <span class="text-muted">Alocado:</span>
+                                    <span id="payment_allocated_display" class="fw-semibold">R$ 0,00</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center small d-none" id="payment_remaining_row">
+                                    <span class="text-warning fw-semibold">Restante:</span>
+                                    <span id="payment_remaining_display" class="text-warning fw-semibold">R$ 0,00</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -231,6 +250,48 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Autorização de Desconto -->
+    <div class="modal fade" id="discountAuthModal" tabindex="-1" aria-labelledby="discountAuthModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="discountAuthModalLabel">
+                        <i class="mdi mdi-shield-key-outline me-2"></i>
+                        Autorizar desconto
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Para aplicar desconto, informe as credenciais de um supervisor (Administrador ou Gerente).
+                    </p>
+                    <div class="alert alert-light border mb-3 py-2">
+                        <small class="text-muted d-block">Desconto solicitado</small>
+                        <strong id="discount_auth_amount">R$ 0,00</strong>
+                        <small class="text-muted ms-2" id="discount_auth_percent">(0%)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="supervisor_email" class="form-label">E-mail do supervisor</label>
+                        <input type="email" class="form-control" id="supervisor_email" autocomplete="username"
+                            placeholder="supervisor@empresa.com">
+                    </div>
+                    <div class="mb-2">
+                        <label for="supervisor_password" class="form-label">Senha do supervisor</label>
+                        <input type="password" class="form-control" id="supervisor_password" autocomplete="current-password"
+                            placeholder="Senha">
+                    </div>
+                    <div id="discount_auth_error" class="alert alert-danger d-none mt-3 mb-0" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" id="discount_auth_cancel_btn">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="discount_auth_confirm_btn">
+                        <i class="mdi mdi-check me-1"></i>
+                        Autorizar
+                    </button>
                 </div>
             </div>
         </div>
@@ -259,7 +320,7 @@
                             <i class="mdi mdi-credit-card-outline"></i>
                             <div class="confirm-sale-meta-text">
                                 <span class="confirm-sale-meta-value" id="confirm_payment_method">-</span>
-                                <small class="text-muted" id="confirm_installments">-</small>
+                                <small class="text-muted" id="confirm_installments"></small>
                             </div>
                         </div>
                     </div>
@@ -464,6 +525,22 @@
             padding: 4px;
         }
 
+        .cart-item-price .input-group-text {
+            font-size: 0.8rem;
+        }
+
+        .cart-item-price .form-control {
+            font-size: 0.85rem;
+        }
+
+        .cart-item-price .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .cart-item-subtotal {
+            font-size: 0.95rem;
+        }
+
         .sticky-top {
             position: sticky;
             top: 20px;
@@ -636,6 +713,17 @@
             padding: 0.35rem 0.85rem;
         }
 
+        /* Entradas de pagamento */
+        .payment-entry {
+            background: #f9fafb;
+            border-color: #e5e7eb !important;
+            transition: border-color 0.15s;
+        }
+
+        .payment-entry:focus-within {
+            border-color: #6366f1 !important;
+        }
+
         /* Estilos gerais para modais */
         .modal-content {
             border-radius: 12px;
@@ -692,6 +780,24 @@
         let allowNavigation = false;
         let pendingNavigationUrl = null;
         let pendingNavigationAction = null;
+        let discountUpdateSource = null;
+        let discountAuthToken = null;
+        let discountAuthorizedFor = null;
+        let pendingDiscountAuth = null;
+
+        // --- Múltiplas formas de pagamento ---
+        let paymentEntries = [];
+        let paymentEntryCounter = 0;
+
+        const PAYMENT_METHODS_MAP = {
+            'dinheiro': 'Dinheiro',
+            'cartao_debito': 'Cartão de Débito',
+            'cartao_credito': 'Cartão de Crédito',
+            'crediario': 'Crediário',
+            'pix': 'PIX'
+        };
+
+        const canApplyDiscountWithoutAuth = @json($canApplyDiscountWithoutAuth ?? false);
 
         const clientSearchInput = document.getElementById('client_search');
         const clientSuggestions = document.getElementById('client_suggestions');
@@ -835,6 +941,38 @@
             clientSearchInput.focus();
         }
 
+        function formatCurrency(value) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) {
+                return '0,00';
+            }
+
+            return num.toFixed(2).replace('.', ',');
+        }
+
+        function parsePrice(value) {
+            if (value === null || value === undefined || value === '') {
+                return null;
+            }
+
+            const normalized = String(value).trim().replace(',', '.');
+            const num = parseFloat(normalized);
+
+            return Number.isFinite(num) ? num : null;
+        }
+
+        function isValidCartItemPrice(price) {
+            return price !== null && Number.isFinite(price) && price > 0;
+        }
+
+        function recalculateItemSubtotal(item) {
+            item.subtotal = isValidCartItemPrice(item.price) ? item.quantity * item.price : 0;
+        }
+
+        function cartHasValidPrices() {
+            return cart.length > 0 && cart.every(item => isValidCartItemPrice(item.price));
+        }
+
         function addToCart(id, name, price, stock) {
             // Verificar se há cliente selecionado
             if (!selectedClient) {
@@ -844,23 +982,26 @@
             }
 
             const stockLimit = Number.isFinite(stock) ? stock : null;
+            const catalogPrice = price !== null && price !== undefined ? parsePrice(price) : null;
             const existingItem = cart.find(item => item.id === id);
 
             if (existingItem) {
                 if (stockLimit === null || existingItem.quantity < stockLimit) {
                     existingItem.quantity++;
-                    existingItem.subtotal = existingItem.quantity * existingItem.price;
+                    recalculateItemSubtotal(existingItem);
                 } else {
                     showValidationModal('Quantidade máxima em estoque atingida!');
                     return;
                 }
             } else {
+                const initialPrice = catalogPrice;
                 cart.push({
                     id: id,
                     name: name,
-                    price: price,
+                    catalogPrice: catalogPrice,
+                    price: initialPrice,
                     quantity: 1,
-                    subtotal: price,
+                    subtotal: isValidCartItemPrice(initialPrice) ? initialPrice : 0,
                     stock: stockLimit
                 });
             }
@@ -883,15 +1024,39 @@
                 const hasLimit = item.stock !== null && item.stock !== undefined;
                 if (newQuantity > 0 && (!hasLimit || newQuantity <= item.stock)) {
                     item.quantity = newQuantity;
-                    item.subtotal = item.quantity * item.price;
+                    recalculateItemSubtotal(item);
                     updateCartDisplay();
                     updateTotal();
+                    updateFinalizeButton();
                 } else if (newQuantity <= 0) {
                     removeFromCart(id);
                 } else {
                     showValidationModal('Quantidade máxima em estoque atingida!');
                 }
             }
+        }
+
+        function updateItemPrice(id, value) {
+            const item = cart.find(cartItem => cartItem.id === id);
+            if (!item) {
+                return;
+            }
+
+            item.price = parsePrice(value);
+            recalculateItemSubtotal(item);
+
+            const subtotalEl = document.getElementById(`cart-subtotal-${id}`);
+            if (subtotalEl) {
+                subtotalEl.textContent = `R$ ${formatCurrency(item.subtotal)}`;
+            }
+
+            const priceInput = document.getElementById(`cart-price-${id}`);
+            if (priceInput) {
+                priceInput.classList.toggle('is-invalid', !isValidCartItemPrice(item.price));
+            }
+
+            updateTotal();
+            updateFinalizeButton();
         }
 
         function updateCartDisplay() {
@@ -914,6 +1079,14 @@
                 cartItems.innerHTML = cart.map(item => {
                     const maxAttr = item.stock !== null && item.stock !== undefined ? `max="${item.stock}"` : '';
                     const disableIncrease = item.stock !== null && item.stock !== undefined && item.quantity >= item.stock;
+                    const priceValue = item.price !== null && item.price !== undefined
+                        ? Number(item.price).toFixed(2)
+                        : '';
+                    const priceInvalidClass = isValidCartItemPrice(item.price) ? '' : 'is-invalid';
+                    const priceHint = isValidCartItemPrice(item.price)
+                        ? ''
+                        : '<small class="text-danger d-block mt-1">Informe o preço unitário</small>';
+
                     return `
             <div class="cart-item">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -921,6 +1094,22 @@
                     <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.id})">
                         <i class="mdi mdi-close"></i>
                     </button>
+                </div>
+                <div class="cart-item-price mb-2">
+                    <label class="form-label small text-muted mb-1" for="cart-price-${item.id}">Preço unitário</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">R$</span>
+                        <input type="number"
+                               class="form-control ${priceInvalidClass}"
+                               id="cart-price-${item.id}"
+                               value="${priceValue}"
+                               step="0.01"
+                               min="0.01"
+                               placeholder="0,00"
+                               onchange="updateItemPrice(${item.id}, this.value)"
+                               onblur="updateItemPrice(${item.id}, this.value)">
+                    </div>
+                    ${priceHint}
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="quantity-controls">
@@ -930,8 +1119,9 @@
                         <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})" ${disableIncrease ? 'disabled' : ''}>+</button>
                     </div>
                     <div class="text-end">
-                        <div class="text-success fw-bold">R$ ${item.subtotal.toFixed(2).replace('.', ',')}</div>
-                        <small class="text-muted">R$ ${item.price.toFixed(2).replace('.', ',')} cada</small>
+                        <div class="text-success fw-bold cart-item-subtotal" id="cart-subtotal-${item.id}">
+                            R$ ${formatCurrency(item.subtotal)}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -941,41 +1131,454 @@
             }
         }
 
-        function updateTotal() {
-            const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-            const discountAmount = subtotal * (discount / 100);
-            const total = subtotal - discountAmount;
-
-            document.getElementById('subtotal').textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
-            document.getElementById('total').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
-
-            updateInstallmentValue();
+        function getCartSubtotal() {
+            return cart.reduce((sum, item) => sum + item.subtotal, 0);
         }
 
-        function updatePaymentOptions() {
-            const paymentMethod = document.getElementById('payment_method').value;
-            const installmentsSection = document.getElementById('installments_section');
+        function getDiscountPercentValue() {
+            return parseFloat(document.getElementById('discount_percent').value) || 0;
+        }
 
-            if (paymentMethod === 'cartao_credito' || paymentMethod === 'crediario') {
-                installmentsSection.style.display = 'block';
-                updateInstallmentValue();
-            } else {
-                installmentsSection.style.display = 'none';
+        function getDiscountAmountValue() {
+            return parseFloat(document.getElementById('discount_value').value) || 0;
+        }
+
+        function resetDiscountAuthorization() {
+            discountAuthToken = null;
+            discountAuthorizedFor = null;
+            updateDiscountAuthStatus();
+        }
+
+        function updateDiscountAuthStatus() {
+            const statusEl = document.getElementById('discount_auth_status');
+            if (!statusEl) {
+                return;
             }
 
+            if (canApplyDiscountWithoutAuth) {
+                statusEl.classList.add('d-none');
+                statusEl.textContent = '';
+                return;
+            }
+
+            const discountAmount = getDiscountAmountValue();
+            if (discountAmount <= 0) {
+                statusEl.classList.add('d-none');
+                statusEl.textContent = '';
+                return;
+            }
+
+            statusEl.classList.remove('d-none');
+
+            if (discountAuthToken && discountAuthorizedFor
+                && Math.abs(discountAuthorizedFor.valor - discountAmount) < 0.01) {
+                statusEl.className = 'text-success d-block mt-1';
+                statusEl.innerHTML = `<i class="mdi mdi-check-circle-outline me-1"></i>Autorizado por ${discountAuthorizedFor.name}`;
+            } else {
+                statusEl.className = 'text-warning d-block mt-1';
+                statusEl.innerHTML = '<i class="mdi mdi-alert-circle-outline me-1"></i>Autorização de supervisor necessária';
+            }
+        }
+
+        function isDiscountAuthorized() {
+            const discountAmount = getDiscountAmountValue();
+            if (discountAmount <= 0) {
+                return true;
+            }
+
+            if (canApplyDiscountWithoutAuth) {
+                return true;
+            }
+
+            return Boolean(
+                discountAuthToken
+                && discountAuthorizedFor
+                && Math.abs(discountAuthorizedFor.valor - discountAmount) < 0.01
+            );
+        }
+
+        function syncDiscountFromPercent() {
+            if (discountUpdateSource === 'value') {
+                return;
+            }
+
+            discountUpdateSource = 'percent';
+            const subtotal = getCartSubtotal();
+            const percent = getDiscountPercentValue();
+            const clampedPercent = Math.min(Math.max(percent, 0), 100);
+            const amount = subtotal > 0 ? (subtotal * (clampedPercent / 100)) : 0;
+
+            document.getElementById('discount_percent').value = clampedPercent > 0
+                ? clampedPercent.toFixed(2)
+                : '0';
+            document.getElementById('discount_value').value = amount > 0 ? amount.toFixed(2) : '0';
+
+            discountUpdateSource = null;
+            handleDiscountChange();
+        }
+
+        function syncDiscountFromValue() {
+            if (discountUpdateSource === 'percent') {
+                return;
+            }
+
+            discountUpdateSource = 'value';
+            const subtotal = getCartSubtotal();
+            let amount = getDiscountAmountValue();
+            amount = Math.max(0, Math.min(amount, subtotal));
+            const percent = subtotal > 0 ? ((amount / subtotal) * 100) : 0;
+
+            document.getElementById('discount_value').value = amount > 0 ? amount.toFixed(2) : '0';
+            document.getElementById('discount_percent').value = percent > 0 ? percent.toFixed(2) : '0';
+
+            discountUpdateSource = null;
+            handleDiscountChange();
+        }
+
+        function handleDiscountChange() {
+            const discountAmount = getDiscountAmountValue();
+
+            if (discountAmount <= 0) {
+                resetDiscountAuthorization();
+            } else if (
+                discountAuthorizedFor
+                && Math.abs(discountAuthorizedFor.valor - discountAmount) >= 0.01
+            ) {
+                resetDiscountAuthorization();
+            }
+
+            updateTotal();
+            updateDiscountAuthStatus();
+            updateFinalizeButton();
+
+            if (!canApplyDiscountWithoutAuth && discountAmount > 0 && !isDiscountAuthorized()) {
+                openDiscountAuthModal();
+            }
+        }
+
+        function openDiscountAuthModal() {
+            const discountAmount = getDiscountAmountValue();
+            const discountPercent = getDiscountPercentValue();
+
+            pendingDiscountAuth = {
+                valor: discountAmount,
+                percentual: discountPercent,
+            };
+
+            document.getElementById('discount_auth_amount').textContent = `R$ ${formatCurrency(discountAmount)}`;
+            document.getElementById('discount_auth_percent').textContent = `(${discountPercent.toFixed(2).replace('.', ',')}%)`;
+            document.getElementById('discount_auth_error').classList.add('d-none');
+            document.getElementById('discount_auth_error').textContent = '';
+            document.getElementById('supervisor_password').value = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('discountAuthModal'));
+            modal.show();
+        }
+
+        async function confirmDiscountAuthorization() {
+            const supervisorEmail = document.getElementById('supervisor_email').value.trim();
+            const supervisorPassword = document.getElementById('supervisor_password').value;
+            const errorEl = document.getElementById('discount_auth_error');
+            const confirmBtn = document.getElementById('discount_auth_confirm_btn');
+
+            if (!supervisorEmail || !supervisorPassword) {
+                errorEl.textContent = 'Informe o e-mail e a senha do supervisor.';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            const discountAmount = pendingDiscountAuth?.valor ?? getDiscountAmountValue();
+            const discountPercent = pendingDiscountAuth?.percentual ?? getDiscountPercentValue();
+
+            if (discountAmount <= 0) {
+                errorEl.textContent = 'Informe um desconto válido antes de solicitar autorização.';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            const originalHtml = confirmBtn.innerHTML;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="mdi mdi-loading me-1"></i>Validando...';
+            errorEl.classList.add('d-none');
+
+            try {
+                const response = await fetch('{{ route('sales.authorize-discount') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        supervisor_email: supervisorEmail,
+                        supervisor_password: supervisorPassword,
+                        desconto_valor: discountAmount,
+                        desconto_percentual: discountPercent,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Não foi possível autorizar o desconto.');
+                }
+
+                discountAuthToken = data.token || null;
+                discountAuthorizedFor = {
+                    valor: discountAmount,
+                    percentual: discountPercent,
+                    name: data.authorized_by_name || 'Supervisor',
+                };
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('discountAuthModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                updateDiscountAuthStatus();
+                updateFinalizeButton();
+            } catch (error) {
+                errorEl.textContent = error.message || 'Erro ao autorizar desconto.';
+                errorEl.classList.remove('d-none');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalHtml;
+            }
+        }
+
+        function cancelDiscountAuthorization() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('discountAuthModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            if (!isDiscountAuthorized()) {
+                discountUpdateSource = 'value';
+                document.getElementById('discount_percent').value = '0';
+                document.getElementById('discount_value').value = '0';
+                discountUpdateSource = null;
+                resetDiscountAuthorization();
+                updateTotal();
+                updateFinalizeButton();
+            }
+        }
+
+        function getCartTotal() {
+            const subtotal = getCartSubtotal();
+            const discountAmount = getDiscountAmountValue();
+            return Math.max(0, subtotal - discountAmount);
+        }
+
+        function updateTotal() {
+            const subtotal = getCartSubtotal();
+            const percent = getDiscountPercentValue();
+
+            if (percent > 0 && discountUpdateSource !== 'value') {
+                discountUpdateSource = 'percent';
+                const amount = subtotal > 0 ? (subtotal * (percent / 100)) : 0;
+                const normalizedAmount = amount > 0 ? amount.toFixed(2) : '0';
+                document.getElementById('discount_value').value = normalizedAmount;
+
+                if (
+                    discountAuthorizedFor
+                    && Math.abs(discountAuthorizedFor.valor - parseFloat(normalizedAmount)) >= 0.01
+                ) {
+                    resetDiscountAuthorization();
+                }
+
+                discountUpdateSource = null;
+            }
+
+            const discountAmount = getDiscountAmountValue();
+            const total = Math.max(0, subtotal - discountAmount);
+
+            document.getElementById('subtotal').textContent = `R$ ${formatCurrency(subtotal)}`;
+            document.getElementById('total').textContent = `R$ ${formatCurrency(total)}`;
+
+            updateDiscountAuthStatus();
+
+            // Auto-preenche a entrada única quando o usuário ainda não digitou valor
+            if (paymentEntries.length === 1 && !paymentEntries[0].userModified && total > 0) {
+                paymentEntries[0].value = parseFloat(total.toFixed(2));
+                renderPaymentEntries();
+            }
+
+            updatePaymentSummary();
             updateFinalizeButton();
         }
 
-        function updateInstallmentValue() {
-            const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-            const finalTotal = total - (total * (discount / 100));
-            const installments = parseInt(document.getElementById('installments').value) || 1;
-            const installmentValue = finalTotal / installments;
+        // ---- Funções de múltiplas formas de pagamento ----
 
-            document.getElementById('installment_value').textContent =
-                `${installments}x de R$ ${installmentValue.toFixed(2).replace('.', ',')}`;
+        function addPaymentEntry() {
+            const id = ++paymentEntryCounter;
+            const cartTotal = getCartTotal();
+            const allocated = getTotalAllocated();
+            const remaining = cartTotal > 0 ? Math.max(0, cartTotal - allocated) : '';
+            paymentEntries.push({ id, method: '', value: remaining > 0.001 ? parseFloat(remaining.toFixed(2)) : '', installments: 1, userModified: remaining > 0.001 });
+            renderPaymentEntries();
+            updatePaymentSummary();
+            updateFinalizeButton();
+        }
+
+        function removePaymentEntry(id) {
+            if (paymentEntries.length <= 1) return;
+            paymentEntries = paymentEntries.filter(e => e.id !== id);
+            renderPaymentEntries();
+            updatePaymentSummary();
+            updateFinalizeButton();
+        }
+
+        function onPaymentMethodChange(id) {
+            const entry = paymentEntries.find(e => e.id === id);
+            if (!entry) return;
+            entry.method = document.getElementById(`payment-method-${id}`).value;
+
+            const installmentsDiv = document.getElementById(`payment-installments-${id}`);
+            const isInstallable = entry.method === 'cartao_credito' || entry.method === 'crediario';
+            if (installmentsDiv) {
+                installmentsDiv.style.display = isInstallable ? 'block' : 'none';
+            }
+            if (!isInstallable) {
+                entry.installments = 1;
+            }
+
+            updateInstallmentHint(id);
+            updatePaymentSummary();
+            updateFinalizeButton();
+        }
+
+        function onPaymentValueChange(id) {
+            const entry = paymentEntries.find(e => e.id === id);
+            if (!entry) return;
+            entry.value = parseFloat(document.getElementById(`payment-value-${id}`).value) || 0;
+            entry.userModified = true;
+            updateInstallmentHint(id);
+            updatePaymentSummary();
+            updateFinalizeButton();
+        }
+
+        function onPaymentInstallmentsChange(id) {
+            const entry = paymentEntries.find(e => e.id === id);
+            if (!entry) return;
+            entry.installments = parseInt(document.getElementById(`payment-installments-select-${id}`).value) || 1;
+            updateInstallmentHint(id);
+        }
+
+        function updateInstallmentHint(id) {
+            const entry = paymentEntries.find(e => e.id === id);
+            if (!entry) return;
+            const hintEl = document.getElementById(`payment-installment-value-${id}`);
+            if (!hintEl) return;
+            if (entry.value > 0 && entry.installments > 1) {
+                hintEl.textContent = `${entry.installments}x de R$ ${formatCurrency(entry.value / entry.installments)}`;
+            } else {
+                hintEl.textContent = '';
+            }
+        }
+
+        function getTotalAllocated() {
+            return paymentEntries.reduce((sum, e) => sum + (parseFloat(e.value) || 0), 0);
+        }
+
+        function isPaymentValid() {
+            if (paymentEntries.length === 0) return false;
+            const cartTotal = getCartTotal();
+            if (cartTotal <= 0) return false;
+
+            for (const entry of paymentEntries) {
+                if (!entry.method || !(parseFloat(entry.value) > 0)) return false;
+            }
+
+            return Math.abs(getTotalAllocated() - cartTotal) <= 0.02;
+        }
+
+        function updatePaymentSummary() {
+            const cartTotal = getCartTotal();
+            const allocated = getTotalAllocated();
+            const remaining = cartTotal - allocated;
+
+            const summaryBar = document.getElementById('payment_summary_bar');
+            const allocatedDisplay = document.getElementById('payment_allocated_display');
+            const remainingRow = document.getElementById('payment_remaining_row');
+            const remainingDisplay = document.getElementById('payment_remaining_display');
+
+            if (paymentEntries.length > 0 && cartTotal > 0) {
+                summaryBar.classList.remove('d-none');
+            } else {
+                summaryBar.classList.add('d-none');
+                return;
+            }
+
+            allocatedDisplay.textContent = `R$ ${formatCurrency(allocated)}`;
+
+            const addBtn = document.getElementById('add_payment_btn');
+
+            if (remaining > 0.02) {
+                remainingRow.classList.remove('d-none');
+                remainingDisplay.textContent = `R$ ${formatCurrency(remaining)}`;
+                allocatedDisplay.className = 'fw-semibold text-warning';
+                if (addBtn) { addBtn.disabled = false; addBtn.title = ''; }
+            } else if (allocated > cartTotal + 0.02) {
+                remainingRow.classList.add('d-none');
+                allocatedDisplay.className = 'fw-semibold text-danger';
+                if (addBtn) { addBtn.disabled = false; addBtn.title = ''; }
+            } else {
+                remainingRow.classList.add('d-none');
+                allocatedDisplay.className = 'fw-semibold text-success';
+                if (addBtn) { addBtn.disabled = true; addBtn.title = 'Total já totalmente alocado'; }
+            }
+        }
+
+        function renderPaymentEntries() {
+            const container = document.getElementById('payment_entries');
+            const showRemove = paymentEntries.length > 1;
+
+            const optionsHtml = (selectedMethod) => ['dinheiro', 'cartao_debito', 'cartao_credito', 'crediario', 'pix']
+                .map(v => `<option value="${v}" ${selectedMethod === v ? 'selected' : ''}>${PAYMENT_METHODS_MAP[v]}</option>`)
+                .join('');
+
+            const installmentsOptions = (selected) => Array.from({length: 12}, (_, i) => i + 1)
+                .map(n => `<option value="${n}" ${selected === n ? 'selected' : ''}>${n}x sem juros</option>`)
+                .join('');
+
+            container.innerHTML = paymentEntries.map(entry => {
+                const isInstallable = entry.method === 'cartao_credito' || entry.method === 'crediario';
+                const hintText = (entry.value > 0 && entry.installments > 1)
+                    ? `${entry.installments}x de R$ ${formatCurrency(entry.value / entry.installments)}`
+                    : '';
+
+                return `
+                    <div class="payment-entry border rounded p-2 mb-2" id="payment-entry-${entry.id}">
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select form-select-sm" id="payment-method-${entry.id}"
+                                    onchange="onPaymentMethodChange(${entry.id})">
+                                <option value="">Selecione...</option>
+                                ${optionsHtml(entry.method)}
+                            </select>
+                            ${showRemove ? `<button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0"
+                                    onclick="removePaymentEntry(${entry.id})">
+                                    <i class="mdi mdi-close"></i>
+                                </button>` : ''}
+                        </div>
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" class="form-control" id="payment-value-${entry.id}"
+                                   value="${entry.value !== '' ? entry.value : ''}"
+                                   step="0.01" min="0.01" placeholder="0,00"
+                                   oninput="onPaymentValueChange(${entry.id})">
+                        </div>
+                        <div id="payment-installments-${entry.id}" style="display:${isInstallable ? 'block' : 'none'};">
+                            <select class="form-select form-select-sm mb-1"
+                                    id="payment-installments-select-${entry.id}"
+                                    onchange="onPaymentInstallmentsChange(${entry.id})">
+                                ${installmentsOptions(entry.installments)}
+                            </select>
+                            <small class="text-muted" id="payment-installment-value-${entry.id}">${hintText}</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function updateAddToCartButtons() {
@@ -1003,9 +1606,11 @@
             const finalizeBtn = document.getElementById('finalize_btn');
             const hasClient = selectedClient !== null;
             const hasProducts = cart.length > 0;
-            const hasPayment = document.getElementById('payment_method').value !== '';
+            const hasValidPrices = cartHasValidPrices();
+            const discountOk = isDiscountAuthorized();
+            const hasPayment = isPaymentValid();
 
-            finalizeBtn.disabled = !(hasClient && hasProducts && hasPayment);
+            finalizeBtn.disabled = !(hasClient && hasProducts && hasPayment && hasValidPrices && discountOk);
         }
 
         function hasSaleInProgress() {
@@ -1045,11 +1650,22 @@
         }
 
         function confirmClearCart() {
-                cart = [];
-                updateCartDisplay();
-                updateTotal();
-                updateFinalizeButton();
-            
+            cart = [];
+            document.getElementById('discount_percent').value = '0';
+            document.getElementById('discount_value').value = '0';
+            resetDiscountAuthorization();
+            updateCartDisplay();
+            updateTotal();
+
+            // Resetar formas de pagamento para uma entrada vazia (sem valor pré-preenchido)
+            paymentEntries = [];
+            paymentEntryCounter = 0;
+            const initId = ++paymentEntryCounter;
+            paymentEntries.push({ id: initId, method: '', value: '', installments: 1, userModified: false });
+            renderPaymentEntries();
+
+            updateFinalizeButton();
+
             const modal = bootstrap.Modal.getInstance(document.getElementById('confirmClearCartModal'));
             if (modal) {
                 modal.hide();
@@ -1082,23 +1698,18 @@
             document.getElementById('confirm_client_name').textContent = selectedClient.name;
             document.getElementById('confirm_client_document').textContent = selectedClient.cpf ? `CPF: ${selectedClient.cpf}` : '';
 
-            // Preencher forma de pagamento
-            const paymentMethod = document.getElementById('payment_method').value;
-            const paymentMethods = {
-                'dinheiro': 'Dinheiro',
-                'cartao_debito': 'Cartão de Débito',
-                'cartao_credito': 'Cartão de Crédito',
-                'crediario': 'Crediário',
-                'pix': 'PIX'
-            };
-            document.getElementById('confirm_payment_method').textContent = paymentMethods[paymentMethod] || paymentMethod;
-
-            const installments = parseInt(document.getElementById('installments').value) || 1;
-            if (paymentMethod === 'cartao_credito' || paymentMethod === 'crediario') {
-                document.getElementById('confirm_installments').textContent = `${installments}x parcelas`;
-            } else {
-                document.getElementById('confirm_installments').textContent = 'À vista';
-            }
+            // Preencher formas de pagamento (múltiplas)
+            const paymentSummaryLines = paymentEntries.map(e => {
+                const name = PAYMENT_METHODS_MAP[e.method] || e.method;
+                const valueStr = `R$ ${formatCurrency(parseFloat(e.value) || 0)}`;
+                const isInstallable = e.method === 'cartao_credito' || e.method === 'crediario';
+                if (isInstallable && e.installments > 1) {
+                    return `${name} ${e.installments}x ${valueStr}`;
+                }
+                return `${name} ${valueStr}`;
+            });
+            document.getElementById('confirm_payment_method').textContent = paymentSummaryLines.join(' + ');
+            document.getElementById('confirm_installments').textContent = '';
 
             // Preencher itens
             const itemsList = document.getElementById('confirm_items_list');
@@ -1106,21 +1717,21 @@
                 <div class="confirm-sale-item">
                     <div class="confirm-sale-item-name" title="${item.name}">${item.name}</div>
                     <div class="confirm-sale-item-detail">
-                        <span class="text-muted">${item.quantity}x R$ ${item.price.toFixed(2).replace('.', ',')}</span>
-                        <span class="fw-semibold">R$ ${item.subtotal.toFixed(2).replace('.', ',')}</span>
+                        <span class="text-muted">${item.quantity}x R$ ${formatCurrency(item.price)}</span>
+                        <span class="fw-semibold">R$ ${formatCurrency(item.subtotal)}</span>
                     </div>
                 </div>
             `).join('');
 
             // Preencher totais
-            const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-            const discountAmount = subtotal * (discount / 100);
-            const total = subtotal - discountAmount;
+            const subtotal = getCartSubtotal();
+            const discountAmount = getDiscountAmountValue();
+            const discountPercent = getDiscountPercentValue();
+            const total = Math.max(0, subtotal - discountAmount);
 
-            document.getElementById('confirm_subtotal').textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
-            document.getElementById('confirm_discount').textContent = `- R$ ${discountAmount.toFixed(2).replace('.', ',')}`;
-            document.getElementById('confirm_total').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+            document.getElementById('confirm_subtotal').textContent = `R$ ${formatCurrency(subtotal)}`;
+            document.getElementById('confirm_discount').textContent = `- R$ ${formatCurrency(discountAmount)}`;
+            document.getElementById('confirm_total').textContent = `R$ ${formatCurrency(total)}`;
             document.getElementById('confirm_discount_row').style.display = discountAmount > 0 ? 'flex' : 'none';
 
             // Observações
@@ -1150,10 +1761,28 @@
                 return;
             }
 
-            const paymentMethod = document.getElementById('payment_method').value;
-            if (!paymentMethod) {
-                showValidationModal('Selecione uma forma de pagamento antes de finalizar a venda!');
-                document.getElementById('payment_method').focus();
+            if (!cartHasValidPrices()) {
+                showValidationModal('Informe o preço unitário de todos os produtos no carrinho antes de finalizar a venda!');
+                return;
+            }
+
+            if (!isDiscountAuthorized()) {
+                showValidationModal('É necessária autorização de supervisor para aplicar este desconto.');
+                openDiscountAuthModal();
+                return;
+            }
+
+            if (paymentEntries.length === 0 || paymentEntries.some(e => !e.method)) {
+                showValidationModal('Selecione uma forma de pagamento para cada entrada!');
+                return;
+            }
+
+            if (!isPaymentValid()) {
+                const cartTotal = getCartTotal();
+                const allocated = getTotalAllocated();
+                showValidationModal(
+                    `O valor alocado (R$ ${formatCurrency(allocated)}) deve ser igual ao total da venda (R$ ${formatCurrency(cartTotal)}).`
+                );
                 return;
             }
 
@@ -1171,13 +1800,11 @@
         }
 
         async function processSale() {
-            // Calcular totais
-            const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-            const discountAmount = subtotal * (discount / 100);
-            const total = subtotal - discountAmount;
+            const subtotal = getCartSubtotal();
+            const discountPercent = getDiscountPercentValue();
+            const discountAmount = getDiscountAmountValue();
+            const total = Math.max(0, subtotal - discountAmount);
 
-            // Preparar dados da venda
             const saleData = {
                 cliente_id: selectedClient.id,
                 produtos: cart.map(item => ({
@@ -1186,12 +1813,14 @@
                     preco_unitario: item.price,
                     subtotal: item.subtotal
                 })),
-                forma_pagamento: document.getElementById('payment_method').value,
-                parcelas: document.getElementById('payment_method').value === 'cartao_credito' || document.getElementById('payment_method').value === 'crediario' 
-                    ? parseInt(document.getElementById('installments').value) || 1 
-                    : 1,
-                desconto_percentual: discount,
+                pagamentos: paymentEntries.map(e => ({
+                    forma_pagamento: e.method,
+                    valor: parseFloat(e.value) || 0,
+                    parcelas: e.installments || 1
+                })),
+                desconto_percentual: discountPercent,
                 desconto_valor: discountAmount,
+                desconto_autorizacao_token: discountAuthToken,
                 subtotal: subtotal,
                 total: total,
                 observacoes: document.getElementById('observations').value || null
@@ -1356,9 +1985,16 @@
             }
         });
 
+        // Inicializar primeira entrada de pagamento (sem valor pré-preenchido, pois carrinho está vazio)
+        const initPaymentId = ++paymentEntryCounter;
+        paymentEntries.push({ id: initPaymentId, method: '', value: '', installments: 1, userModified: false });
+        renderPaymentEntries();
+
         // Event listeners
-        document.getElementById('discount').addEventListener('input', updateTotal);
-        document.getElementById('payment_method').addEventListener('change', updateFinalizeButton);
+        document.getElementById('discount_percent').addEventListener('input', syncDiscountFromPercent);
+        document.getElementById('discount_value').addEventListener('input', syncDiscountFromValue);
+        document.getElementById('discount_auth_confirm_btn').addEventListener('click', confirmDiscountAuthorization);
+        document.getElementById('discount_auth_cancel_btn').addEventListener('click', cancelDiscountAuthorization);
         clientSuggestions.addEventListener('click', event => {
             const item = event.target.closest('[data-index]');
             if (!item) {

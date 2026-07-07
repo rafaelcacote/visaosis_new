@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class ProductImage extends Model
 {
@@ -31,6 +32,21 @@ class ProductImage extends Model
     public function product()
     {
         return $this->belongsTo(Produto::class, 'produto_id');
+    }
+
+    public function getUrlAttribute(): ?string
+    {
+        if (!$this->caminho_arquivo) {
+            return null;
+        }
+
+        $storagePath = ltrim($this->caminho_arquivo, '/');
+
+        if (!Storage::disk('public')->exists($storagePath)) {
+            return null;
+        }
+
+        return asset('storage/' . $storagePath);
     }
 }
 

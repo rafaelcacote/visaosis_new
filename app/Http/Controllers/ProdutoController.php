@@ -47,7 +47,7 @@ class ProdutoController extends Controller
 
         $query = Produto::query()
             ->where('tenant_id', $tenantId)
-            ->with('categoria');
+            ->with(['categoria', 'primaryImage']);
 
         if (!empty($locationIds)) {
             $query->where(function ($q) use ($locationIds) {
@@ -354,7 +354,7 @@ class ProdutoController extends Controller
                 },
             ],
             'categoria_id' => 'required|exists:categoria_produto,id',
-            'preco_venda' => 'required|numeric|min:0',
+            'preco_venda' => 'nullable|numeric|min:0',
             'preco_custo' => 'nullable|numeric|min:0',
             'marca' => 'nullable|string|max:100',
             'ativo' => 'nullable|boolean',
@@ -364,7 +364,6 @@ class ProdutoController extends Controller
             'nome.max' => 'O nome não pode ter mais de 160 caracteres.',
             'categoria_id.required' => 'A categoria é obrigatória.',
             'categoria_id.exists' => 'Categoria inválida.',
-            'preco_venda.required' => 'O preço de venda é obrigatório.',
             'preco_venda.numeric' => 'O preço de venda deve ser um número.',
         ]);
 
@@ -382,7 +381,7 @@ class ProdutoController extends Controller
                 'marca' => $request->marca ?: null,
                 'atributos' => $atributos,
                 'preco_custo' => $request->preco_custo ?: null,
-                'preco_venda' => $request->preco_venda,
+                'preco_venda' => $request->preco_venda ?: null,
                 'ativo' => $request->has('ativo') && $request->ativo == '1',
             ]);
 
@@ -564,7 +563,7 @@ class ProdutoController extends Controller
                 },
             ],
             'categoria_id' => 'required|exists:categoria_produto,id',
-            'preco_venda' => 'required|numeric|min:0',
+            'preco_venda' => 'nullable|numeric|min:0',
             'preco_custo' => 'nullable|numeric|min:0',
             'marca' => 'nullable|string|max:100',
             'ativo' => 'nullable|boolean',
@@ -575,7 +574,7 @@ class ProdutoController extends Controller
             'nome.max' => 'O nome não pode ter mais de 160 caracteres.',
             'categoria_id.required' => 'A categoria é obrigatória.',
             'categoria_id.exists' => 'Categoria inválida.',
-            'preco_venda.required' => 'O preço de venda é obrigatório.',
+            'preco_venda.numeric' => 'O preço de venda deve ser um número.',
         ]);
 
         $atributos = $this->buildAtributosFromRequest($request);
@@ -589,7 +588,7 @@ class ProdutoController extends Controller
                 'marca' => $request->marca ?: null,
                 'atributos' => $atributos,
                 'preco_custo' => $request->preco_custo ?: null,
-                'preco_venda' => $request->preco_venda,
+                'preco_venda' => $request->preco_venda ?: null,
                 'ativo' => $request->has('ativo') && $request->ativo == '1',
             ]);
 
