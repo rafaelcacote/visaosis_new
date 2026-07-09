@@ -1463,18 +1463,32 @@
 
 		if ($("#evolucao-vendas-chart").length) {
 			var vendasData = window.DASHBOARD_VENDAS_POR_MES || { labels: [], valores: [] };
+			var clientesData = window.DASHBOARD_CLIENTES_POR_MES || { labels: [], valores: [] };
 			var labels = vendasData.labels && vendasData.labels.length ? vendasData.labels : ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 			var valores = vendasData.valores && vendasData.valores.length ? vendasData.valores : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+			var valoresClientes = clientesData.valores && clientesData.valores.length ? clientesData.valores : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 			var evolucaoVendasData = {
 				labels: labels,
-				datasets: [{
-					label: 'Vendas',
-					data: valores,
-					backgroundColor: ['#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8'],
-					borderColor: ['#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8'],
-					borderWidth: 1,
-					fill: false
-				}]
+				datasets: [
+					{
+						label: 'Vendas',
+						data: valores,
+						yAxisID: 'y-vendas',
+						backgroundColor: ['#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8'],
+						borderColor: ['#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8', '#a461d8'],
+						borderWidth: 1,
+						fill: false
+					},
+					{
+						label: 'Clientes',
+						data: valoresClientes,
+						yAxisID: 'y-clientes',
+						backgroundColor: ['#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff'],
+						borderColor: ['#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff', '#0062ff'],
+						borderWidth: 1,
+						fill: false
+					}
+				]
 			};
 			var evolucaoVendasOptions = {
 				responsive: true,
@@ -1482,8 +1496,8 @@
 				scales: {
 					xAxes: [{
 						stacked: false,
-						barPercentage: 0.5,
-						categoryPercentage: 0.4,
+						barPercentage: 0.7,
+						categoryPercentage: 0.6,
 						position: 'bottom',
 						display: true,
 						gridLines: {
@@ -1498,34 +1512,66 @@
 							padding: 10,
 						}
 					}],
-					yAxes: [{
-						stacked: false,
-						display: true,
-						gridLines: {
-							drawBorder: false,
+					yAxes: [
+						{
+							id: 'y-vendas',
+							position: 'left',
+							stacked: false,
 							display: true,
-							color: '#eef0fa',
-							drawTicks: false,
-							zeroLineColor: 'rgba(90, 113, 208, 0)',
+							gridLines: {
+								drawBorder: false,
+								display: true,
+								color: '#eef0fa',
+								drawTicks: false,
+								zeroLineColor: 'rgba(90, 113, 208, 0)',
+							},
+							ticks: {
+								display: true,
+								beginAtZero: true,
+								fontColor: '#a7afb7',
+								fontSize: 14,
+								callback: function(value) {
+									return 'R$ ' + Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+								}
+							},
 						},
-						ticks: {
+						{
+							id: 'y-clientes',
+							position: 'right',
+							stacked: false,
 							display: true,
-							beginAtZero: true,
-							fontColor: '#a7afb7',
-							fontSize: 14,
-							callback: function(value) {
-								return 'R$ ' + Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+							gridLines: {
+								drawBorder: false,
+								display: false,
+								drawTicks: false,
+								zeroLineColor: 'rgba(90, 113, 208, 0)',
+							},
+							ticks: {
+								display: true,
+								beginAtZero: true,
+								fontColor: '#a7afb7',
+								fontSize: 14,
+								callback: function(value) {
+									return Number(value).toLocaleString('pt-BR');
+								}
 							}
-						},
-					}]
+						}
+					]
 				},
 				legend: { display: false },
 				tooltips: {
 					backgroundColor: 'rgba(0, 0, 0, 1)',
 					callbacks: {
-						label: function(tooltipItem) {
+						label: function(tooltipItem, data) {
+							var dataset = data && data.datasets ? data.datasets[tooltipItem.datasetIndex] : null;
+							var label = dataset && dataset.label ? dataset.label : '';
 							var val = tooltipItem.yLabel != null ? tooltipItem.yLabel : 0;
-							return 'R$ ' + Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+							if (label === 'Clientes') {
+								return 'Clientes: ' + Number(val).toLocaleString('pt-BR');
+							}
+
+							return 'Vendas: R$ ' + Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 						}
 					}
 				},
