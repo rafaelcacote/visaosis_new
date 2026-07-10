@@ -182,20 +182,22 @@
                         </div>
                         <div class="mb-2">
                             <span class="d-block small text-muted mb-1">Desconto</span>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" class="form-control" id="discount_percent" value="0"
-                                            min="0" max="100" step="0.01" placeholder="0">
-                                        <span class="input-group-text">%</span>
-                                    </div>
+                            <select class="form-select form-select-sm mb-2" id="discount_type">
+                                <option value="percent" selected>Porcentagem (%)</option>
+                                <option value="value">Valor (R$)</option>
+                            </select>
+                            <div id="discount_percent_wrap">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" id="discount_percent"
+                                        inputmode="decimal" placeholder="0,00" autocomplete="off">
+                                    <span class="input-group-text">%</span>
                                 </div>
-                                <div class="col-6">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">R$</span>
-                                        <input type="number" class="form-control" id="discount_value" value="0"
-                                            min="0" step="0.01" placeholder="0,00">
-                                    </div>
+                            </div>
+                            <div id="discount_value_wrap" class="d-none">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="text" class="form-control" id="discount_value"
+                                        inputmode="numeric" placeholder="0,00" autocomplete="off">
                                 </div>
                             </div>
                             <small id="discount_auth_status" class="text-muted d-none mt-1"></small>
@@ -780,7 +782,6 @@
         let allowNavigation = false;
         let pendingNavigationUrl = null;
         let pendingNavigationAction = null;
-        let discountUpdateSource = null;
         let discountAuthToken = null;
         let discountAuthorizedFor = null;
         let pendingDiscountAuth = null;
@@ -1135,12 +1136,130 @@
             return cart.reduce((sum, item) => sum + item.subtotal, 0);
         }
 
+        function getDiscountType() {
+            return document.getElementById('discount_type')?.value === 'value' ? 'value' : 'percent';
+        }
+
+        function formatMoneyMask(rawValue) {
+            const digits = String(rawValue ?? '').replace(/\D/g, '');
+            if (!digits) {
+                return '';
+            }
+
+            const number = parseFloat(digits) / 100;
+            return number.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+        }
+
+        function parseMoneyMasked(value) {
+            const digits = String(value ?? '').replace(/\D/g, '');
+            if (!digits) {
+                return 0;
+            }
+
+            return parseFloat(digits) / 100;
+        }
+
+        function parsePercentInput(value) {
+            const cleaned = String(value ?? '')
+                .trim()
+                .replace(/[^\d,.]/g, '')
+                .replace(',', '.');
+
+            if (!cleaned) {
+                return 0;
+            }
+
+            const num = parseFloat(cleaned);
+            return Number.isFinite(num) ? num : 0;
+        }
+
         function getDiscountPercentValue() {
-            return parseFloat(document.getElementById('discount_percent').value) || 0;
+            const subtotal = getCartSubtotal();
+
+            if (getDiscountType() === 'percent') {
+                const percent = Math.min(Math.max(parsePercentInput(document.getElementById('discount_percent').value), 0), 100);
+                return Math.round(percent * 100) / 100;
+            }
+
+            const amount = getDiscountAmountValue();
+            if (subtotal <= 0 || amount <= 0) {
+                return 0;
+            }
+
+            return Math.min(Math.round((amount / subtotal) * 10000) / 100, 100);
         }
 
         function getDiscountAmountValue() {
-            return parseFloat(document.getElementById('discount_value').value) || 0;
+            const subtotal = getCartSubtotal();
+
+            if (getDiscountType() === 'value') {
+                const amount = parseMoneyMasked(document.getElementById('discount_value').value);
+                return Math.max(0, Math.min(amount, subtotal));
+            }
+
+            const percent = getDiscountPercentValue();
+            const amount = subtotal > 0 ? (subtotal * (percent / 100)) : 0;
+            return Math.round(amount * 100) / 100;
+        }
+
+        function clearDiscountInputs() {
+            document.getElementById('discount_percent').value = '';
+            document.getElementById('discount_value').value = '';
+        }
+
+        function updateDiscountTypeUI() {
+            const type = getDiscountType();
+            const percentWrap = document.getElementById('discount_percent_wrap');
+            const valueWrap = document.getElementById('discount_value_wrap');
+
+            percentWrap.classList.toggle('d-none', type !== 'percent');
+            valueWrap.classList.toggle('d-none', type !== 'value');
+        }
+
+        function handleDiscountTypeChange() {
+            clearDiscountInputs();
+            resetDiscountAuthorization();
+            updateDiscountTypeUI();
+            updateTotal();
+            updateFinalizeButton();
+        }
+
+        function applyDiscountPercentMask(event) {
+            const input = event.target;
+            let value = input.value.replace(/[^\d,.]/g, '');
+
+            // Normaliza ponto para vírgula e mantém só o primeiro separador decimal
+            value = value.replace(/\./g, ',');
+            const parts = value.split(',');
+            let integerPart = (parts[0] || '').replace(/\D/g, '');
+            let decimalPart = parts.length > 1 ? parts[1].replace(/\D/g, '').slice(0, 2) : null;
+
+            // Limita a 100
+            const preview = parseFloat(
+                integerPart + (decimalPart !== null ? '.' + decimalPart : '')
+            );
+            if (Number.isFinite(preview) && preview > 100) {
+                integerPart = '100';
+                decimalPart = parts.length > 1 ? '' : null;
+            }
+
+            if (decimalPart !== null) {
+                value = integerPart + ',' + decimalPart;
+            } else {
+                value = integerPart;
+            }
+
+            input.value = value;
+            handleDiscountChange();
+        }
+
+        function applyDiscountValueMask(event) {
+            const input = event.target;
+            input.value = formatMoneyMask(input.value);
+            handleDiscountChange();
         }
 
         function resetDiscountAuthorization() {
@@ -1195,44 +1314,6 @@
                 && discountAuthorizedFor
                 && Math.abs(discountAuthorizedFor.valor - discountAmount) < 0.01
             );
-        }
-
-        function syncDiscountFromPercent() {
-            if (discountUpdateSource === 'value') {
-                return;
-            }
-
-            discountUpdateSource = 'percent';
-            const subtotal = getCartSubtotal();
-            const percent = getDiscountPercentValue();
-            const clampedPercent = Math.min(Math.max(percent, 0), 100);
-            const amount = subtotal > 0 ? (subtotal * (clampedPercent / 100)) : 0;
-
-            document.getElementById('discount_percent').value = clampedPercent > 0
-                ? clampedPercent.toFixed(2)
-                : '0';
-            document.getElementById('discount_value').value = amount > 0 ? amount.toFixed(2) : '0';
-
-            discountUpdateSource = null;
-            handleDiscountChange();
-        }
-
-        function syncDiscountFromValue() {
-            if (discountUpdateSource === 'percent') {
-                return;
-            }
-
-            discountUpdateSource = 'value';
-            const subtotal = getCartSubtotal();
-            let amount = getDiscountAmountValue();
-            amount = Math.max(0, Math.min(amount, subtotal));
-            const percent = subtotal > 0 ? ((amount / subtotal) * 100) : 0;
-
-            document.getElementById('discount_value').value = amount > 0 ? amount.toFixed(2) : '0';
-            document.getElementById('discount_percent').value = percent > 0 ? percent.toFixed(2) : '0';
-
-            discountUpdateSource = null;
-            handleDiscountChange();
         }
 
         function handleDiscountChange() {
@@ -1354,10 +1435,7 @@
             }
 
             if (!isDiscountAuthorized()) {
-                discountUpdateSource = 'value';
-                document.getElementById('discount_percent').value = '0';
-                document.getElementById('discount_value').value = '0';
-                discountUpdateSource = null;
+                clearDiscountInputs();
                 resetDiscountAuthorization();
                 updateTotal();
                 updateFinalizeButton();
@@ -1372,22 +1450,20 @@
 
         function updateTotal() {
             const subtotal = getCartSubtotal();
-            const percent = getDiscountPercentValue();
 
-            if (percent > 0 && discountUpdateSource !== 'value') {
-                discountUpdateSource = 'percent';
-                const amount = subtotal > 0 ? (subtotal * (percent / 100)) : 0;
-                const normalizedAmount = amount > 0 ? amount.toFixed(2) : '0';
-                document.getElementById('discount_value').value = normalizedAmount;
-
-                if (
-                    discountAuthorizedFor
-                    && Math.abs(discountAuthorizedFor.valor - parseFloat(normalizedAmount)) >= 0.01
-                ) {
-                    resetDiscountAuthorization();
+            if (getDiscountType() === 'value') {
+                const rawAmount = parseMoneyMasked(document.getElementById('discount_value').value);
+                if (rawAmount > subtotal && subtotal >= 0) {
+                    document.getElementById('discount_value').value = formatMoneyMask(
+                        Math.round(subtotal * 100).toString()
+                    );
+                    if (
+                        discountAuthorizedFor
+                        && Math.abs(discountAuthorizedFor.valor - subtotal) >= 0.01
+                    ) {
+                        resetDiscountAuthorization();
+                    }
                 }
-
-                discountUpdateSource = null;
             }
 
             const discountAmount = getDiscountAmountValue();
@@ -1651,8 +1727,7 @@
 
         function confirmClearCart() {
             cart = [];
-            document.getElementById('discount_percent').value = '0';
-            document.getElementById('discount_value').value = '0';
+            clearDiscountInputs();
             resetDiscountAuthorization();
             updateCartDisplay();
             updateTotal();
@@ -1991,8 +2066,9 @@
         renderPaymentEntries();
 
         // Event listeners
-        document.getElementById('discount_percent').addEventListener('input', syncDiscountFromPercent);
-        document.getElementById('discount_value').addEventListener('input', syncDiscountFromValue);
+        document.getElementById('discount_type').addEventListener('change', handleDiscountTypeChange);
+        document.getElementById('discount_percent').addEventListener('input', applyDiscountPercentMask);
+        document.getElementById('discount_value').addEventListener('input', applyDiscountValueMask);
         document.getElementById('discount_auth_confirm_btn').addEventListener('click', confirmDiscountAuthorization);
         document.getElementById('discount_auth_cancel_btn').addEventListener('click', cancelDiscountAuthorization);
         clientSuggestions.addEventListener('click', event => {
