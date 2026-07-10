@@ -5,20 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Produto;
 use App\Models\Categoria;
 use App\Models\ProductImage;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\Csv as CsvReader;
 
 class ProdutoController extends Controller
 {
     public function index(Request $request)
     {
         $filters = [
-            'search' => $request->get('search', ''),
-            'categoria' => $request->get('categoria', ''),
-            'status' => $request->get('status', ''),
+            'search' => trim((string) $request->get('search', '')),
+            'categoria' => trim((string) $request->get('categoria', '')),
+            'status' => trim((string) $request->get('status', '')),
         ];
 
         $tenantId = session('tenant_id');
@@ -41,7 +45,9 @@ class ProdutoController extends Controller
             return view('produtos.index', compact('produtos', 'categorias', 'filters'));
         }
 
-        $query = Produto::where('tenant_id', $tenantId)->with('categoria');
+        $query = Produto::query()
+            ->where('tenant_id', $tenantId)
+            ->with(['categoria', 'primaryImage']);
 
         if (!empty($locationIds)) {
             $query->where(function ($q) use ($locationIds) {
@@ -59,18 +65,255 @@ class ProdutoController extends Controller
         }
 
         if ($filters['categoria'] !== '') {
-            $query->where('categoria_id', $filters['categoria']);
+            $categoriaId = (int) $filters['categoria'];
+            $query->where('categoria_id', $categoriaId)
+                ->whereHas('categoria', function ($categoriaQuery) use ($tenantId, $locationIds, $categoriaId) {
+                    $categoriaQuery->where('id', $categoriaId)
+                        ->where('tenant_id', $tenantId);
+
+                    if (!empty($locationIds)) {
+                        $categoriaQuery->where(function ($q) use ($locationIds) {
+                            $q->whereIn('location_id', $locationIds)
+                                ->orWhereNull('location_id');
+                        });
+                    }
+                });
         }
 
         if ($filters['status'] !== '') {
-            $query->where('ativo', $filters['status'] == '1');
+            if (in_array($filters['status'], ['1', 'ativo'], true)) {
+                $query->where('ativo', true);
+            } elseif (in_array($filters['status'], ['0', 'inativo'], true)) {
+                $query->where('ativo', false);
+            }
         }
 
         $produtos = $query->orderBy('nome')->paginate(5);
 
-        $categorias = Categoria::where('ativo', true)->orderBy('descricao')->get();
+        $categorias = Categoria::query()
+            ->where('tenant_id', $tenantId)
+            ->where('ativo', true)
+            ->when(!empty($locationIds), function ($query) use ($locationIds) {
+                $query->where(function ($q) use ($locationIds) {
+                    $q->whereIn('location_id', $locationIds)
+                        ->orWhereNull('location_id');
+                });
+            })
+            ->orderBy('descricao')
+            ->get();
 
         return view('produtos.index', compact('produtos', 'categorias', 'filters'));
+    }
+
+    public function importForm()
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        $locationIds = [];
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
+        }
+
+        if (empty($tenantId)) {
+            return redirect()->route('produtos.index')->with('error', 'Nenhum tenant disponível para importar produtos.');
+        }
+
+        $categorias = Categoria::query()
+            ->where('tenant_id', $tenantId)
+            ->where('ativo', true)
+            ->when(!empty($locationIds), function ($query) use ($locationIds) {
+                $query->where(function ($q) use ($locationIds) {
+                    $q->whereIn('location_id', $locationIds)
+                        ->orWhereNull('location_id');
+                });
+            })
+            ->orderBy('descricao')
+            ->get();
+
+        return view('produtos.import', compact('categorias'));
+    }
+
+    public function importStore(Request $request)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        if (!$locationId && $tenantId) {
+            $firstLocation = collect($userLocations)->where('tenant_id', $tenantId)->first();
+            $locationId = $firstLocation['location_id'] ?? null;
+        }
+
+        if (empty($tenantId)) {
+            return redirect()->route('produtos.index')->with('error', 'Nenhum tenant disponível para importar produtos.');
+        }
+
+        $request->validate([
+            'categoria_id' => ['required', 'integer'],
+            'arquivo' => ['required', 'file', 'mimes:xlsx,xls,csv,txt'],
+        ], [
+            'categoria_id.required' => 'A categoria é obrigatória.',
+            'arquivo.required' => 'Selecione uma planilha para importar.',
+            'arquivo.mimes' => 'Formato inválido. Envie um arquivo XLSX, XLS ou CSV.',
+        ]);
+
+        $locationIds = [];
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
+        }
+
+        $categoriaId = (int) $request->input('categoria_id');
+        $categoriaOk = Categoria::query()
+            ->where('id', $categoriaId)
+            ->where('tenant_id', $tenantId)
+            ->when(!empty($locationIds), function ($query) use ($locationIds) {
+                $query->where(function ($q) use ($locationIds) {
+                    $q->whereIn('location_id', $locationIds)
+                        ->orWhereNull('location_id');
+                });
+            })
+            ->exists();
+
+        if (!$categoriaOk) {
+            return back()->withInput()->with('error', 'Categoria inválida para o tenant/localização atual.');
+        }
+
+        $file = $request->file('arquivo');
+        $path = $file->getRealPath();
+        $ext = strtolower((string) $file->getClientOriginalExtension());
+
+        try {
+            $this->ensureSpreadsheetAutoload();
+            $spreadsheet = $this->loadSpreadsheet($path, $ext);
+        } catch (\Throwable $e) {
+            Log::error('Falha ao abrir planilha para importacao de produtos', [
+                'message' => $e->getMessage(),
+                'file' => $file?->getClientOriginalName(),
+                'extension' => $ext,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withInput()->with('error', 'Não foi possível ler a planilha. Verifique o arquivo e tente novamente.');
+        }
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $highestRow = (int) $sheet->getHighestDataRow();
+        $highestColumn = (string) $sheet->getHighestDataColumn();
+        $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
+
+        if ($highestRow < 2) {
+            return back()->withInput()->with('error', 'A planilha não possui linhas de dados para importar.');
+        }
+
+        $headers = [];
+        for ($col = 1; $col <= $highestColumnIndex; $col++) {
+            $headers[$col] = trim($this->cellToString($sheet->getCell($this->cellAddress($col, 1))->getValue()));
+        }
+
+        $attributeColumns = [];
+        for ($col = 5; $col <= $highestColumnIndex; $col++) {
+            $key = trim((string) ($headers[$col] ?? ''));
+            if ($key !== '') {
+                $attributeColumns[$col] = $key;
+            }
+        }
+
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+
+        $userId = Auth::id();
+
+        try {
+            DB::beginTransaction();
+
+            for ($row = 2; $row <= $highestRow; $row++) {
+                $nome = $this->cellToString($sheet->getCell($this->cellAddress(1, $row))->getValue());
+                $nome = trim($nome);
+                if ($nome === '') {
+                    $skipped++;
+                    continue;
+                }
+
+                $marca = trim($this->cellToString($sheet->getCell($this->cellAddress(2, $row))->getValue()));
+                $precoCustoRaw = $this->cellToString($sheet->getCell($this->cellAddress(3, $row))->getValue());
+                $precoVendaRaw = $this->cellToString($sheet->getCell($this->cellAddress(4, $row))->getValue());
+
+                $precoCusto = $this->parseDecimal($precoCustoRaw);
+                $precoVenda = $this->parseDecimal($precoVendaRaw);
+
+                $attrs = [];
+                foreach ($attributeColumns as $col => $key) {
+                    $value = $this->cellToString($sheet->getCell($this->cellAddress($col, $row))->getValue());
+                    $value = trim($value);
+                    if ($value === '') {
+                        continue;
+                    }
+                    $attrs[$key] = $this->parseMaybeNumber($value);
+                }
+
+                $existing = Produto::query()
+                    ->where('tenant_id', $tenantId)
+                    ->whereRaw('LOWER(nome) = ?', [mb_strtolower($nome, 'UTF-8')])
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($existing) {
+                    $mergedAttrs = array_merge((array) ($existing->atributos ?? []), $attrs);
+
+                    $existing->update([
+                        'categoria_id' => $categoriaId,
+                        'marca' => $marca !== '' ? $marca : null,
+                        'preco_custo' => $precoCusto,
+                        'preco_venda' => $precoVenda,
+                        'atributos' => $mergedAttrs,
+                    ]);
+                    $updated++;
+                    continue;
+                }
+
+                Produto::create([
+                    'tenant_id' => $tenantId,
+                    'location_id' => $locationId,
+                    'user_id' => $userId,
+                    'nome' => $nome,
+                    'categoria_id' => $categoriaId,
+                    'marca' => $marca !== '' ? $marca : null,
+                    'atributos' => $attrs,
+                    'preco_custo' => $precoCusto,
+                    'preco_venda' => $precoVenda,
+                    'ativo' => true,
+                ]);
+                $created++;
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Erro ao importar produtos', [
+                'message' => $e->getMessage(),
+                'file' => $file?->getClientOriginalName(),
+                'tenant_id' => $tenantId,
+                'categoria_id' => $categoriaId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withInput()->with('error', 'Erro ao importar produtos. Verifique a planilha e tente novamente.');
+        }
+
+        return redirect()
+            ->route('produtos.index')
+            ->with('success', "Importação concluída. Criados: {$created}. Atualizados: {$updated}. Ignorados: {$skipped}.");
     }
 
     public function create()
@@ -111,7 +354,7 @@ class ProdutoController extends Controller
                 },
             ],
             'categoria_id' => 'required|exists:categoria_produto,id',
-            'preco_venda' => 'required|numeric|min:0',
+            'preco_venda' => 'nullable|numeric|min:0',
             'preco_custo' => 'nullable|numeric|min:0',
             'marca' => 'nullable|string|max:100',
             'ativo' => 'nullable|boolean',
@@ -121,7 +364,6 @@ class ProdutoController extends Controller
             'nome.max' => 'O nome não pode ter mais de 160 caracteres.',
             'categoria_id.required' => 'A categoria é obrigatória.',
             'categoria_id.exists' => 'Categoria inválida.',
-            'preco_venda.required' => 'O preço de venda é obrigatório.',
             'preco_venda.numeric' => 'O preço de venda deve ser um número.',
         ]);
 
@@ -139,7 +381,7 @@ class ProdutoController extends Controller
                 'marca' => $request->marca ?: null,
                 'atributos' => $atributos,
                 'preco_custo' => $request->preco_custo ?: null,
-                'preco_venda' => $request->preco_venda,
+                'preco_venda' => $request->preco_venda ?: null,
                 'ativo' => $request->has('ativo') && $request->ativo == '1',
             ]);
 
@@ -154,6 +396,121 @@ class ProdutoController extends Controller
             return back()->withInput()
                 ->with('error', 'Erro ao cadastrar produto: ' . $e->getMessage());
         }
+    }
+
+    private function loadSpreadsheet(string $path, string $ext)
+    {
+        if ($ext === 'csv' || $ext === 'txt') {
+            $reader = new CsvReader;
+            $reader->setReadDataOnly(true);
+
+            $sample = @file_get_contents($path, false, null, 0, 4096);
+            $sample = is_string($sample) ? $sample : '';
+            $delimiter = substr_count($sample, ';') > substr_count($sample, ',') ? ';' : ',';
+            $reader->setDelimiter($delimiter);
+            $reader->setEnclosure('"');
+            $reader->setInputEncoding('UTF-8');
+
+            return $reader->load($path);
+        }
+
+        $type = $ext === 'xls' ? 'Xls' : 'Xlsx';
+        $reader = IOFactory::createReader($type);
+        $reader->setReadDataOnly(true);
+        return $reader->load($path);
+    }
+
+    private function ensureSpreadsheetAutoload(): void
+    {
+        if (class_exists(IOFactory::class, false) || class_exists(IOFactory::class)) {
+            return;
+        }
+
+        $mappings = [
+            'PhpOffice\\PhpSpreadsheet\\' => base_path('vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/'),
+            'Complex\\' => base_path('vendor/markbaker/complex/classes/src/'),
+            'Matrix\\' => base_path('vendor/markbaker/matrix/classes/src/'),
+            'ZipStream\\' => base_path('vendor/maennchen/zipstream-php/src/'),
+        ];
+
+        spl_autoload_register(static function (string $class) use ($mappings) {
+            foreach ($mappings as $prefix => $baseDir) {
+                if (!str_starts_with($class, $prefix)) {
+                    continue;
+                }
+
+                $relativeClass = substr($class, strlen($prefix));
+                $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+                if (is_file($file)) {
+                    require_once $file;
+                }
+            }
+        });
+
+        if (!class_exists(IOFactory::class)) {
+            throw new \RuntimeException('Biblioteca PhpSpreadsheet não está disponível no autoload.');
+        }
+    }
+
+    private function cellToString(mixed $value): string
+    {
+        if ($value instanceof \PhpOffice\PhpSpreadsheet\RichText\RichText) {
+            return $value->getPlainText();
+        }
+        if ($value === null) {
+            return '';
+        }
+        return (string) $value;
+    }
+
+    private function cellAddress(int $column, int $row): string
+    {
+        return Coordinate::stringFromColumnIndex($column) . $row;
+    }
+
+    private function parseDecimal(?string $raw): float
+    {
+        $raw = (string) $raw;
+        $raw = trim($raw);
+        if ($raw === '') {
+            return 0.0;
+        }
+
+        $raw = str_replace(['R$', ' '], '', $raw);
+
+        if (str_contains($raw, ',')) {
+            $raw = str_replace('.', '', $raw);
+            $raw = str_replace(',', '.', $raw);
+        }
+
+        $raw = preg_replace('/[^0-9\.\-]/', '', (string) $raw);
+        $num = is_numeric($raw) ? (float) $raw : 0.0;
+        return $num;
+    }
+
+    private function parseMaybeNumber(string $value): mixed
+    {
+        $v = trim($value);
+        if ($v === '') {
+            return '';
+        }
+
+        $candidate = $v;
+        if (str_contains($candidate, ',')) {
+            $candidate = str_replace('.', '', $candidate);
+            $candidate = str_replace(',', '.', $candidate);
+        }
+        $candidate = preg_replace('/[^0-9\.\-]/', '', (string) $candidate);
+
+        if ($candidate !== '' && is_numeric($candidate)) {
+            $float = (float) $candidate;
+            if (abs($float - round($float)) < 0.0000001) {
+                return (int) round($float);
+            }
+            return $float;
+        }
+
+        return $v;
     }
 
     public function show(Produto $produto)
@@ -206,7 +563,7 @@ class ProdutoController extends Controller
                 },
             ],
             'categoria_id' => 'required|exists:categoria_produto,id',
-            'preco_venda' => 'required|numeric|min:0',
+            'preco_venda' => 'nullable|numeric|min:0',
             'preco_custo' => 'nullable|numeric|min:0',
             'marca' => 'nullable|string|max:100',
             'ativo' => 'nullable|boolean',
@@ -217,7 +574,7 @@ class ProdutoController extends Controller
             'nome.max' => 'O nome não pode ter mais de 160 caracteres.',
             'categoria_id.required' => 'A categoria é obrigatória.',
             'categoria_id.exists' => 'Categoria inválida.',
-            'preco_venda.required' => 'O preço de venda é obrigatório.',
+            'preco_venda.numeric' => 'O preço de venda deve ser um número.',
         ]);
 
         $atributos = $this->buildAtributosFromRequest($request);
@@ -231,7 +588,7 @@ class ProdutoController extends Controller
                 'marca' => $request->marca ?: null,
                 'atributos' => $atributos,
                 'preco_custo' => $request->preco_custo ?: null,
-                'preco_venda' => $request->preco_venda,
+                'preco_venda' => $request->preco_venda ?: null,
                 'ativo' => $request->has('ativo') && $request->ativo == '1',
             ]);
 

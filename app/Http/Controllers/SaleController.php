@@ -8,9 +8,14 @@ use App\Models\Categoria;
 use App\Models\PedidoVenda;
 use App\Models\ItemPedido;
 use App\Models\PedidoVendaParcela;
+use App\Models\PedidoVendaPagamento;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use App\Helpers\AuthHelper;
 
 class SaleController extends Controller
@@ -204,7 +209,7 @@ class SaleController extends Controller
                     'nome' => $product->nome,
                     'categoria' => optional($product->categoria)->descricao ?? 'Sem categoria',
                     'categoria_id' => $product->categoria_id,
-                    'preco' => (float) $product->preco_venda,
+                    'preco' => $product->preco_venda !== null ? (float) $product->preco_venda : null,
                     'stock' => $stockFromAttributes,
                     'image_url' => $imageUrl,
                 ];
@@ -226,7 +231,74 @@ class SaleController extends Controller
         $categories = $categoriesQuery->orderBy('descricao')
             ->get(['id', 'descricao']);
 
-        return view('sales.create', compact('products', 'categories'));
+        $canApplyDiscountWithoutAuth = AuthHelper::canApplyDiscountWithoutAuthorization();
+
+        return view('sales.create', compact('products', 'categories', 'canApplyDiscountWithoutAuth'));
+    }
+
+    /**
+     * Autoriza desconto com credenciais de supervisor (admin/gerente).
+     */
+    public function authorizeDiscount(Request $request)
+    {
+        if (AuthHelper::canApplyDiscountWithoutAuthorization()) {
+            return response()->json([
+                'authorized' => true,
+                'token' => null,
+                'message' => 'Usuário já possui permissão para conceder desconto.',
+            ]);
+        }
+
+        try {
+            $validated = $request->validate([
+                'supervisor_email' => 'required|email',
+                'supervisor_password' => 'required|string',
+                'desconto_valor' => 'required|numeric|gt:0',
+                'desconto_percentual' => 'nullable|numeric|min:0|max:100',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Dados inválidos',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $supervisor = User::where('email', $validated['supervisor_email'])
+            ->where('status', 1)
+            ->first();
+
+        if (!$supervisor || !Hash::check($validated['supervisor_password'], $supervisor->password)) {
+            return response()->json([
+                'message' => 'E-mail ou senha do supervisor inválidos.',
+            ], 422);
+        }
+
+        if (!AuthHelper::userHasPrivilegedProfile($supervisor)) {
+            return response()->json([
+                'message' => 'Este usuário não possui perfil para autorizar descontos.',
+            ], 422);
+        }
+
+        $discountValue = round((float) $validated['desconto_valor'], 2);
+        $discountPercent = round((float) ($validated['desconto_percentual'] ?? 0), 2);
+        $token = (string) Str::uuid();
+        $ttlMinutes = (int) config('sales.discount_authorization_ttl_minutes', 30);
+
+        Cache::put($this->discountAuthorizationCacheKey($token), [
+            'authorized_by' => $supervisor->id,
+            'authorized_by_name' => $supervisor->name,
+            'seller_id' => auth()->id(),
+            'desconto_valor' => $discountValue,
+            'desconto_percentual' => $discountPercent,
+        ], now()->addMinutes($ttlMinutes));
+
+        return response()->json([
+            'authorized' => true,
+            'token' => $token,
+            'authorized_by' => $supervisor->id,
+            'authorized_by_name' => $supervisor->name,
+            'message' => 'Desconto autorizado com sucesso.',
+        ]);
     }
 
     /**
@@ -241,12 +313,15 @@ class SaleController extends Controller
                 'produtos' => 'required|array|min:1',
                 'produtos.*.produto_id' => 'required|integer|exists:produto,id',
                 'produtos.*.quantidade' => 'required|integer|min:1',
-                'produtos.*.preco_unitario' => 'required|numeric|min:0',
-                'produtos.*.subtotal' => 'required|numeric|min:0',
-                'forma_pagamento' => 'required|string|in:dinheiro,cartao_debito,cartao_credito,crediario,pix',
-                'parcelas' => 'required|integer|min:1|max:12',
+                'produtos.*.preco_unitario' => 'required|numeric|gt:0',
+                'produtos.*.subtotal' => 'required|numeric|gt:0',
+                'pagamentos' => 'required|array|min:1',
+                'pagamentos.*.forma_pagamento' => 'required|string|in:dinheiro,cartao_debito,cartao_credito,crediario,pix',
+                'pagamentos.*.valor' => 'required|numeric|gt:0',
+                'pagamentos.*.parcelas' => 'required|integer|min:1|max:12',
                 'desconto_percentual' => 'nullable|numeric|min:0|max:100',
                 'desconto_valor' => 'nullable|numeric|min:0',
+                'desconto_autorizacao_token' => 'nullable|string|max:100',
                 'subtotal' => 'required|numeric|min:0',
                 'total' => 'required|numeric|min:0',
                 'observacoes' => 'nullable|string|max:1000'
@@ -298,6 +373,60 @@ class SaleController extends Controller
             }
         }
 
+        $discountValue = round((float) ($validated['desconto_valor'] ?? 0), 2);
+        $discountPercent = round((float) ($validated['desconto_percentual'] ?? 0), 2);
+
+        if ($discountValue > $validated['subtotal']) {
+            return response()->json([
+                'message' => 'O desconto não pode ser maior que o subtotal da venda.',
+            ], 422);
+        }
+
+        $expectedTotal = round($validated['subtotal'] - $discountValue, 2);
+        if (abs($expectedTotal - round((float) $validated['total'], 2)) > 0.02) {
+            return response()->json([
+                'message' => 'Total da venda inconsistente com subtotal e desconto informados.',
+            ], 422);
+        }
+
+        $discountAuthorizedBy = null;
+
+        if ($discountValue > 0) {
+            if (AuthHelper::canApplyDiscountWithoutAuthorization()) {
+                $discountAuthorizedBy = auth()->id();
+            } else {
+                $token = $request->input('desconto_autorizacao_token');
+                if (!$token) {
+                    return response()->json([
+                        'message' => 'É necessária autorização de supervisor para aplicar desconto.',
+                    ], 422);
+                }
+
+                $authData = Cache::get($this->discountAuthorizationCacheKey($token));
+                if (
+                    !$authData
+                    || (int) ($authData['seller_id'] ?? 0) !== (int) auth()->id()
+                    || abs((float) ($authData['desconto_valor'] ?? 0) - $discountValue) > 0.02
+                ) {
+                    return response()->json([
+                        'message' => 'Autorização de desconto inválida ou expirada. Solicite novamente.',
+                    ], 422);
+                }
+
+                $discountAuthorizedBy = (int) $authData['authorized_by'];
+                Cache::forget($this->discountAuthorizationCacheKey($token));
+            }
+        }
+
+        // Verificar que a soma dos pagamentos é igual ao total da venda
+        $totalPagamentos = round(collect($validated['pagamentos'])->sum('valor'), 2);
+        $totalVenda = round((float) $validated['total'], 2);
+        if (abs($totalPagamentos - $totalVenda) > 0.02) {
+            return response()->json([
+                'message' => 'A soma das formas de pagamento (R$ ' . number_format($totalPagamentos, 2, ',', '.') . ') deve ser igual ao total da venda (R$ ' . number_format($totalVenda, 2, ',', '.') . ').',
+            ], 422);
+        }
+
         // Criar o pedido de venda e seus itens em uma transação
         try {
             DB::beginTransaction();
@@ -314,7 +443,12 @@ class SaleController extends Controller
                 'crediario' => 'Crediário',
                 'pix' => 'PIX'
             ];
-            $formaPagamentoNome = $paymentMethods[$validated['forma_pagamento']] ?? $validated['forma_pagamento'];
+
+            // Resumo legível das formas de pagamento (ex: "Dinheiro + PIX")
+            $formaPagamentoNome = collect($validated['pagamentos'])
+                ->map(fn($p) => $paymentMethods[$p['forma_pagamento']] ?? $p['forma_pagamento'])
+                ->unique()
+                ->join(' + ');
 
             // Criar o pedido de venda
             $pedidoVenda = PedidoVenda::create([
@@ -325,6 +459,9 @@ class SaleController extends Controller
                 'status' => 'faturado', // Status inicial como 'faturado' quando finaliza a venda
                 'data_pedido' => now(),
                 'valor_total' => $validated['total'],
+                'desconto_valor' => $discountValue,
+                'desconto_percentual' => $discountPercent,
+                'desconto_autorizado_por' => $discountAuthorizedBy,
                 'forma_pagamento' => $formaPagamentoNome,
                 'observacoes' => $validated['observacoes'] ?? null,
                 'ativo' => true
@@ -367,51 +504,67 @@ class SaleController extends Controller
                 }
             }
 
-            if ($validated['forma_pagamento'] === 'crediario') {
-                $totalParcelas = (int) $validated['parcelas'];
-                if ($totalParcelas < 1) {
-                    $totalParcelas = 1;
-                }
+            $tz = 'America/Manaus';
+            $agora = Carbon::now($tz);
 
-                $totalCents = (int) round(((float) $validated['total']) * 100);
-                $parcelaCents = (int) floor($totalCents / $totalParcelas);
-                $lastParcelaCents = $totalCents - ($parcelaCents * ($totalParcelas - 1));
+            // Calcular total global de parcelas para numeração contínua
+            $totalParcelasGlobal = collect($validated['pagamentos'])->sum(function ($p) {
+                return $p['forma_pagamento'] === 'crediario' ? (int) $p['parcelas'] : 1;
+            });
 
-                $primeiroVencimento = Carbon::today()->addMonthNoOverflow();
-                for ($numero = 1; $numero <= $totalParcelas; $numero++) {
-                    $valorCents = $numero === $totalParcelas ? $lastParcelaCents : $parcelaCents;
+            $parcelaNumeroGlobal = 0; // contador global, evita duplicidade no unique constraint
 
+            foreach ($validated['pagamentos'] as $pagamento) {
+                $metodoPagamento = $pagamento['forma_pagamento'];
+                $valorPagamento  = (float) $pagamento['valor'];
+                $nParcelasPag    = (int) $pagamento['parcelas'];
+                $nomeMetodo      = $paymentMethods[$metodoPagamento] ?? $metodoPagamento;
+
+                // Persistir no novo registro de formas de pagamento
+                PedidoVendaPagamento::create([
+                    'tenant_id'       => $tenantId,
+                    'location_id'     => $locationId,
+                    'pedido_venda_id' => $pedidoVenda->id,
+                    'forma_pagamento' => $nomeMetodo,
+                    'valor'           => $valorPagamento,
+                    'parcelas'        => $metodoPagamento === 'crediario' ? $nParcelasPag : 1,
+                ]);
+
+                if ($metodoPagamento === 'crediario') {
+                    $totalCents   = (int) round($valorPagamento * 100);
+                    $parcelaCents = (int) floor($totalCents / $nParcelasPag);
+                    $lastCents    = $totalCents - ($parcelaCents * ($nParcelasPag - 1));
+
+                    $primeiroVencimento = Carbon::today($tz)->addMonthNoOverflow();
+                    for ($n = 1; $n <= $nParcelasPag; $n++) {
+                        $parcelaNumeroGlobal++;
+                        PedidoVendaParcela::create([
+                            'tenant_id'       => $tenantId,
+                            'location_id'     => $locationId,
+                            'pedido_venda_id' => $pedidoVenda->id,
+                            'numero_parcela'  => $parcelaNumeroGlobal,
+                            'total_parcelas'  => $totalParcelasGlobal,
+                            'valor'           => ($n === $nParcelasPag ? $lastCents : $parcelaCents) / 100,
+                            'vencimento_em'   => $primeiroVencimento->copy()->addMonthsNoOverflow($n - 1),
+                            'status'          => 'aberta',
+                            'forma_pagamento' => $nomeMetodo,
+                        ]);
+                    }
+                } else {
+                    $parcelaNumeroGlobal++;
                     PedidoVendaParcela::create([
-                        'tenant_id' => $tenantId,
-                        'location_id' => $locationId,
+                        'tenant_id'       => $tenantId,
+                        'location_id'     => $locationId,
                         'pedido_venda_id' => $pedidoVenda->id,
-                        'numero_parcela' => $numero,
-                        'total_parcelas' => $totalParcelas,
-                        'valor' => $valorCents / 100,
-                        'vencimento_em' => $primeiroVencimento->copy()->addMonthsNoOverflow($numero - 1),
-                        'status' => 'aberta',
+                        'numero_parcela'  => $parcelaNumeroGlobal,
+                        'total_parcelas'  => $totalParcelasGlobal,
+                        'valor'           => $valorPagamento,
+                        'vencimento_em'   => $agora->toDateString(),
+                        'pago_em'         => $agora,
+                        'status'          => 'pago',
+                        'forma_pagamento' => $nomeMetodo,
                     ]);
                 }
-            }
-            if (in_array($validated['forma_pagamento'], ['dinheiro', 'cartao_debito', 'cartao_credito', 'pix'], true)) {
-                $tz = 'America/Manaus';
-                $agora = Carbon::now($tz);
-
-                PedidoVendaParcela::updateOrCreate(
-                    [
-                        'tenant_id' => $tenantId,
-                        'pedido_venda_id' => $pedidoVenda->id,
-                        'numero_parcela' => 1,
-                    ],
-                    [
-                        'location_id' => $locationId,
-                        'total_parcelas' => 1,
-                        'valor' => (float) $validated['total'],
-                        'vencimento_em' => $agora->toDateString(),
-                        'pago_em' => $agora,
-                        'status' => 'pago',
-                    ]
-                );
             }
 
             DB::commit();
@@ -492,11 +645,11 @@ class SaleController extends Controller
             return ($item->preco_unit * $item->quantidade);
         });
 
-        // Desconto total
-        $descontoTotal = $pedidoVenda->itens->sum('desconto');
-
         // Total
         $total = (float) $pedidoVenda->valor_total;
+
+        // Desconto total
+        $descontoTotal = $this->resolvePedidoDesconto($pedidoVenda, $subtotal, $total);
 
         // Formatar dados do cliente
         $cliente = null;
@@ -514,6 +667,17 @@ class SaleController extends Controller
 
         // Forma de pagamento do banco
         $formaPagamento = $pedidoVenda->forma_pagamento ?? 'Não informado';
+
+        // Formas de pagamento detalhadas (novo modelo multi-pagamento)
+        $pagamentosDetalhados = PedidoVendaPagamento::where('pedido_venda_id', $pedidoVenda->id)
+            ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+            ->get()
+            ->map(fn($p) => [
+                'forma_pagamento' => $p->forma_pagamento,
+                'valor'           => (float) $p->valor,
+                'parcelas'        => (int) $p->parcelas,
+            ])
+            ->toArray();
 
         $today = Carbon::today($tz)->startOfDay();
         $tomorrow = $today->copy()->addDay();
@@ -576,6 +740,7 @@ class SaleController extends Controller
             'desconto' => $descontoTotal,
             'total' => $total,
             'forma_pagamento' => $formaPagamento,
+            'pagamentos' => $pagamentosDetalhados,
             'parcelas' => $parcelas->count() > 0 ? $parcelas->count() : 1,
             'valor_parcela' => $parcelas->count() > 0 ? (float) $parcelas->first()['valor_parcela'] : $total,
             'parcelas_detalhes' => $parcelas,
@@ -633,11 +798,11 @@ class SaleController extends Controller
             return ($item->preco_unit * $item->quantidade);
         });
 
-        // Desconto total
-        $descontoTotal = $pedidoVenda->itens->sum('desconto');
-
         // Total
         $total = (float) $pedidoVenda->valor_total;
+
+        // Desconto total
+        $descontoTotal = $this->resolvePedidoDesconto($pedidoVenda, $subtotal, $total);
 
         // Formatar dados do cliente
         $cliente = null;
@@ -710,6 +875,16 @@ class SaleController extends Controller
             'email' => $user ? $user->email : null
         ];
 
+        $pagamentosImpressao = PedidoVendaPagamento::where('pedido_venda_id', $pedidoVenda->id)
+            ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+            ->get()
+            ->map(fn($p) => [
+                'forma_pagamento' => $p->forma_pagamento,
+                'valor'           => (float) $p->valor,
+                'parcelas'        => (int) $p->parcelas,
+            ])
+            ->toArray();
+
         $sale = [
             'id' => $pedidoVenda->id,
             'numero' => $numero,
@@ -722,6 +897,7 @@ class SaleController extends Controller
             'desconto' => $descontoTotal,
             'total' => $total,
             'forma_pagamento' => $pedidoVenda->forma_pagamento ?? 'Não informado',
+            'pagamentos' => $pagamentosImpressao,
             'parcelas' => 1,
             'valor_parcela' => $total,
             'status' => $status,
@@ -789,5 +965,21 @@ class SaleController extends Controller
         ]);
 
         return redirect()->route('sales.index')->with('success', 'Venda cancelada com sucesso!');
+    }
+
+    private function discountAuthorizationCacheKey(string $token): string
+    {
+        return 'sale_discount_auth:' . $token;
+    }
+
+    private function resolvePedidoDesconto(PedidoVenda $pedidoVenda, float $subtotal, float $total): float
+    {
+        $descontoPersistido = (float) ($pedidoVenda->desconto_valor ?? 0);
+
+        if ($descontoPersistido > 0) {
+            return $descontoPersistido;
+        }
+
+        return max(0, round($subtotal - $total, 2));
     }
 }

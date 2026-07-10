@@ -1,13 +1,22 @@
 <tr>
     <td>
         <div class="d-flex align-items-center">
-            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-size: 16px;">
-                <i class="mdi mdi-package-variant"></i>
-            </div>
-            <div>
-                <div class="font-weight-medium">{{ $produto->nome }}</div>
+            @if($produto->imagem_principal_url)
+                <div class="produto-list-thumb me-3" title="{{ $produto->nome }}">
+                    <img src="{{ $produto->imagem_principal_url }}"
+                         alt="{{ $produto->nome }}"
+                         class="produto-list-thumb__img"
+                         loading="lazy">
+                </div>
+            @else
+                <div class="produto-list-thumb produto-list-thumb--placeholder me-3" aria-hidden="true">
+                    <i class="mdi mdi-package-variant"></i>
+                </div>
+            @endif
+            <div class="min-w-0">
+                <div class="font-weight-medium text-truncate">{{ $produto->nome }}</div>
                 @if($produto->marca)
-                    <small class="text-muted">{{ $produto->marca }}</small>
+                    <small class="text-muted text-truncate d-block">{{ $produto->marca }}</small>
                 @endif
             </div>
         </div>

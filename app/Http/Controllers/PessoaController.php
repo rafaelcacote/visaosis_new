@@ -168,7 +168,7 @@ class PessoaController extends Controller
         try {
             DB::beginTransaction();
 
-            Pessoa::create([
+            $novaPessoa = Pessoa::create([
                 'nome' => $request->nome,
                 'apelido' => $request->apelido,
                 'cpf' => $cpfLimpo,
@@ -194,7 +194,7 @@ class PessoaController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pessoas.index')
+            return redirect()->route('pessoas.show', $novaPessoa)
                 ->with('success', 'Paciente cadastrado com sucesso!');
         } catch (\Exception $e) {
             DB::rollBack();

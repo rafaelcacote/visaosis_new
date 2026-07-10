@@ -127,6 +127,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('laboratorios/{laboratorio}/toggle-status', [LaboratorioController::class, 'toggleStatus'])->name('laboratorios.toggle-status');
 
     // Rotas de produtos
+    Route::get('produtos/importar', [ProdutoController::class, 'importForm'])->name('produtos.import');
+    Route::post('produtos/importar', [ProdutoController::class, 'importStore'])->name('produtos.import.store');
     Route::resource('produtos', ProdutoController::class)->parameters([
         'produtos' => 'produto',
     ]);
@@ -190,6 +192,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Módulo de Vendas
+    Route::post('/sales/authorize-discount', [SaleController::class, 'authorizeDiscount'])->name('sales.authorize-discount');
     Route::resource('sales', SaleController::class);
     Route::get('/sales/{id}/print', [SaleController::class, 'print'])->name('sales.print');
 
