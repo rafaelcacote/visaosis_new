@@ -799,6 +799,7 @@
         };
 
         const canApplyDiscountWithoutAuth = @json($canApplyDiscountWithoutAuth ?? false);
+        const preselectedClient = @json($preselectedClient);
 
         const clientSearchInput = document.getElementById('client_search');
         const clientSuggestions = document.getElementById('client_suggestions');
@@ -2132,6 +2133,10 @@
         
         // Inicializar estado dos botões ao carregar a página
         updateAddToCartButtons();
+
+        if (preselectedClient) {
+            selectClientFromSearch(preselectedClient);
+        }
         
         // Mostrar alerta inicial se não há cliente selecionado
         if (!selectedClient) {
