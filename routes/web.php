@@ -242,5 +242,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendance', [ReportController::class, 'attendance'])->name('attendance');
         Route::get('/attendance/export', [ReportController::class, 'exportAttendance'])->name('attendance.export');
         Route::get('/attendance/pdf', [ReportController::class, 'attendancePdf'])->name('attendance.pdf');
+        Route::get('/products', [ReportController::class, 'products'])->name('products');
+        Route::get('/products/pdf', [ReportController::class, 'productsPdf'])->name('products.pdf');
     });
 });

@@ -7,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório</title>
+    <title>Relatório de Produtos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         {!! file_get_contents(resource_path('views/pdf/styles/header-footer.css')) !!} body {
@@ -37,14 +37,6 @@
             border-top-right-radius: 0.375rem;
         }
 
-        .bg-primary {
-            background-color: #0d6efd !important;
-        }
-
-        .text-white {
-            color: #fff !important;
-        }
-
         .card-body {
             flex: 1 1 auto;
             padding: 0.3rem;
@@ -52,61 +44,24 @@
         }
 
         .row {
-            display: flex;
-            flex-wrap: wrap;
-            margin-right: -8px;
-            margin-left: -8px;
-        }
-
-        .col-6 {
-            position: relative;
-            width: 100%;
-            padding-right: 8px;
-            padding-left: 8px;
-            flex: 0 0 50%;
-            max-width: 50%;
+            display: table !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+            margin-bottom: 1px !important;
         }
 
         .col-md-6 {
-            position: relative;
-            width: 100%;
-            padding-right: 8px;
-            padding-left: 8px;
-            flex: 0 0 50%;
-            max-width: 50%;
+            display: table-cell !important;
+            width: 50% !important;
+            vertical-align: top !important;
+            padding: 4px 8px !important;
+            box-sizing: border-box !important;
         }
 
         .col-12 {
-            position: relative;
-            width: 100%;
-            padding-right: 8px;
-            padding-left: 8px;
-            flex: 0 0 100%;
-            max-width: 100%;
-        }
-
-        .text-end {
-            text-align: right !important;
-        }
-
-        .mb-0 {
-            margin-bottom: 0 !important;
-        }
-
-        .mb-2 {
-            margin-bottom: 0.2rem !important;
-        }
-
-        .mb-4 {
-            margin-bottom: 0.2rem !important;
-        }
-
-        .mt-2 {
-            margin-top: 0.5rem !important;
-        }
-
-        .mt-5 {
-            margin-top: 3rem !important;
+            display: block !important;
+            width: 100% !important;
+            margin-bottom: 1px !important;
         }
 
         h5 {
@@ -141,6 +96,22 @@
 
         .p-3 {
             padding: 0.2rem !important;
+        }
+
+        .mb-0 {
+            margin-bottom: 0 !important;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.2rem !important;
+        }
+
+        .mb-4 {
+            margin-bottom: 0.2rem !important;
+        }
+
+        .mt-2 {
+            margin-top: 0.5rem !important;
         }
 
         .table {
@@ -179,6 +150,14 @@
             text-align: center !important;
         }
 
+        .text-end {
+            text-align: right !important;
+        }
+
+        .text-muted {
+            color: #6c757d !important;
+        }
+
         .badge {
             display: inline-block;
             padding: 0.35em 0.65em;
@@ -192,15 +171,6 @@
             border-radius: 0.375rem;
         }
 
-        .bg-warning {
-            background-color: #ffc107 !important;
-            color: #000 !important;
-        }
-
-        .bg-info {
-            background-color: #0dcaf0 !important;
-        }
-
         .bg-success {
             background-color: #198754 !important;
         }
@@ -209,81 +179,27 @@
             background-color: #dc3545 !important;
         }
 
-        .bg-dark {
-            background-color: #212529 !important;
+        .bg-info {
+            background-color: #0dcaf0 !important;
+        }
+
+        .bg-warning {
+            background-color: #ffc107 !important;
+            color: #000 !important;
+        }
+
+        .bg-primary {
+            background-color: #0d6efd !important;
         }
 
         .bg-secondary {
             background-color: #6c757d !important;
         }
 
-        .alert {
-            position: relative;
-            padding: 0.75rem 1.25rem;
-            margin-bottom: 1rem;
-            border: 1px solid transparent;
-            border-radius: 0.375rem;
+        .text-white {
+            color: #fff !important;
         }
 
-        .alert-warning {
-            color: #664d03;
-            background-color: #fff3cd;
-            border-color: #ffecb5;
-        }
-
-        .text-muted {
-            color: #6c757d !important;
-        }
-
-        .align-items-center {
-            align-items: center !important;
-        }
-
-        .d-print-block {
-            display: block !important;
-        }
-
-        /* Específico para as assinaturas */
-        .signature-line {
-            border-top: 1px solid #000;
-            margin-top: 25px;
-            padding-top: 4px;
-        }
-
-        /* Melhor layout para PDF */
-        .row {
-            display: table !important;
-            width: 100% !important;
-            table-layout: fixed !important;
-            margin-bottom: 1px !important;
-        }
-
-        .col-md-6 {
-            display: table-cell !important;
-            width: 50% !important;
-            vertical-align: top !important;
-            padding: 4px 8px !important;
-            box-sizing: border-box !important;
-        }
-
-        .col-12 {
-            display: block !important;
-            width: 100% !important;
-            margin-bottom: 1px !important;
-        }
-
-        /* Evitar quebras indevidas */
-        .prescription-section {
-            page-break-inside: avoid;
-            margin-bottom: 1px;
-        }
-
-        .supplier-section {
-            page-break-inside: avoid;
-            margin-bottom: 1px;
-        }
-
-        /* Estilos para estatísticas em formato de cards lado a lado */
         .stats-row {
             display: table;
             width: 100%;
@@ -295,7 +211,7 @@
 
         .stat-column {
             display: table-cell;
-            width: 16.666%;
+            width: 25%;
             text-align: center;
             padding: 12px 8px;
             border-right: 1px solid #dee2e6;
@@ -328,15 +244,39 @@
             color: #212529;
         }
 
-        /* Print styles */
+        .produto-block {
+            page-break-inside: avoid;
+            margin-bottom: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .produto-header {
+            background-color: #f8f9fa;
+            padding: 5px 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .produto-body {
+            padding: 5px 8px;
+        }
+
+        .status-ativo {
+            color: #198754;
+            font-weight: bold;
+        }
+
+        .status-inativo {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
         @media print {
             body {
                 margin: 0;
                 padding: 10px;
                 font-size: 10px;
             }
-
-
         }
     </style>
 </head>
@@ -382,136 +322,149 @@
                     </span>
                 </td>
                 <td class="title-wrap">
-                    <h2 class="doc-title">RELATORIO DE ATENDIMENTOS</h2>
+                    <h2 class="doc-title">RELATORIO DE PRODUTOS</h2>
                     <p class="doc-subtitle">Emissao: {{ now('America/Sao_Paulo')->format('d/m/Y H:i') }}</p>
                 </td>
             </tr>
         </table>
     </header>
 
-
-
-
-    <!-- Título do relatório -->
-
-
-    <!-- Informações do período -->
+    <!-- Filtros aplicados -->
     <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
-        <h3 class="section-title">PERÍODO ANALISADO</h3>
+        <h3 class="section-title">FILTROS APLICADOS</h3>
         <div class="p-3">
             <div class="row mb-2">
                 <div class="col-md-6">
-                    @if (isset($startDate) && isset($endDate) && $startDate !== $endDate)
-                        <p><strong>Período:</strong> {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} até
-                            {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
+                    @if ($search)
+                        <p><strong>Busca:</strong> {{ $search }}</p>
                     @else
-                        <p><strong>Data:</strong> {{ \Carbon\Carbon::parse($selectedDate)->format('d/m/Y') }}</p>
+                        <p><strong>Busca:</strong> Todos os produtos</p>
                     @endif
                 </div>
                 <div class="col-md-6">
-                    @if ($selectedProfessional && $selectedProfessionalData)
-                        <p class="professional-filter"><strong>Profissional:</strong>
-                            {{ $selectedProfessionalData->nome ?? 'N/A' }}
-                            ({{ optional($selectedProfessionalData->especialidade)->nome ?? 'Sem especialidade' }})</p>
+                    @if ($categoriaId)
+                        @php $catNome = $categorias->where('id', $categoriaId)->first()?->descricao ?? 'N/A'; @endphp
+                        <p><strong>Categoria:</strong> {{ $catNome }}</p>
                     @else
-                        <p class="professional-filter">Todos os profissionais incluídos</p>
+                        <p><strong>Categoria:</strong> Todas</p>
+                    @endif
+                    @if ($status !== '')
+                        <p><strong>Status:</strong> {{ $status === '1' ? 'Ativo' : 'Inativo' }}</p>
+                    @else
+                        <p><strong>Status:</strong> Todos</p>
                     @endif
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Estatísticas gerais -->
+    <!-- Resumo Estatístico -->
     <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
         <h3 class="section-title">RESUMO ESTATÍSTICO</h3>
         <div class="p-3">
-
             <div class="stats-row">
                 <div class="stat-column">
-                    <span class="stat-number">{{ $stats['scheduled'] ?? 0 }}</span>
-                    <span class="stat-label">Agendados</span>
+                    <span class="stat-number">{{ $stats['total'] }}</span>
+                    <span class="stat-label">Total de Produtos</span>
                 </div>
                 <div class="stat-column">
-                    <span class="stat-number">{{ $stats['attended'] ?? 0 }}</span>
-                    <span class="stat-label">Atendidos</span>
+                    <span class="stat-number">{{ $stats['ativos'] }}</span>
+                    <span class="stat-label">Ativos</span>
                 </div>
                 <div class="stat-column">
-                    <span class="stat-number">{{ $stats['cancelled'] ?? 0 }}</span>
-                    <span class="stat-label">Cancelados</span>
+                    <span class="stat-number">{{ $stats['inativos'] }}</span>
+                    <span class="stat-label">Inativos</span>
                 </div>
                 <div class="stat-column">
-                    <span class="stat-number">{{ $stats['returns'] ?? 0 }}</span>
-                    <span class="stat-label">Retornos</span>
-                </div>
-                <div class="stat-column">
-                    <span class="stat-number">{{ $stats['referrals'] ?? 0 }}</span>
-                    <span class="stat-label">Encaminhamentos</span>
-                </div>
-                <div class="stat-column">
-                    <span class="stat-number">{{ $stats['priority_patients'] ?? 0 }}</span>
-                    <span class="stat-label">Prioritários</span>
+                    <span class="stat-number">{{ $stats['com_atributos'] }}</span>
+                    <span class="stat-label">Com Atributos</span>
                 </div>
             </div>
         </div>
     </div>
 
-
-    <!-- Estatísticas por profissional -->
-    <!-- Produtos -->
-    <div class="col-12" style="page-break-inside: avoid; margin-bottom: 1px;">
-        <h3 class="section-title">DESEMPENHO POR PROFISSIONAL</h3>
+    <!-- Lista de Produtos -->
+    <div class="col-12" style="margin-bottom: 1px;">
+        <h3 class="section-title">PRODUTOS</h3>
         <div class="p-3">
-            <div class="table-responsive">
-                @if (count($professionalStats) > 0)
-                    <table class="table table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Profissional</th>
-                                <th>Especialidade</th>
-                                <th>Agendadas</th>
-                                <th>Atendidas</th>
-                                <th>Canceladas</th>
-                                <th>Taxa Atend.</th>
-
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                            @foreach ($professionalStats as $stat)
+            @if ($produtos->isEmpty())
+                <p style="text-align: center; color: #666; font-style: italic; margin: 20px 0;">
+                    Nenhum produto encontrado para os filtros selecionados.
+                </p>
+            @else
+                @foreach ($produtos as $produto)
+                    <div class="produto-block">
+                        <div class="produto-header">
+                            <table style="width: 100%; border: none;">
                                 <tr>
-                                    <td>{{ $stat['name'] }}</td>
-                                    <td>{{ $stat['specialty'] ?: 'Não informado' }}</td>
-                                    <td>{{ $stat['total'] }}</td>
-                                    <td>{{ $stat['attended'] }}</td>
-                                    <td>{{ $stat['cancelled'] ?? 0 }}</td>
-                                    <td>
-                                        @if ($stat['total'] > 0)
-                                            {{ round(($stat['attended'] / $stat['total']) * 100, 1) }}%
-                                        @else
-                                            0%
+                                    <td style="border: none; padding: 0; width: 50%;">
+                                        <strong style="font-size: 11px;">{{ $produto->nome }}</strong>
+                                        @if ($produto->marca)
+                                            <span style="color: #6c757d; font-size: 9px;"> —
+                                                {{ $produto->marca }}</span>
                                         @endif
                                     </td>
-
+                                    <td style="border: none; padding: 0; width: 25%; text-align: center;">
+                                        <span style="font-size: 9px; color: #6c757d;">
+                                            {{ $produto->categoria->descricao ?? 'Sem Categoria' }}
+                                        </span>
+                                    </td>
+                                    <td style="border: none; padding: 0; width: 25%; text-align: right;">
+                                        @if ($produto->ativo)
+                                            <span class="status-ativo">&#10003; Ativo</span>
+                                        @else
+                                            <span class="status-inativo">&#10007; Inativo</span>
+                                        @endif
+                                    </td>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @else
-                    <p style="text-align: center; color: #666; font-style: italic; margin: 20px 0;">
-                        Nenhum dado de profissional encontrado para o período selecionado.
-                    </p>
-                @endif
-            </div>
+                            </table>
+                        </div>
+                        <div class="produto-body">
+                            <table style="width: 100%; border: none;">
+                                <tr>
+                                    <td style="border: none; padding: 2px 4px; width: 50%;">
+                                        <strong>Preço de Custo:</strong> {{ $produto->preco_custo_formatado }}
+                                    </td>
+                                    <td style="border: none; padding: 2px 4px; width: 50%;">
+                                        <strong>Preço de Venda:</strong> {{ $produto->preco_venda_formatado }}
+                                    </td>
+                                </tr>
+                            </table>
 
+                            @if (!empty($produto->atributos) && count($produto->atributos) > 0)
+                                <div style="margin-top: 6px;">
+                                    <strong style="font-size: 9px; color: #495057;">Atributos:</strong>
+                                    <table class="table table-bordered table-sm"
+                                        style="margin-top: 4px; font-size: 9px;">
+                                        <thead>
+                                            <tr>
+                                                <th style="background-color: #f8f9fa; width: 40%;">Atributo</th>
+                                                <th style="background-color: #f8f9fa;">Valor</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($produto->atributos as $key => $value)
+                                                <tr>
+                                                    <td>{{ $key }}</td>
+                                                    <td>{{ $value }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            @endif
         </div>
     </div>
-
 
     <footer class="pdf-footer">
         <table class="pdf-footer-table">
             <tr>
                 <td class="pdf-footer-left">Documento gerado por {{ AuthHelper::tenantName() ?? 'VisaoSis' }}</td>
-                <td class="pdf-footer-right">Relatorio de Atendimentos</td>
+                <td class="pdf-footer-right">Relatorio de Produtos</td>
             </tr>
         </table>
     </footer>
