@@ -207,7 +207,11 @@
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
-                        @forelse ($produtos->groupBy(fn($p) => $p->categoria->descricao ?? 'Sem Categoria') as $catNome => $grupo)
+                        @php
+                            // Agrupa por descrição da categoria e ordena as chaves alfabeticamente A-Z
+                            $groups = $produtos->groupBy(fn($p) => $p->categoria->descricao ?? 'Sem Categoria')->sortKeys();
+                        @endphp
+                        @forelse ($groups as $catNome => $grupo)
                             <li class="list-group-item d-flex justify-content-between align-items-center py-2">
                                 <small>{{ $catNome }}</small>
                                 <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
