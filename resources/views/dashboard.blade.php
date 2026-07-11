@@ -43,7 +43,7 @@
             </div>
         </div>
 
-        {{-- Card: Aguardando --}}
+        {{-- Card: Receitas vencidas --}}
         <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
@@ -52,15 +52,16 @@
                             <i class="mdi mdi-timer-sand text-warning icon-lg"></i>
                         </div>
                         <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Aguardando</p>
+                            <p class="mb-0 text-right text-dark">Receitas Vencidas</p>
                             <div class="fluid-container">
-                                <h3 class="font-weight-medium text-right mb-0 text-dark">0</h3>
+                                <h3 class="font-weight-medium text-right mb-0 text-dark">
+                                    {{ $clientesComReceitasVencidas ?? 0 }}</h3>
                             </div>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
-                        <i class="mdi mdi-account-clock-outline me-1" aria-hidden="true"></i> Clientes aguardando
-                        atendimento
+                        <i class="mdi mdi-account-clock-outline me-1" aria-hidden="true"></i> Total de clientes com
+                        receitas vencidas
                     </p>
                 </div>
             </div>

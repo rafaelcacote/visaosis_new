@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pessoa;
 use App\Models\PedidoVenda;
+use App\Models\Prescricao;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -13,8 +14,68 @@ class DashboardController extends Controller
         $vendasPorMes = $this->getVendasPorMes();
         $clientesPorMes = $this->getClientesPorMes();
         $clientesUltimos12Meses = $this->getClientesUltimos12Meses();
+        $clientesComReceitasVencidas = $this->getClientesComReceitasVencidas();
 
-        return view('dashboard', compact('vendasPorMes', 'clientesPorMes', 'clientesUltimos12Meses'));
+        return view('dashboard', compact('vendasPorMes', 'clientesPorMes', 'clientesUltimos12Meses', 'clientesComReceitasVencidas'));
+    }
+
+    private function getClientesComReceitasVencidas(): int
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $hoje = Carbon::today()->startOfDay();
+
+        $locationIds = [];
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
+        }
+
+        $prescricoes = Prescricao::query()
+            ->whereNotNull('pessoa_paciente_id')
+            ->whereNotNull('validade_dias')
+            ->when($tenantId, fn($query) => $query->where('tenant_id', $tenantId))
+            ->when(!empty($locationIds), function ($query) use ($locationIds) {
+                $query->where(function ($q) use ($locationIds) {
+                    $q->whereIn('location_id', $locationIds)
+                        ->orWhereNull('location_id');
+                });
+            }, function ($query) use ($locationId) {
+                if ($locationId) {
+                    $query->where('location_id', $locationId);
+                }
+            })
+            ->orderByDesc('data_receita')
+            ->orderByDesc('created_at')
+            ->get(['pessoa_paciente_id', 'data_receita', 'created_at', 'validade_dias']);
+
+        $ultimasPorCliente = $prescricoes
+            ->groupBy('pessoa_paciente_id')
+            ->map(fn($items) => $items->first());
+
+        return (int) $ultimasPorCliente
+            ->filter(function (Prescricao $prescricao) use ($hoje) {
+                $dataBase = $prescricao->data_receita
+                    ? Carbon::parse($prescricao->data_receita)->startOfDay()
+                    : ($prescricao->created_at ? $prescricao->created_at->copy()->startOfDay() : null);
+
+                if (!$dataBase || !$prescricao->validade_dias) {
+                    return false;
+                }
+
+                $vencimento = $dataBase->copy()->addDays((int) $prescricao->validade_dias);
+
+                return $vencimento->lt($hoje);
+            })
+            ->count();
     }
 
     private function getClientesPorMes(): array

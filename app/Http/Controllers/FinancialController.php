@@ -994,6 +994,7 @@ class FinancialController extends Controller
         if ($tenantId) {
             $prescricoes = Prescricao::with('paciente')
                 ->whereNull('deleted_at')
+                ->whereNotNull('pessoa_paciente_id')
                 ->whereNotNull('validade_dias')
                 ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
                 ->when(! empty($locationIds), function ($q) use ($locationIds) {
@@ -1001,20 +1002,24 @@ class FinancialController extends Controller
                         $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
                     });
                 })
+                ->orderByDesc('data_receita')
                 ->orderByDesc('created_at')
-                ->limit(200)
                 ->get();
 
-            $receitasVencendo = $prescricoes->filter(function (Prescricao $p) use ($hoje) {
-                if (! $p->created_at || ! $p->validade_dias) {
-                    return false;
-                }
+            $receitasVencendo = $prescricoes
+                ->groupBy('pessoa_paciente_id')
+                ->map(fn($items) => $items->first())
+                ->filter(function (Prescricao $p) use ($hoje) {
+                    $vencimento = $this->resolvePrescriptionDueDate($p);
+                    if (! $vencimento) {
+                        return false;
+                    }
 
-                $vencimento = $p->created_at->copy()->startOfDay()->addDays((int) $p->validade_dias);
-                $dias = $hoje->diffInDays($vencimento, false);
+                    $dias = $hoje->diffInDays($vencimento, false);
 
-                return $dias >= 0 && $dias <= 7;
-            })->values();
+                    return $dias <= 7;
+                })
+                ->values();
         }
 
         $eligibles = collect();
@@ -1649,10 +1654,12 @@ class FinancialController extends Controller
 
             $pessoa = $pessoa ?: $prescricao?->paciente;
 
-            $dataEmissao = $prescricao?->created_at ? $prescricao->created_at->format('d/m/Y') : '';
+            $dataBaseReceita = $prescricao ? $this->resolvePrescriptionBaseDate($prescricao) : null;
+            $dataEmissao = $dataBaseReceita ? $dataBaseReceita->format('d/m/Y') : '';
             $dataVenc = '';
-            if ($prescricao?->created_at && $prescricao?->validade_dias) {
-                $dataVenc = $prescricao->created_at->copy()->startOfDay()->addDays((int) $prescricao->validade_dias)->format('d/m/Y');
+            $vencimentoReceita = $prescricao ? $this->resolvePrescriptionDueDate($prescricao) : null;
+            if ($vencimentoReceita) {
+                $dataVenc = $vencimentoReceita->format('d/m/Y');
             }
 
             $placeholders = array_merge($placeholders, [
@@ -1693,6 +1700,30 @@ class FinancialController extends Controller
             'mensagem' => $mensagem,
             'erro' => null,
         ];
+    }
+
+    private function resolvePrescriptionBaseDate(Prescricao $prescricao): ?Carbon
+    {
+        if ($prescricao->data_receita) {
+            return Carbon::parse($prescricao->data_receita)->startOfDay();
+        }
+
+        if ($prescricao->created_at) {
+            return $prescricao->created_at->copy()->startOfDay();
+        }
+
+        return null;
+    }
+
+    private function resolvePrescriptionDueDate(Prescricao $prescricao): ?Carbon
+    {
+        $dataBase = $this->resolvePrescriptionBaseDate($prescricao);
+
+        if (! $dataBase || ! $prescricao->validade_dias) {
+            return null;
+        }
+
+        return $dataBase->copy()->addDays((int) $prescricao->validade_dias);
     }
 
     private function getTemplateMessage($tenantId, $locationId, string $tipo): string
