@@ -18,7 +18,8 @@
                 <i class="mdi mdi-arrow-left me-2"></i>
                 Voltar ao Paciente
             </a>
-            <a href="{{ route('sales.create') }}" class="btn btn-primary">
+            <a href="{{ route('sales.create', ['cliente_id' => $pessoa->id]) }}" class="btn btn-primary" target="_blank"
+                rel="noopener noreferrer">
                 <i class="mdi mdi-plus me-2"></i>
                 Nova Venda
             </a>

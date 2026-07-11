@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Consulta;
 use App\Models\Profissional;
+use App\Models\Produto;
+use App\Models\Categoria;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -441,5 +443,105 @@ class ReportController extends Controller
         $filename = 'relatorio_atendimentos_' . $date->format('Y-m-d') . '.pdf';
 
         return $pdf->stream($filename);
+    }
+
+    public function products(Request $request)
+    {
+        $tenantId = session('tenant_id') ?? 1;
+        $locationId = session('location_id') ?? 1;
+
+        // Normalizar parâmetros: converter para string e trim para evitar espaços em branco
+        $search = trim((string) $request->get('search', ''));
+        $categoriaId = trim((string) $request->get('categoria_id', ''));
+        $status = trim((string) $request->get('status', ''));
+
+        $query = Produto::with('categoria')
+            ->where('tenant_id', $tenantId);
+
+        if ($search) {
+            // Usar ILIKE para busca case-insensitive (Postgres)
+            $like = "%{$search}%";
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw('nome ILIKE ?', [$like])
+                    ->orWhereRaw('marca ILIKE ?', [$like]);
+            });
+        }
+
+        if ($categoriaId !== '') {
+            $query->where('categoria_id', $categoriaId);
+        }
+
+        if ($status !== '') {
+            // Aceita '1' (string) e 1 (int). Converte para inteiro para robustez.
+            $query->where('ativo', (int) $status === 1);
+        }
+
+        $produtos = $query->orderBy('nome')->get();
+
+        $stats = [
+            'total'      => $produtos->count(),
+            'ativos'     => $produtos->where('ativo', true)->count(),
+            'inativos'   => $produtos->where('ativo', false)->count(),
+            'com_atributos' => $produtos->filter(fn($p) => !empty($p->atributos))->count(),
+        ];
+
+        $categorias = Categoria::where('tenant_id', $tenantId)
+            ->where('ativo', true)
+            ->orderBy('descricao')
+            ->get();
+
+        return view('reports.products', compact('produtos', 'stats', 'categorias', 'search', 'categoriaId', 'status'));
+    }
+
+    public function productsPdf(Request $request)
+    {
+        $tenantId = session('tenant_id') ?? 1;
+        $locationId = session('location_id') ?? 1;
+
+        // Normalizar parâmetros: converter para string e trim para evitar espaços em branco
+        $search = trim((string) $request->get('search', ''));
+        $categoriaId = trim((string) $request->get('categoria_id', ''));
+        $status = trim((string) $request->get('status', ''));
+
+        $query = Produto::with('categoria')
+            ->where('tenant_id', $tenantId);
+
+        if ($search) {
+            // Usar ILIKE para busca case-insensitive (Postgres)
+            $like = "%{$search}%";
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw('nome ILIKE ?', [$like])
+                    ->orWhereRaw('marca ILIKE ?', [$like]);
+            });
+        }
+
+        if ($categoriaId !== '') {
+            $query->where('categoria_id', $categoriaId);
+        }
+
+        if ($status !== '') {
+            // Aceita '1' (string) e 1 (int). Converte para inteiro para robustez.
+            $query->where('ativo', (int) $status === 1);
+        }
+
+        $produtos = $query->orderBy('nome')->get();
+
+        $stats = [
+            'total'         => $produtos->count(),
+            'ativos'        => $produtos->where('ativo', true)->count(),
+            'inativos'      => $produtos->where('ativo', false)->count(),
+            'com_atributos' => $produtos->filter(fn($p) => !empty($p->atributos))->count(),
+        ];
+
+        $categorias = Categoria::where('tenant_id', $tenantId)
+            ->where('ativo', true)
+            ->orderBy('descricao')
+            ->get();
+
+        $pdf = \PDF::loadView('reports.products-pdf', compact('produtos', 'stats', 'categorias', 'search', 'categoriaId', 'status'));
+
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->stream('relatorio_produtos_' . now()->format('Y-m-d') . '.pdf');
     }
 }

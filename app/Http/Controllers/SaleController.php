@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Pessoa;
 use App\Models\Produto;
 use App\Models\Categoria;
 use App\Models\PedidoVenda;
@@ -141,7 +142,7 @@ class SaleController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
@@ -233,7 +234,39 @@ class SaleController extends Controller
 
         $canApplyDiscountWithoutAuth = AuthHelper::canApplyDiscountWithoutAuthorization();
 
-        return view('sales.create', compact('products', 'categories', 'canApplyDiscountWithoutAuth'));
+        $preselectedClient = null;
+        $clienteId = (int) $request->query('cliente_id');
+
+        if ($clienteId > 0) {
+            $clientQuery = Pessoa::query()
+                ->where('id', $clienteId)
+                ->where('ativo', true);
+
+            if ($tenantId) {
+                $clientQuery->where('tenant_id', $tenantId);
+            }
+
+            if (!empty($locationIds)) {
+                $clientQuery->whereIn('location_id', $locationIds);
+            } elseif ($locationId) {
+                $clientQuery->where('location_id', $locationId);
+            }
+
+            $cliente = $clientQuery->first();
+
+            if ($cliente) {
+                $preselectedClient = [
+                    'id' => $cliente->id,
+                    'nome' => $cliente->nome,
+                    'cpf' => $cliente->cpf_formatado,
+                    'telefone' => $cliente->telefone_formatado,
+                    'email' => $cliente->email,
+                    'endereco' => $cliente->endereco_completo,
+                ];
+            }
+        }
+
+        return view('sales.create', compact('products', 'categories', 'canApplyDiscountWithoutAuth', 'preselectedClient'));
     }
 
     /**

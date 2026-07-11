@@ -128,6 +128,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Rotas de produtos
     Route::get('produtos/importar', [ProdutoController::class, 'importForm'])->name('produtos.import');
+    Route::get('produtos/importar/template', [ProdutoController::class, 'downloadImportTemplate'])->name('produtos.import.template');
     Route::post('produtos/importar', [ProdutoController::class, 'importStore'])->name('produtos.import.store');
     Route::resource('produtos', ProdutoController::class)->parameters([
         'produtos' => 'produto',
@@ -242,5 +243,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendance', [ReportController::class, 'attendance'])->name('attendance');
         Route::get('/attendance/export', [ReportController::class, 'exportAttendance'])->name('attendance.export');
         Route::get('/attendance/pdf', [ReportController::class, 'attendancePdf'])->name('attendance.pdf');
+        Route::get('/products', [ReportController::class, 'products'])->name('products');
+        Route::get('/products/pdf', [ReportController::class, 'productsPdf'])->name('products.pdf');
     });
 });

@@ -103,21 +103,21 @@
                     </div>
                 </div>
 
-                <!-- Relatório de Pacientes -->
+                <!-- Relatório de Produtos -->
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 hover-card">
                         <div class="card-body text-center">
                             <div class="mb-3">
-                                <i class="mdi mdi-account-group text-info" style="font-size: 3rem;"></i>
+                                <i class="mdi mdi-tag-multiple text-primary" style="font-size: 3rem;"></i>
                             </div>
-                            <h5 class="card-title">Relatório de Pacientes</h5>
+                            <h5 class="card-title">Relatório de Produtos</h5>
                             <p class="card-text text-muted">
-                                Análise demográfica, histórico de consultas e estatísticas de pacientes cadastrados.
+                                Visualize todos os produtos cadastrados com seus atributos, preços e categorias.
                             </p>
                             <div class="mt-auto">
-                                <button class="btn btn-info" onclick="generateReport('patients')" disabled>
-                                    <i class="mdi mdi-account-search me-2"></i>
-                                    Em Breve
+                                <button class="btn btn-primary" onclick="generateReport('products')">
+                                    <i class="mdi mdi-chart-bar me-2"></i>
+                                    Gerar Relatório
                                 </button>
                             </div>
                         </div>
@@ -165,6 +165,8 @@
                         </div>
                     </div>
                 </div>
+
+
 
                 <!-- Relatório Personalizado -->
                 <div class="col-lg-4 col-md-6 mb-4">
@@ -226,6 +228,9 @@
                     break;
                 case 'financial':
                     url = `{{ route('reports.financial') }}?${params.toString()}`;
+                    break;
+                case 'products':
+                    url = `{{ route('reports.products') }}`;
                     break;
                 default:
                     alert('Relatório ainda não disponível. Em breve!');
