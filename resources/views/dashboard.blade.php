@@ -67,23 +67,25 @@
             </div>
         </div>
 
-        {{-- Card: Em atendimento --}}
+        {{-- Card: Pagamentos em atraso --}}
         <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
                     <div class="clearfix">
                         <div class="float-start">
-                            <i class="mdi mdi-stethoscope text-success icon-lg"></i>
+                            <i class="mdi mdi-cash-remove text-success icon-lg"></i>
                         </div>
                         <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Em atendimento</p>
+                            <p class="mb-0 text-right text-dark">Pagamento em Atraso</p>
                             <div class="fluid-container">
-                                <h3 class="font-weight-medium text-right mb-0 text-dark">0</h3>
+                                <h3 class="font-weight-medium text-right mb-0 text-dark">
+                                    {{ $clientesComPagamentoAtraso ?? 0 }}</h3>
                             </div>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
-                        <i class="mdi mdi-hospital-marker me-1" aria-hidden="true"></i> Pacientes sendo atendidos agora
+                        <i class="mdi mdi-hospital-marker me-1" aria-hidden="true"></i> Total de clientes com pagamento em
+                        atraso
                     </p>
                 </div>
             </div>
