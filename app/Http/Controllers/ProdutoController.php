@@ -140,6 +140,33 @@ class ProdutoController extends Controller
         return view('produtos.import', compact('categorias'));
     }
 
+    public function downloadImportTemplate()
+    {
+        $fileName = 'template_importacao_produtos.csv';
+        $rows = [
+            ['Nome', 'Marca', 'Preco de Custo', 'Preco de Venda', 'Cor', 'Tamanho'],
+            ['ARMACAO EXEMPLO', 'MARCA EXEMPLO', '120,00', '199,90', 'Preto', '54'],
+        ];
+
+        return response()->streamDownload(function () use ($rows) {
+            $handle = fopen('php://output', 'w');
+
+            if ($handle === false) {
+                return;
+            }
+
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            foreach ($rows as $row) {
+                fputcsv($handle, $row, ';');
+            }
+
+            fclose($handle);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     public function importStore(Request $request)
     {
         $tenantId = session('tenant_id');

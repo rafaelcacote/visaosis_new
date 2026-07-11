@@ -11,10 +11,16 @@
             </h2>
             <p class="text-muted mb-0">Importe produtos a partir de uma planilha (XLSX/XLS/CSV)</p>
         </div>
-        <a href="{{ route('produtos.index') }}" class="btn btn-outline-secondary">
-            <i class="mdi mdi-arrow-left me-2"></i>
-            Voltar
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ route('produtos.import.template') }}" class="btn btn-outline-primary">
+                <i class="mdi mdi-download me-2"></i>
+                Baixar Modelo
+            </a>
+            <a href="{{ route('produtos.index') }}" class="btn btn-outline-secondary">
+                <i class="mdi mdi-arrow-left me-2"></i>
+                Voltar
+            </a>
+        </div>
     </div>
 
     @if (session('success'))
@@ -38,7 +44,8 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Categoria</label>
-                        <select class="form-select @error('categoria_id') is-invalid @enderror" name="categoria_id" required>
+                        <select class="form-select @error('categoria_id') is-invalid @enderror" name="categoria_id"
+                            required>
                             <option value="">Selecione</option>
                             @foreach ($categorias as $cat)
                                 <option value="{{ $cat->id }}" {{ old('categoria_id') == $cat->id ? 'selected' : '' }}>
@@ -67,6 +74,8 @@
                         1ª coluna: Nome | 2ª coluna: Marca | 3ª coluna: Preço de Custo | 4ª coluna: Preço de Venda
                         <br>
                         A partir da 5ª coluna: Atributos (o título da coluna será o nome do atributo)
+                        <br>
+                        <a href="{{ route('produtos.import.template') }}" class="alert-link">Baixar modelo de planilha</a>
                     </div>
                 </div>
 
@@ -83,4 +92,3 @@
         </div>
     </div>
 @endsection
-

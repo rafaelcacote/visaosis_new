@@ -128,6 +128,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Rotas de produtos
     Route::get('produtos/importar', [ProdutoController::class, 'importForm'])->name('produtos.import');
+    Route::get('produtos/importar/template', [ProdutoController::class, 'downloadImportTemplate'])->name('produtos.import.template');
     Route::post('produtos/importar', [ProdutoController::class, 'importStore'])->name('produtos.import.store');
     Route::resource('produtos', ProdutoController::class)->parameters([
         'produtos' => 'produto',
