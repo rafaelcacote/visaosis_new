@@ -544,5 +544,94 @@
 
             render();
         })();
+
+        (function() {
+            const form = document.querySelector('form[action*="receitas"]');
+            if (!form) return;
+
+            const getField = (name) => form.querySelector(`[name="${name}"]`);
+
+            const parseRxNumber = (value) => {
+                if (value == null) return null;
+                const s = String(value).trim().replace(',', '.');
+                if (s === '') return null;
+                const normalized = s.startsWith('+') ? s.slice(1) : s;
+                const n = Number(normalized);
+                return Number.isFinite(n) ? n : null;
+            };
+
+            const formatRxNumber = (n) => {
+                if (!Number.isFinite(n)) return '';
+                const fixed = n.toFixed(2);
+                return n > 0 ? `+${fixed}` : fixed;
+            };
+
+            const manualFields = [
+                'od_esferico_perto',
+                'oe_esferico_perto',
+                'od_cilindrico_perto',
+                'oe_cilindrico_perto',
+                'od_eixo_perto',
+                'oe_eixo_perto',
+            ];
+
+            manualFields.forEach((name) => {
+                const input = getField(name);
+                if (!input) return;
+                input.addEventListener('input', () => {
+                    const v = String(input.value ?? '').trim();
+                    if (v === '') {
+                        delete input.dataset.manual;
+                        return;
+                    }
+                    input.dataset.manual = '1';
+                });
+            });
+
+            const setIfNotManual = (name, value) => {
+                const input = getField(name);
+                if (!input) return;
+                if (input.dataset.manual === '1') return;
+                input.value = value;
+            };
+
+            const updateNearFromAddition = () => {
+                const odAdd = parseRxNumber(getField('od_adicao')?.value);
+                const oeAddRaw = parseRxNumber(getField('oe_adicao')?.value);
+                const oeAdd = oeAddRaw != null ? oeAddRaw : odAdd;
+
+                const odEsf = parseRxNumber(getField('od_esferico')?.value);
+                const oeEsf = parseRxNumber(getField('oe_esferico')?.value);
+
+                if (odAdd != null && odEsf != null) {
+                    setIfNotManual('od_esferico_perto', formatRxNumber(odEsf + odAdd));
+                    setIfNotManual('od_cilindrico_perto', String(getField('od_cilindrico')?.value ?? ''));
+                    setIfNotManual('od_eixo_perto', String(getField('od_eixo')?.value ?? ''));
+                }
+
+                if (oeAdd != null && oeEsf != null) {
+                    setIfNotManual('oe_esferico_perto', formatRxNumber(oeEsf + oeAdd));
+                    setIfNotManual('oe_cilindrico_perto', String(getField('oe_cilindrico')?.value ?? ''));
+                    setIfNotManual('oe_eixo_perto', String(getField('oe_eixo')?.value ?? ''));
+                }
+            };
+
+            [
+                'od_adicao',
+                'oe_adicao',
+                'od_esferico',
+                'oe_esferico',
+                'od_cilindrico',
+                'oe_cilindrico',
+                'od_eixo',
+                'oe_eixo',
+            ].forEach((name) => {
+                const input = getField(name);
+                if (!input) return;
+                input.addEventListener('input', updateNearFromAddition);
+            });
+
+            updateNearFromAddition();
+        })();
     </script>
 @endpush

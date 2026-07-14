@@ -18,7 +18,7 @@
     </div>
     <div class="row">
         <!-- Dados do Paciente -->
-        <div class="col-lg-4">
+        <div class="col-lg-3">
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
@@ -186,7 +186,7 @@
         </div>
 
         <!-- Área de Consulta -->
-        <div class="col-lg-8">
+        <div class="col-lg-9">
             <!-- Tabs de Navegação -->
             @php $activeTab = session('active_tab', 'prescription'); @endphp
             <ul class="nav nav-tabs mb-3" id="consultationTabs" role="tablist">
@@ -279,11 +279,11 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th style="width: 44px;"></th>
-                                                <th style="width: 90px;">Olho</th>
+                                                <th style="width: 45px;">Olho</th>
                                                 <th>Esférico</th>
                                                 <th>Cilíndrico</th>
-                                                <th>Eixo</th>
-                                                <th>AV</th>
+                                                <th>Eixo </th>
+                                                <th>Acuidade</th>
                                                 <th class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">DNP
                                                 </th>
                                                 <th class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">Altura
@@ -1207,6 +1207,95 @@
 
             setGlassesFieldsVisible(toggle.checked);
             toggle.addEventListener('change', () => setGlassesFieldsVisible(toggle.checked));
+
+            const $ = (name) => document.querySelector(`[name="${name}"]`);
+
+            const parseRxNumber = (value) => {
+                if (value == null) return null;
+                const s = String(value).trim().replace(',', '.');
+                if (s === '') return null;
+                const normalized = s.startsWith('+') ? s.slice(1) : s;
+                const n = Number(normalized);
+                return Number.isFinite(n) ? n : null;
+            };
+
+            const formatRxNumber = (n) => {
+                if (!Number.isFinite(n)) return '';
+                const fixed = n.toFixed(2);
+                if (n > 0) return `+${fixed}`;
+                return fixed;
+            };
+
+            const manualFields = [
+                'od_esferico_perto',
+                'oe_esferico_perto',
+                'od_cilindrico_perto',
+                'oe_cilindrico_perto',
+                'od_eixo_perto',
+                'oe_eixo_perto',
+            ];
+
+            manualFields.forEach((name) => {
+                const input = $(name);
+                if (!input) return;
+                input.addEventListener('input', () => {
+                    const v = String(input.value ?? '').trim();
+                    if (v === '') {
+                        delete input.dataset.manual;
+                        return;
+                    }
+                    input.dataset.manual = '1';
+                });
+            });
+
+            const setIfNotManual = (name, value) => {
+                const input = $(name);
+                if (!input) return;
+                if (input.dataset.manual === '1') return;
+                input.value = value;
+            };
+
+            const updateNearFromAddition = () => {
+                const odAdd = parseRxNumber($('od_adicao')?.value);
+                const oeAddRaw = parseRxNumber($('oe_adicao')?.value);
+                const oeAdd = oeAddRaw != null ? oeAddRaw : odAdd;
+
+                const odEsf = parseRxNumber($('od_esferico')?.value);
+                const oeEsf = parseRxNumber($('oe_esferico')?.value);
+
+                if (odAdd != null && odEsf != null) {
+                    setIfNotManual('od_esferico_perto', formatRxNumber(odEsf + odAdd));
+                    const odCil = $('od_cilindrico')?.value ?? '';
+                    const odEixo = $('od_eixo')?.value ?? '';
+                    setIfNotManual('od_cilindrico_perto', String(odCil));
+                    setIfNotManual('od_eixo_perto', String(odEixo));
+                }
+
+                if (oeAdd != null && oeEsf != null) {
+                    setIfNotManual('oe_esferico_perto', formatRxNumber(oeEsf + oeAdd));
+                    const oeCil = $('oe_cilindrico')?.value ?? '';
+                    const oeEixo = $('oe_eixo')?.value ?? '';
+                    setIfNotManual('oe_cilindrico_perto', String(oeCil));
+                    setIfNotManual('oe_eixo_perto', String(oeEixo));
+                }
+            };
+
+            [
+                'od_adicao',
+                'oe_adicao',
+                'od_esferico',
+                'oe_esferico',
+                'od_cilindrico',
+                'oe_cilindrico',
+                'od_eixo',
+                'oe_eixo',
+            ].forEach((name) => {
+                const input = $(name);
+                if (!input) return;
+                input.addEventListener('input', updateNearFromAddition);
+            });
+
+            updateNearFromAddition();
         });
 
         function copyLastPrescription() {

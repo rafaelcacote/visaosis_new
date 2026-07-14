@@ -356,3 +356,108 @@
         @enderror
     </div>
 </div>
+
+@push('scripts')
+    <script>
+        (function() {
+            if (window.__rxNearFromAddV1) return;
+            window.__rxNearFromAddV1 = true;
+
+            const $ = (name) => document.querySelector(`[name="${name}"]`);
+
+            const parseRxNumber = (value) => {
+                if (value == null) return null;
+                const s = String(value).trim().replace(',', '.');
+                if (s === '') return null;
+                const normalized = s.startsWith('+') ? s.slice(1) : s;
+                const n = Number(normalized);
+                return Number.isFinite(n) ? n : null;
+            };
+
+            const formatRxNumber = (n) => {
+                if (!Number.isFinite(n)) return '';
+                const fixed = n.toFixed(2);
+                if (n > 0) return `+${fixed}`;
+                return fixed;
+            };
+
+            const manualFields = [
+                'od_esferico_perto',
+                'oe_esferico_perto',
+                'od_cilindrico_perto',
+                'oe_cilindrico_perto',
+                'od_eixo_perto',
+                'oe_eixo_perto',
+            ];
+
+            const setIfNotManual = (name, value) => {
+                const input = $(name);
+                if (!input) return;
+                if (input.dataset.manual === '1') return;
+                input.value = value;
+            };
+
+            const updateNearFromAddition = () => {
+                const odAdd = parseRxNumber($('od_adicao')?.value);
+                const oeAddRaw = parseRxNumber($('oe_adicao')?.value);
+                const oeAdd = oeAddRaw != null ? oeAddRaw : odAdd;
+                if (odAdd == null && oeAdd == null) return;
+
+                const odEsf = parseRxNumber($('od_esferico')?.value);
+                const oeEsf = parseRxNumber($('oe_esferico')?.value);
+
+                if (odAdd != null && odEsf != null) {
+                    setIfNotManual('od_esferico_perto', formatRxNumber(odEsf + odAdd));
+                    setIfNotManual('od_cilindrico_perto', String($('od_cilindrico')?.value ?? ''));
+                    setIfNotManual('od_eixo_perto', String($('od_eixo')?.value ?? ''));
+                }
+
+                if (oeAdd != null && oeEsf != null) {
+                    setIfNotManual('oe_esferico_perto', formatRxNumber(oeEsf + oeAdd));
+                    setIfNotManual('oe_cilindrico_perto', String($('oe_cilindrico')?.value ?? ''));
+                    setIfNotManual('oe_eixo_perto', String($('oe_eixo')?.value ?? ''));
+                }
+            };
+
+            const init = () => {
+                if (!$('od_esferico') || !$('oe_esferico')) return;
+
+                manualFields.forEach((name) => {
+                    const input = $(name);
+                    if (!input) return;
+                    input.addEventListener('input', () => {
+                        const v = String(input.value ?? '').trim();
+                        if (v === '') {
+                            delete input.dataset.manual;
+                            return;
+                        }
+                        input.dataset.manual = '1';
+                    });
+                });
+
+                [
+                    'od_adicao',
+                    'oe_adicao',
+                    'od_esferico',
+                    'oe_esferico',
+                    'od_cilindrico',
+                    'oe_cilindrico',
+                    'od_eixo',
+                    'oe_eixo',
+                ].forEach((name) => {
+                    const input = $(name);
+                    if (!input) return;
+                    input.addEventListener('input', updateNearFromAddition);
+                });
+
+                updateNearFromAddition();
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+@endpush
