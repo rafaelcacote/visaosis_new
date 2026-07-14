@@ -108,7 +108,7 @@
             <form id="triageForm" action="{{ route('recepcao.triage.store') }}" method="POST">
                 @csrf
                 <div class="card mb-4" id="patientForm"
-                    style="display: {{ $errors->any() || old('nome') || old('cpf') || old('profissional_id') || old('tipo') || old('prioridade') ? 'block' : 'none' }};">
+                    style="display: {{ $errors->any() || old('nome') || old('apelido') || old('cpf') || old('profissional_id') || old('tipo') || old('prioridade') ? 'block' : 'none' }};">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="mdi mdi-account me-2"></i>
@@ -117,7 +117,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-8">
+                            <div class="col-md-6">
                                 <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('nome') is-invalid @enderror"
                                     name="nome" value="{{ old('nome') }}" required>
@@ -125,18 +125,27 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label class="form-label">Apelido <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control @error('apelido') is-invalid @enderror"
+                                    name="apelido" value="{{ old('apelido') }}" required>
+                                @error('apelido')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-3">
                                 <label class="form-label">CPF</label>
-                                <input type="text" class="form-control @error('cpf') is-invalid @enderror" name="cpf"
-                                    value="{{ old('cpf') }}" placeholder="000.000.000-00" maxlength="14">
+                                <input type="text" class="form-control @error('cpf') is-invalid @enderror"
+                                    name="cpf" value="{{ old('cpf') }}" placeholder="000.000.000-00"
+                                    maxlength="14">
                                 @error('cpf')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Data de Nascimento <span class="text-danger">*</span></label>
+                                <label class="form-label">Data de Nascimento</label>
                                 <input type="date" class="form-control @error('nascimento_em') is-invalid @enderror"
-                                    name="nascimento_em" value="{{ old('nascimento_em') }}" required>
+                                    name="nascimento_em" value="{{ old('nascimento_em') }}">
                                 @error('nascimento_em')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -163,7 +172,7 @@
 
                 <!-- Triage Info -->
                 <div class="card" id="triageInfo"
-                    style="display: {{ $errors->any() || old('nome') || old('cpf') || old('profissional_id') || old('tipo') || old('prioridade') ? 'block' : 'none' }};">
+                    style="display: {{ $errors->any() || old('nome') || old('apelido') || old('cpf') || old('profissional_id') || old('tipo') || old('prioridade') ? 'block' : 'none' }};">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="mdi mdi-clipboard-pulse me-2"></i>
@@ -481,6 +490,7 @@
 
                 // Preencher campos do formulário
                 form.querySelector('[name="nome"]').value = paciente.nome || '';
+                form.querySelector('[name="apelido"]').value = paciente.apelido || '';
 
                 // Usar CPF formatado se disponível, senão usar o valor bruto
                 const cpfValue = paciente.cpf_formatado || paciente.cpf || '';
@@ -507,6 +517,11 @@
 
                 // Marcar campos como readonly para pacientes existentes
                 form.querySelectorAll('input').forEach(input => {
+                    if (input.name === 'apelido' && !input.value) {
+                        input.readOnly = false;
+                        input.classList.remove('bg-light');
+                        return;
+                    }
                     input.readOnly = true;
                     input.classList.add('bg-light');
                 });
@@ -550,7 +565,7 @@
                     const form = document.getElementById('triageForm');
                     if (form) {
                         form.querySelectorAll(
-                            'input[name="nome"], input[name="cpf"], input[name="nascimento_em"], input[name="telefone"], input[name="email"]'
+                            'input[name="nome"], input[name="apelido"], input[name="cpf"], input[name="nascimento_em"], input[name="telefone"], input[name="email"]'
                         ).forEach(input => {
                             input.readOnly = true;
                             input.classList.add('bg-light');
