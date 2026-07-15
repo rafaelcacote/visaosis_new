@@ -244,15 +244,13 @@
                             <!-- Preço Unitário -->
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="preco_unit" class="form-label">
-                                        Preço Unitário <span class="text-danger">*</span>
-                                    </label>
+                                    <label for="preco_unit" class="form-label">Preço Unitário</label>
                                     <div class="input-group">
                                         <span class="input-group-text">R$</span>
                                         <input type="number"
                                             class="form-control @error('preco_unit') is-invalid @enderror" id="preco_unit"
                                             name="preco_unit" value="{{ old('preco_unit') }}" step="0.01"
-                                            min="0" required>
+                                            min="0">
                                     </div>
                                     @error('preco_unit')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -806,12 +804,12 @@
                             </small>
                         </div>
                         ${(prescricao.perto && (prescricao.perto.od?.esfera || prescricao.perto.oe?.esfera || prescricao.perto.od?.cilindro || prescricao.perto.oe?.cilindro || prescricao.perto.od?.eixo || prescricao.perto.oe?.eixo)) ? `
-                                    <div class="mt-1">
-                                        <small class="text-danger">
-                                            PERTO OD: ${shortTriplet(prescricao.perto, 'od')} • OE: ${shortTriplet(prescricao.perto, 'oe')}
-                                        </small>
-                                    </div>
-                                ` : ''}
+                                        <div class="mt-1">
+                                            <small class="text-danger">
+                                                PERTO OD: ${shortTriplet(prescricao.perto, 'od')} • OE: ${shortTriplet(prescricao.perto, 'oe')}
+                                            </small>
+                                        </div>
+                                    ` : ''}
                     </button>
                 `).join('');
             }
@@ -996,8 +994,8 @@
                                 </small>
                                 <div class="itens-preview" style="max-height: 60px; overflow-y: auto; font-size: 0.8em;">
                                     ${venda.itens.slice(0, 3).map(item => `
-                                                                                                                                                                            <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
-                                                                                                                                                                        `).join('')}
+                                                                                                                                                                                <div class="text-muted">• ${item.produto_nome} (${item.quantidade}x)</div>
+                                                                                                                                                                            `).join('')}
                                     ${venda.itens.length > 3 ? `<div class="text-muted">... e mais ${venda.itens.length - 3} produto(s)</div>` : ''}
                                 </div>
                             </div>
@@ -1051,20 +1049,20 @@
                     </h6>
                     <div style="max-height: 60vh; overflow-y: auto; overflow-x: hidden; width: 100%;">
                         ${venda.itens.map(item => `
-                                                                                                                                                            <div class="border rounded p-2 mb-2 item-checkbox d-flex align-items-start" style="cursor: pointer;">
-                                                                                                                                                                <input class="form-check-input me-3" type="checkbox" name="itens_selecionados[]"
-                                                                                                                                                                       value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()" style="margin-top: 2px;">
-                                                                                                                                                                <div class="flex-grow-1">
-                                                                                                                                                                    <label class="form-check-label w-100" for="item_${item.id}" style="cursor: pointer;">
-                                                                                                                                                                        <strong style="display: block; font-size: 0.9rem; line-height: 1.3; margin-bottom: 2px;">${item.produto_nome}</strong>
-                                                                                                                                                                        <small class="text-muted" style="font-size: 0.75rem; line-height: 1.2;">
-                                                                                                                                                                            Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
-                                                                                                                                                                            ${item.desconto_raw > 0 ? ` • Desc: ${item.desconto}` : ''}
-                                                                                                                                                                        </small>
-                                                                                                                                                                    </label>
+                                                                                                                                                                <div class="border rounded p-2 mb-2 item-checkbox d-flex align-items-start" style="cursor: pointer;">
+                                                                                                                                                                    <input class="form-check-input me-3" type="checkbox" name="itens_selecionados[]"
+                                                                                                                                                                           value="${item.id}" id="item_${item.id}" onchange="updateSelectedItems()" style="margin-top: 2px;">
+                                                                                                                                                                    <div class="flex-grow-1">
+                                                                                                                                                                        <label class="form-check-label w-100" for="item_${item.id}" style="cursor: pointer;">
+                                                                                                                                                                            <strong style="display: block; font-size: 0.9rem; line-height: 1.3; margin-bottom: 2px;">${item.produto_nome}</strong>
+                                                                                                                                                                            <small class="text-muted" style="font-size: 0.75rem; line-height: 1.2;">
+                                                                                                                                                                                Qtd: ${item.quantidade} • Preço Unit.: ${item.preco_unit}
+                                                                                                                                                                                ${item.desconto_raw > 0 ? ` • Desc: ${item.desconto}` : ''}
+                                                                                                                                                                            </small>
+                                                                                                                                                                        </label>
+                                                                                                                                                                    </div>
                                                                                                                                                                 </div>
-                                                                                                                                                            </div>
-                                                                                                                                                        `).join('')}
+                                                                                                                                                            `).join('')}
                     </div>
                     <div class="mt-3 text-center">
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllItems()">
@@ -1076,11 +1074,11 @@
                     </div>
                 </div>
                 ${venda.observacoes ? `
-                                                                                                                                                    <div class="mt-3">
-                                                                                                                                                        <h6 class="mb-1">Observações da Venda:</h6>
-                                                                                                                                                        <p class="mb-0 text-muted small">${venda.observacoes}</p>
-                                                                                                                                                    </div>
-                                                                                                                                                ` : ''}
+                                                                                                                                                        <div class="mt-3">
+                                                                                                                                                            <h6 class="mb-1">Observações da Venda:</h6>
+                                                                                                                                                            <p class="mb-0 text-muted small">${venda.observacoes}</p>
+                                                                                                                                                        </div>
+                                                                                                                                                    ` : ''}
             `;
             document.getElementById('venda_selecionada').style.display = 'block';
             document.getElementById('btnSalvar').disabled = false;

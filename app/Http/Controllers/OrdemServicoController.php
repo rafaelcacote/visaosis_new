@@ -94,7 +94,7 @@ class OrdemServicoController extends Controller
             'itens_selecionados' => 'required|array|min:1',
             'itens_selecionados.*' => 'required|exists:item_pedido,id',
             'quantidade' => 'required|integer|min:1',
-            'preco_unit' => 'required|numeric|min:0',
+            'preco_unit' => 'nullable|numeric|min:0',
             'desconto' => 'nullable|numeric|min:0',
             'entrega_em' => 'nullable|date|after:today',
             'prioridade' => 'required|in:normal,urgente,expressa',
@@ -105,8 +105,9 @@ class OrdemServicoController extends Controller
             'itens_selecionados.*.exists' => 'Um ou mais itens selecionados são inválidos.'
         ]);
 
-        $desconto = $request->desconto ?? 0;
-        $total_linha = ($request->preco_unit * $request->quantidade) - $desconto;
+        $precoUnit = (float) ($request->preco_unit ?? 0);
+        $desconto = (float) ($request->desconto ?? 0);
+        $total_linha = ($precoUnit * (int) $request->quantidade) - $desconto;
 
         // Usar transação para garantir consistência
         DB::beginTransaction();
@@ -123,7 +124,7 @@ class OrdemServicoController extends Controller
                 'prescricao_id' => $request->prescricao_id,
                 'fornecedor_id' => $request->fornecedor_id,
                 'quantidade' => $request->quantidade,
-                'preco_unit' => $request->preco_unit,
+                'preco_unit' => $precoUnit,
                 'desconto' => $desconto,
                 'total_linha' => $total_linha,
                 'entrega_em' => $request->entrega_em,
