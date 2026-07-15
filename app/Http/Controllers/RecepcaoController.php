@@ -207,6 +207,7 @@ class RecepcaoController extends Controller
                     return [
                         'id' => $p->id,
                         'nome' => $p->nome,
+                        'apelido' => $p->apelido,
                         'cpf' => $p->cpf,
                         'cpf_formatado' => $p->cpf_formatado,
                         'telefone' => $p->telefone,
@@ -220,6 +221,7 @@ class RecepcaoController extends Controller
                 'paciente' => $pacientes->count() === 1 ? [
                     'id' => $pacientes->first()->id,
                     'nome' => $pacientes->first()->nome,
+                    'apelido' => $pacientes->first()->apelido,
                     'cpf' => $pacientes->first()->cpf,
                     'cpf_formatado' => $pacientes->first()->cpf_formatado,
                     'telefone' => $pacientes->first()->telefone,
@@ -238,9 +240,9 @@ class RecepcaoController extends Controller
     {
         try {
             // Validação simples
-            if (!$request->nome || !$request->cpf) {
+            if (!$request->nome || !$request->apelido) {
                 return redirect()->back()
-                    ->with('validation_message', 'Nome e CPF são obrigatórios')
+                    ->with('validation_message', 'Nome e Apelido são obrigatórios')
                     ->withInput();
             }
 
@@ -250,10 +252,13 @@ class RecepcaoController extends Controller
             $userId = Auth::id() ?? 1;
 
             // Limpar CPF para busca (remover formatação)
-            $cpfLimpo = preg_replace('/[^0-9]/', '', $request->cpf);
+            $cpfLimpo = $request->cpf ? preg_replace('/[^0-9]/', '', $request->cpf) : null;
+            if ($cpfLimpo !== null && $cpfLimpo === '') {
+                $cpfLimpo = null;
+            }
 
             // Validar CPF básico (evitar CPFs óbvios como 111.111.111-11)
-            if (strlen($cpfLimpo) === 11) {
+            if ($cpfLimpo && strlen($cpfLimpo) === 11) {
                 $cpfsInvalidos = [
                     '00000000000',
                     '11111111111',
@@ -274,10 +279,13 @@ class RecepcaoController extends Controller
             }
 
             // Buscar pessoa existente pelo CPF, tenant_id e location_id
-            $pessoa = Pessoa::where('cpf', $cpfLimpo)
-                ->where('tenant_id', $tenantId)
-                ->where('location_id', $locationId)
-                ->first();
+            $pessoa = null;
+            if ($cpfLimpo) {
+                $pessoa = Pessoa::where('cpf', $cpfLimpo)
+                    ->where('tenant_id', $tenantId)
+                    ->where('location_id', $locationId)
+                    ->first();
+            }
 
             // Se pessoa existe, verificar se os dados conferem
             if ($pessoa) {
@@ -298,6 +306,10 @@ class RecepcaoController extends Controller
                 }
 
                 // Se chegou aqui, é a mesma pessoa ou nomes similares - usar pessoa existente
+                if (!$pessoa->apelido && $request->apelido) {
+                    $pessoa->apelido = $request->apelido;
+                    $pessoa->save();
+                }
             } else {
                 // Pessoa não existe, criar nova
                 $pessoa = new Pessoa();
@@ -306,6 +318,7 @@ class RecepcaoController extends Controller
                 $pessoa->user_id = $userId;
                 $pessoa->cpf = $cpfLimpo;
                 $pessoa->nome = $request->nome;
+                $pessoa->apelido = $request->apelido;
                 $pessoa->nascimento_em = $request->nascimento_em;
                 $pessoa->telefone = $request->telefone;
                 $pessoa->email = $request->email;

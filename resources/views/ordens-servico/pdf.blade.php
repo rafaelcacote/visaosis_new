@@ -2,7 +2,7 @@
     use App\Helpers\AuthHelper;
 
     $pedido = $ordemServico->pedido;
-    $cliente = $pedido?->cliente;
+    $cliente = $ordemServico->prescricao?->paciente ?? $pedido?->cliente;
     $fornecedor = $ordemServico->fornecedor;
     $itensOrdem = $ordemServico->itensOrdem ?? collect();
 
@@ -39,514 +39,409 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ordem de Servico #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</title>
     <style>
-        {!! file_get_contents(resource_path('views/pdf/styles/header-footer.css')) !!} body {
-            font-family: DejaVu Sans, Arial, sans-serif;
-            font-size: 11px;
-            line-height: 1.45;
-            color: #111827;
+        @page {
+            size: A4 portrait;
+            margin: 6mm;
         }
 
-        .section {
-            margin-bottom: 10px;
+        body {
+            font-family: DejaVu Sans, Arial, sans-serif;
+            font-size: 8px;
+            line-height: 1.1;
+            color: #000;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .os-sheet {
+            border: 1px solid #000;
+            padding: 4px 5px;
             page-break-inside: avoid;
         }
 
-        .section-title {
-            margin: 0 0 6px;
-            padding: 5px 8px;
-            background: #f1f5f9;
-            border-left: 3px solid #1d4ed8;
-            font-size: 11px;
-            font-weight: 700;
-            color: #0f172a;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .info-grid {
+        .os-row {
             width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
         }
 
-        .info-grid td {
-            width: 50%;
+        .os-row td {
             vertical-align: top;
-            padding: 3px 8px 3px 0;
+            padding: 1px 2px;
         }
 
-        .label {
-            color: #475569;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
-            font-weight: 400;
-        }
-
-        .value {
-            display: inline;
-            color: #111827;
-            font-weight: 600;
-            word-wrap: break-word;
-        }
-
-        .info-grid td {
-            padding: 3px 8px 3px 0;
-        }
-
-        .muted {
-            color: #6b7280;
-            font-weight: 400;
-        }
-
-        .pill {
-            display: inline-block;
-            border-radius: 999px;
-            padding: 2px 8px;
+        .os-title {
             font-size: 9px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            margin-right: 4px;
-            border: 1px solid transparent;
         }
 
-        .pill-priority-normal {
-            background: #eff6ff;
-            color: #1d4ed8;
-            border-color: #bfdbfe;
+        .os-brand {
+            width: auto;
         }
 
-        .pill-priority-urgente,
-        .pill-priority-expressa {
-            background: #fff7ed;
-            color: #c2410c;
-            border-color: #fed7aa;
+        .os-brand td {
+            padding: 0;
+            vertical-align: middle;
         }
 
-        .pill-status-warning {
-            background: #fff7ed;
-            color: #9a3412;
-            border-color: #fdba74;
+        .os-logo-wrap {
+            width: 30px;
+            padding-right: 5px;
         }
 
-        .pill-status-info,
-        .pill-status-primary {
-            background: #eff6ff;
-            color: #1e40af;
-            border-color: #bfdbfe;
+        .os-logo {
+            max-width: 24px;
+            max-height: 24px;
+            display: block;
         }
 
-        .pill-status-success {
-            background: #ecfdf5;
-            color: #166534;
-            border-color: #bbf7d0;
-        }
-
-        .pill-status-danger {
-            background: #fef2f2;
-            color: #b91c1c;
-            border-color: #fecaca;
-        }
-
-        .pill-status-secondary {
-            background: #f8fafc;
-            color: #334155;
-            border-color: #cbd5e1;
-        }
-
-        .table-data {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-
-        .table-data th,
-        .table-data td {
-            border: 1px solid #dbe3ee;
-            padding: 6px 7px;
-            font-size: 10px;
-            vertical-align: top;
-        }
-
-        .table-data th {
-            background: #f8fafc;
-            color: #334155;
+        .os-copy-label {
+            font-size: 8px;
             font-weight: 700;
-            text-transform: uppercase;
-            font-size: 9px;
-            letter-spacing: 0.3px;
-        }
-
-        .text-center {
             text-align: center;
+            margin-top: 2px;
         }
 
-        .text-right {
+        .os-kv {
+            font-size: 8px;
+        }
+
+        .os-kv b {
+            font-weight: 700;
+        }
+
+        .os-barcode {
+            height: 12px;
+            width: 140px;
+            border: 1px solid #000;
+            background: repeating-linear-gradient(90deg, #000 0, #000 2px, #fff 2px, #fff 4px);
+        }
+
+        .os-sep {
+            border-top: 1px solid #000;
+            margin: 4px 0;
+        }
+
+        .os-table th,
+        .os-table td {
+            border: 1px solid #000;
+            padding: 1px 2px;
+            font-size: 7px;
+        }
+
+        .os-table th {
+            background: #eee;
+            font-weight: 700;
+        }
+
+        .os-table-no-outer thead th {
+            border: none;
+            border-bottom: 1px solid #000;
+        }
+
+        .os-table-no-outer tbody td {
+            border: none;
+        }
+
+        .os-right {
             text-align: right;
         }
 
-        .summary-block {
-            margin-top: 6px;
-            text-align: right;
-            font-size: 10px;
-            line-height: 1.5;
-        }
-
-        .summary-line {
-            margin: 0;
-            padding: 1px 0;
-        }
-
-        .summary-total-line {
-            margin: 3px 0 0;
-            padding: 4px 0 0;
-            border-top: 1px solid #94a3b8;
-            font-size: 11px;
-            color: #0f172a;
-        }
-
-        .note-box {
-            border: 1px solid #dbe3ee;
-            background: #fafcff;
-            padding: 8px;
-            font-size: 10px;
-            color: #0f172a;
-            min-height: 30px;
-        }
-
-        .signatures {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 14px;
-        }
-
-        .signatures td {
-            width: 50%;
-            padding: 0 12px;
+        .os-center {
             text-align: center;
-            vertical-align: top;
         }
 
-        .signature-line {
-            border-top: 1px solid #64748b;
-            margin-top: 28px;
-            padding-top: 5px;
-            font-size: 10px;
-            color: #334155;
+        .os-small {
+            font-size: 6.8px;
         }
 
-        .pt-6 {
-            padding-top: 6px;
+        .os-note {
+            border: 1px solid #000;
+            padding: 2px 3px;
+            font-size: 8px;
+        }
+
+        .os-footer {
+            border-top: 1px solid #000;
+            margin-top: 3px;
+            padding-top: 2px;
+            font-size: 7px;
+        }
+
+        .os-block {
+            margin-top: 4px;
+        }
+
+        .cut-line {
+            margin: 4px 0;
+            border-top: 1px dashed #000;
+            height: 0;
         }
     </style>
 </head>
 
 <body>
-    <header class="pdf-header">
-        <table class="pdf-header-top">
-            <tr>
-                <td class="brand-wrap">
-                    @if ($logoBase64)
-                        <img src="{{ $logoBase64 }}" alt="{{ AuthHelper::tenantName() ?? 'Empresa' }}"
-                            class="brand-logo">
-                    @else
-                        <span class="brand-logo-fallback">LOGO</span>
-                    @endif
-                    <span class="brand-block">
-                        <h1 class="brand-title">{{ AuthHelper::tenantName() ?? 'VisaoSis' }}</h1>
-                        <p class="brand-subtitle">
-                            Sistema de Gestao Otica
-                            @if (AuthHelper::locationName())
-                                | {{ AuthHelper::locationName() }}
-                            @endif
-                        </p>
-                    </span>
-                </td>
-                <td class="title-wrap">
-                    <h2 class="doc-title">ORDEM DE SERVICO #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</h2>
-                    <p class="doc-subtitle">Emissao: {{ now('America/Sao_Paulo')->format('d/m/Y H:i') }}</p>
-                </td>
-            </tr>
-        </table>
-    </header>
+    @php
+        $osNumero = str_pad($ordemServico->id, 8, '0', STR_PAD_LEFT);
+        $osTipo = 'Ótica';
+        $atendente = $ordemServico->user?->name ?? 'Não informado';
+        $dataVenda =
+            $pedido?->data_pedido_formatada ?? ($ordemServico->created_at?->format('d/m/Y') ?? 'Não informado');
+        $dataOS = $ordemServico->created_at?->format('d/m/Y') ?? 'Não informado';
+        $entrega = $ordemServico->entrega_em?->format('d/m/Y') ?? 'Não definido';
+        $cpfCliente = $cliente->cpf_formatado ?? ($cliente->cpf ?? null);
+        $clienteVenda = $pedido?->cliente;
+        $cpfClienteVenda = $clienteVenda->cpf_formatado ?? ($clienteVenda->cpf ?? null);
+        $rx = $ordemServico->prescricao;
+        $adiantamento = 0.0;
+        $aReceber = max(0, $totalOS - $adiantamento);
+    @endphp
 
-    <main>
-        <section class="section">
-            <h3 class="section-title">Resumo da Ordem</h3>
-            <table class="info-grid">
+    @for ($copy = 0; $copy < 2; $copy++)
+        <div class="os-sheet">
+            <table class="os-row">
                 <tr>
-                    <td>
-                        <span class="label">Numero da Ordem:</span>
-                        <span class="value">#{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}</span>
+                    <td style="width: 55%;">
+                        <table class="os-brand">
+                            <tr>
+                                @if ($logoBase64)
+                                    <td class="os-logo-wrap">
+                                        <img src="{{ $logoBase64 }}" alt="Logo da ótica" class="os-logo">
+                                    </td>
+                                @endif
+                                <td>
+                                    <div class="os-title">{{ AuthHelper::tenantName() ?? 'VisaoSis' }}</div>
+                                    <div class="os-kv os-small">
+                                        {{ AuthHelper::locationName() ?? '' }}
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
                     </td>
-                    <td>
-                        <span class="label">Data de Criacao:</span>
-                        <span
-                            class="value">{{ $ordemServico->created_at?->format('d/m/Y H:i') ?? 'Nao informado' }}</span>
+                    <td style="width: 25%;" class="os-center">
+                        <div class="os-kv"><b>O.S.:</b> {{ $osNumero }}</div>
+                        <div class="os-kv"><b>Tipo:</b> {{ $osTipo }}</div>
                     </td>
-                </tr>
-                <tr>
-                    <td>
-                        <span class="label">Entrega Prevista:</span>
-                        <span
-                            class="value">{{ $ordemServico->entrega_em?->format('d/m/Y H:i') ?? 'Nao definida' }}</span>
-                    </td>
-                    <td>
-                        <span class="label">Responsavel:</span>
-                        <span class="value">{{ $ordemServico->user?->name ?? 'Nao informado' }}</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <span class="label">Cliente:</span>
-                        <span class="value">{{ $cliente->nome ?? 'Nao informado' }}</span>
-                    </td>
-                    <td>
-                        <span class="label">Data da Venda:</span>
-                        <span class="value">{{ $pedido?->data_pedido_formatada ?? 'Nao informado' }}</span>
-                    </td>
-                </tr>
-                <tr>
 
-                    <td>
-                        <span class="label">Status da Venda:</span>
-                        <span class="value">{{ $pedido?->status_label ?? 'Nao informado' }}</span>
-                    </td>
-                    <td>
-                        <span class="label">Total da Venda:</span>
-                        <span class="value">{{ $pedido?->valor_total_formatado ?? 'R$ 0,00' }}</span>
-                    </td>
                 </tr>
-
             </table>
-        </section>
 
-        <section class="section">
-            <h3 class="section-title">Fornecedor / Laboratorio</h3>
-            <table class="info-grid">
+            <div class="os-copy-label">{{ $copy === 0 ? 'Via da Ótica' : 'Via do Laboratório' }}</div>
+
+            <div class="os-sep"></div>
+
+            <table class="os-row">
                 <tr>
-
-                    <td>
-                        <span class="label">Nome Fantasia:</span>
-                        <span class="value">{{ $fornecedor->nome_fantasia ?? 'Nao informado' }}</span>
+                    <td style="width: 45%;" class="os-kv">
+                        <b>Atendente:</b> {{ $atendente }}
                     </td>
-                    <td>
-                        <span class="label">CNPJ:</span>
-                        <span class="value">{{ $fornecedor->cnpj_formatado ?? 'Nao informado' }}</span>
+                    <td style="width: 55%;" class="os-kv">
+                        <b>Data:</b> {{ $dataOS }} <b>Prev. Entrega:</b> {{ $entrega }}
                     </td>
                 </tr>
                 <tr>
-
-                    <td>
-                        <span class="label">Telefone:</span>
-                        <span
-                            class="value">{{ $fornecedor->telefone_formatado ?? ($fornecedor->telefone ?? 'Nao informado') }}</span>
-                    </td>
-                    <td>
-                        <span class="label">E-mail:</span>
-                        <span class="value">{{ $fornecedor->email ?? 'Nao informado' }}</span>
+                    <td colspan="2" class="os-kv">
+                        <b>Cliente:</b> {{ $cliente->nome ?? 'Não informado' }}
                     </td>
                 </tr>
-
             </table>
-        </section>
 
-        <section class="section">
-            <h3 class="section-title">Itens da Ordem de Serviço</h3>
-            <table class="table-data">
+            <div class="os-sep"></div>
+
+            <table class="os-table os-table-no-outer">
                 <thead>
                     <tr>
-                        <th style="width: 46%;">Produto</th>
-                        <th style="width: 8%;" class="text-center">Qtd</th>
-                        <th style="width: 17%;" class="text-right">Valor Unit.</th>
-                        <th style="width: 14%;" class="text-right">Desconto</th>
-                        <th style="width: 15%;" class="text-right">Total</th>
-
+                        <th style="width: {{ $copy === 0 ? '18%' : '20%' }};">Ref.</th>
+                        <th style="width: {{ $copy === 0 ? '42%' : '65%' }};">Produto</th>
+                        <th style="width: {{ $copy === 0 ? '8%' : '15%' }};" class="os-center">Qtde</th>
+                        @if ($copy === 0)
+                            <th style="width: 14%;" class="os-right">Val. Unit.</th>
+                            <th style="width: 8%;" class="os-right">Desc.</th>
+                            <th style="width: 10%;" class="os-right">Valor Total</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($itensOrdem as $itemOrdem)
-                        @php
-                            $itemPedido = $itemOrdem->item;
-                            $produto = $itemPedido?->produto;
-                            $totalLinha = (float) ($itemPedido->total_linha ?? 0);
-                            $precoUnit = (float) ($itemPedido->preco_unit ?? 0);
-                            $desconto = (float) ($itemPedido->desconto ?? 0);
-                        @endphp
+                    @if ($itensOrdem->count() > 0)
+                        @foreach ($itensOrdem as $itemOrdem)
+                            @php
+                                $itemPedido = $itemOrdem->item;
+                                $produto = $itemPedido?->produto;
+                                $totalLinha = (float) ($itemPedido->total_linha ?? 0);
+                                $precoUnit = (float) ($itemPedido->preco_unit ?? 0);
+                                $desconto = (float) ($itemPedido->desconto ?? 0);
+                            @endphp
+                            <tr>
+                                <td class="os-center">{{ $produto->id ?? '-' }}</td>
+                                <td>{{ $produto->nome ?? 'Produto não identificado' }}</td>
+                                <td class="os-center">{{ $itemPedido->quantidade ?? 0 }}</td>
+                                @if ($copy === 0)
+                                    <td class="os-right">R$ {{ number_format($precoUnit, 2, ',', '.') }}</td>
+                                    <td class="os-right">R$ {{ number_format($desconto, 2, ',', '.') }}</td>
+                                    <td class="os-right">R$ {{ number_format($totalLinha, 2, ',', '.') }}</td>
+                                @endif
+                            </tr>
+                        @endforeach
+                    @else
                         <tr>
-                            <td>
-                                <strong>{{ $produto->nome ?? 'Produto nao identificado' }}</strong><br>
-
-                            </td>
-                            <td class="text-center">{{ $itemPedido->quantidade ?? 0 }}</td>
-                            <td class="text-right">R$ {{ number_format($precoUnit, 2, ',', '.') }}</td>
-                            <td class="text-right">R$ {{ number_format($desconto, 2, ',', '.') }}</td>
-                            <td class="text-right"><strong>R$ {{ number_format($totalLinha, 2, ',', '.') }}</strong>
-                            </td>
-
+                            <td class="os-center">-</td>
+                            <td>Ordem de Serviço Geral</td>
+                            <td class="os-center">{{ $ordemServico->quantidade ?? 1 }}</td>
+                            @if ($copy === 0)
+                                <td class="os-right">{{ $ordemServico->preco_unit_formatado ?? 'R$ 0,00' }}</td>
+                                <td class="os-right">{{ $ordemServico->desconto_formatado ?? 'R$ 0,00' }}</td>
+                                <td class="os-right">{{ $ordemServico->total_formatado ?? 'R$ 0,00' }}</td>
+                            @endif
                         </tr>
-                    @empty
-                        <tr>
-                            <td><strong>Ordem de Servico Geral</strong></td>
-                            <td class="text-center">{{ $ordemServico->quantidade ?? 1 }}</td>
-                            <td class="text-right">{{ $ordemServico->preco_unit_formatado ?? 'R$ 0,00' }}</td>
-                            <td class="text-right">{{ $ordemServico->desconto_formatado ?? 'R$ 0,00' }}</td>
-                            <td class="text-right"><strong>{{ $ordemServico->total_formatado ?? 'R$ 0,00' }}</strong>
-                            </td>
-                            <td class="text-center">-</td>
-                        </tr>
-                    @endforelse
+                    @endif
                 </tbody>
             </table>
 
-            <div class="summary-block">
-                <p class="summary-line"><strong>Subtotal:</strong> R$ {{ number_format($subtotalItens, 2, ',', '.') }}
-                </p>
-                <p class="summary-line"><strong>Desconto:</strong> R$ {{ number_format($descontoOS, 2, ',', '.') }}</p>
-                <p class="summary-total-line"><strong>TOTAL DA ORDEM: R$
-                        {{ number_format($totalOS, 2, ',', '.') }}</strong></p>
-            </div>
-        </section>
+            <div class="os-sep"></div>
 
-        @if (isset($ordemServico->prescricao) && $ordemServico->prescricao)
-            <section class="section">
-                <h3 class="section-title">Prescrição Médica</h3>
-                <table class="info-grid">
-                    <tr>
-                        <td>
-                            <span class="label">Número da Prescrição:</span>
-                            <span
-                                class="value">#{{ str_pad($ordemServico->prescricao->id, 6, '0', STR_PAD_LEFT) }}</span>
-                        </td>
-                        <td>
-                            <span class="label">Data da Prescrição:</span>
-                            <span
-                                class="value">{{ $ordemServico->prescricao->created_at?->format('d/m/Y') ?? 'Não informado' }}</span>
-                        </td>
-                    </tr>
-                </table>
-
-                @php $rx = $ordemServico->prescricao; @endphp
-                <table class="table-data pt-6">
-                    <thead>
-                        <tr>
-                            <th class="text-center" style="width: 9%;">Dist.</th>
-                            <th class="text-center" style="width: 6%;">Olho</th>
-                            <th class="text-center" style="width: 9%;">Esferico</th>
-                            <th class="text-center" style="width: 9%;">Cilindrico</th>
-                            <th class="text-center" style="width: 7%;">Eixo</th>
-                            <th class="text-center" style="width: 7%;">AV</th>
-                            <th class="text-center" style="width: 8%;">DNP</th>
-                            <th class="text-center" style="width: 8%;">Altura</th>
-                            <th class="text-center" style="width: 9%;">Adicao</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{-- LONGE OD --}}
-                        <tr>
-                            <td rowspan="2" class="text-center" style="background:#f8fafc;"><strong>Longe</strong>
-                            </td>
-                            <td class="text-center"><strong>OD</strong></td>
-                            <td class="text-center">{{ $rx->esfera_od ?? '-' }}</td>
-                            <td class="text-center">{{ $rx->cilindro_od ?? '-' }}</td>
-                            <td class="text-center">{{ !is_null($rx->eixo_od) ? $rx->eixo_od . '°' : '-' }}</td>
-                            <td class="text-center">{{ $rx->acuidade_od ?? '-' }}</td>
-                            <td class="text-center">{{ !is_null($rx->dnp_od) ? $rx->dnp_od . 'mm' : '-' }}</td>
-                            <td class="text-center">{{ !is_null($rx->altura_od) ? $rx->altura_od . 'mm' : '-' }}</td>
-                            <td class="text-center">{{ $rx->adicao_od ?? '-' }}</td>
-                        </tr>
-                        {{-- LONGE OE --}}
-                        <tr>
-                            <td class="text-center"><strong>OE</strong></td>
-                            <td class="text-center">{{ $rx->esfera_oe ?? '-' }}</td>
-                            <td class="text-center">{{ $rx->cilindro_oe ?? '-' }}</td>
-                            <td class="text-center">{{ !is_null($rx->eixo_oe) ? $rx->eixo_oe . '°' : '-' }}</td>
-                            <td class="text-center">{{ $rx->acuidade_oe ?? '-' }}</td>
-                            <td class="text-center">{{ !is_null($rx->dnp_oe) ? $rx->dnp_oe . 'mm' : '-' }}</td>
-                            <td class="text-center">{{ !is_null($rx->altura_oe) ? $rx->altura_oe . 'mm' : '-' }}</td>
-                            <td class="text-center">{{ $rx->adicao_oe ?? '-' }}</td>
-                        </tr>
-                        {{-- PERTO OD --}}
-                        <tr>
-                            <td rowspan="2" class="text-center" style="background:#f8fafc;"><strong>Perto</strong>
-                            </td>
-                            <td class="text-center"><strong>OD</strong></td>
-                            <td class="text-center">{{ $rx->esfera_od_perto ?? '-' }}</td>
-                            <td class="text-center">{{ $rx->cilindro_od_perto ?? '-' }}</td>
-                            <td class="text-center">
-                                {{ !is_null($rx->eixo_od_perto) ? $rx->eixo_od_perto . '°' : '-' }}</td>
-                            <td class="text-center">{{ $rx->acuidade_od_perto ?? '-' }}</td>
-                            <td class="text-center">{{ !is_null($rx->dnp_od_perto) ? $rx->dnp_od_perto . 'mm' : '-' }}
-                            </td>
-                            <td class="text-center">
-                                {{ !is_null($rx->altura_od_perto) ? $rx->altura_od_perto . 'mm' : '-' }}</td>
-                            <td class="text-center">{{ $rx->adicao_od_perto ?? '-' }}</td>
-                        </tr>
-                        {{-- PERTO OE --}}
-                        <tr>
-                            <td class="text-center"><strong>OE</strong></td>
-                            <td class="text-center">{{ $rx->esfera_oe_perto ?? '-' }}</td>
-                            <td class="text-center">{{ $rx->cilindro_oe_perto ?? '-' }}</td>
-                            <td class="text-center">
-                                {{ !is_null($rx->eixo_oe_perto) ? $rx->eixo_oe_perto . '°' : '-' }}</td>
-                            <td class="text-center">{{ $rx->acuidade_oe_perto ?? '-' }}</td>
-                            <td class="text-center">{{ !is_null($rx->dnp_oe_perto) ? $rx->dnp_oe_perto . 'mm' : '-' }}
-                            </td>
-                            <td class="text-center">
-                                {{ !is_null($rx->altura_oe_perto) ? $rx->altura_oe_perto . 'mm' : '-' }}</td>
-                            <td class="text-center">{{ $rx->adicao_oe_perto ?? '-' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
-        @endif
-
-        <table class="info-grid">
-            <tr>
-                <td>
-                    <span class="label">Observações:</span>
-                    <span class="value">
-                        {{ $ordemServico->observacoes ?: $pedido->observacoes ?? 'Sem observações registradas para esta ordem.' }}</span>
-                </td>
-            </tr>
-        </table>
-
-
-
-
-        <section class="section">
-            <table class="signatures">
+            <table class="os-row">
                 <tr>
-                    <td>
-                        <div class="signature-line">
-                            <strong>Responsável da Ótica</strong><br>
-                            Data: ____ / ____ / ______
-                        </div>
+                    <td style="width: 64%; padding-right: 4px;">
+                        <table class="os-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;" class="os-center"></th>
+                                    <th style="width: 10%;" class="os-center">Olho</th>
+                                    <th style="width: 16%;" class="os-center">Esférico</th>
+                                    <th style="width: 16%;" class="os-center">Cilíndrico</th>
+                                    <th style="width: 12%;" class="os-center">Eixo</th>
+                                    <th style="width: 12%;" class="os-center">DNP</th>
+                                    <th style="width: 12%;" class="os-center">Altura</th>
+                                    <th style="width: 12%;" class="os-center">Adição</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td rowspan="2" class="os-center"><b>Longe</b></td>
+                                    <td class="os-center"><b>OD</b></td>
+                                    <td class="os-center">{{ $rx?->esfera_od ?? '-' }}</td>
+                                    <td class="os-center">{{ $rx?->cilindro_od ?? '-' }}</td>
+                                    <td class="os-center">{{ !is_null($rx?->eixo_od) ? $rx->eixo_od : '-' }}</td>
+                                    <td class="os-center">{{ !is_null($rx?->dnp_od) ? $rx->dnp_od : '-' }}</td>
+                                    <td class="os-center">{{ !is_null($rx?->altura_od) ? $rx->altura_od : '-' }}</td>
+                                    <td class="os-center">{{ $rx?->adicao_od ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="os-center"><b>OE</b></td>
+                                    <td class="os-center">{{ $rx?->esfera_oe ?? '-' }}</td>
+                                    <td class="os-center">{{ $rx?->cilindro_oe ?? '-' }}</td>
+                                    <td class="os-center">{{ !is_null($rx?->eixo_oe) ? $rx->eixo_oe : '-' }}</td>
+                                    <td class="os-center">{{ !is_null($rx?->dnp_oe) ? $rx->dnp_oe : '-' }}</td>
+                                    <td class="os-center">{{ !is_null($rx?->altura_oe) ? $rx->altura_oe : '-' }}</td>
+                                    <td class="os-center">{{ $rx?->adicao_oe ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="2" class="os-center"><b>Perto</b></td>
+                                    <td class="os-center"><b>OD</b></td>
+                                    <td class="os-center">{{ $rx?->esfera_od_perto ?? '-' }}</td>
+                                    <td class="os-center">{{ $rx?->cilindro_od_perto ?? '-' }}</td>
+                                    <td class="os-center">
+                                        {{ !is_null($rx?->eixo_od_perto) ? $rx->eixo_od_perto : '-' }}</td>
+                                    <td class="os-center">{{ !is_null($rx?->dnp_od_perto) ? $rx->dnp_od_perto : '-' }}
+                                    </td>
+                                    <td class="os-center">
+                                        {{ !is_null($rx?->altura_od_perto) ? $rx->altura_od_perto : '-' }}</td>
+                                    <td class="os-center">{{ $rx?->adicao_od_perto ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="os-center"><b>OE</b></td>
+                                    <td class="os-center">{{ $rx?->esfera_oe_perto ?? '-' }}</td>
+                                    <td class="os-center">{{ $rx?->cilindro_oe_perto ?? '-' }}</td>
+                                    <td class="os-center">
+                                        {{ !is_null($rx?->eixo_oe_perto) ? $rx->eixo_oe_perto : '-' }}</td>
+                                    <td class="os-center">{{ !is_null($rx?->dnp_oe_perto) ? $rx->dnp_oe_perto : '-' }}
+                                    </td>
+                                    <td class="os-center">
+                                        {{ !is_null($rx?->altura_oe_perto) ? $rx->altura_oe_perto : '-' }}</td>
+                                    <td class="os-center">{{ $rx?->adicao_oe_perto ?? '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </td>
-                    <td>
-                        <div class="signature-line">
-                            <strong>Responsável do Laboratorio</strong><br>
-                            Data: ____ / ____ / ______
-                        </div>
+                    <td style="width: 36%;">
+                        <table class="os-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="3" class="os-center">LENTE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="width: 30%;"><b>Tipo</b></td>
+                                    <td colspan="2">{{ $rx?->tipo_lente ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Material</b></td>
+                                    <td colspan="2">-</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Tratamento</b></td>
+                                    <td colspan="2">{{ $rx?->recomendacoes ?? '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="os-table os-block">
+                            <thead>
+                                <tr>
+                                    <th colspan="3" class="os-center">ARMAÇÃO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="width: 40%;"><b>Própria</b></td>
+                                    <td class="os-center" style="width: 30%;">-</td>
+                                    <td class="os-center" style="width: 30%;">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </td>
                 </tr>
             </table>
-        </section>
-    </main>
 
-    <footer class="pdf-footer">
-        <table class="pdf-footer-table">
-            <tr>
-                <td class="pdf-footer-left">
-                    Documento gerado por {{ AuthHelper::tenantName() ?? 'VisaoSis' }}
-                </td>
-                <td class="pdf-footer-right">
-                    Ordem #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}
-                </td>
-            </tr>
-        </table>
-    </footer>
+            @if ($copy === 0)
+                <table class="os-row os-block">
+                    <tr>
+                        <td class="os-kv os-right">
+                            <b>Total:</b> R$ {{ number_format($totalOS, 2, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="os-kv os-right">
+                            <b>Adiantamento:</b> R$ {{ number_format($adiantamento, 2, ',', '.') }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="os-kv os-right">
+                            <b>A Receber:</b> R$ {{ number_format($aReceber, 2, ',', '.') }}
+                        </td>
+                    </tr>
+                </table>
+            @endif
+
+            <div class="os-footer">
+                @if ($copy === 0)
+                    <div class="os-kv">
+                        <b>Cliente Venda:</b> {{ $clienteVenda->nome ?? 'Não informado' }}
+                        @if ($cpfClienteVenda)
+                            - <b>CPF:</b> {{ $cpfClienteVenda }}
+                        @endif
+                    </div>
+                @endif
+                <div class="os-kv os-right">{{ $dataVenda }}</div>
+            </div>
+        </div>
+
+        @if ($copy === 0)
+            <div class="cut-line"></div>
+        @endif
+    @endfor
 </body>
 
 </html>
