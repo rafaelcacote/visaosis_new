@@ -46,8 +46,8 @@
 
         body {
             font-family: DejaVu Sans, Arial, sans-serif;
-            font-size: 8px;
-            line-height: 1.1;
+            font-size: 12px;
+            line-height: 1.25;
             color: #000;
         }
 
@@ -58,7 +58,7 @@
 
         .os-sheet {
             border: 1px solid #000;
-            padding: 4px 5px;
+            padding: 5px 6px;
             page-break-inside: avoid;
         }
 
@@ -68,11 +68,11 @@
 
         .os-row td {
             vertical-align: top;
-            padding: 1px 2px;
+            padding: 2px 3px;
         }
 
         .os-title {
-            font-size: 9px;
+            font-size: 12.5px;
             font-weight: 700;
         }
 
@@ -87,24 +87,24 @@
 
         .os-logo-wrap {
             width: 30px;
-            padding-right: 5px;
+            padding-right: 6px;
         }
 
         .os-logo {
-            max-width: 24px;
-            max-height: 24px;
+            max-width: 28px;
+            max-height: 28px;
             display: block;
         }
 
         .os-copy-label {
-            font-size: 8px;
+            font-size: 10px;
             font-weight: 700;
             text-align: center;
-            margin-top: 2px;
+            margin-top: 3px;
         }
 
         .os-kv {
-            font-size: 8px;
+            font-size: 9.6px;
         }
 
         .os-kv b {
@@ -120,19 +120,33 @@
 
         .os-sep {
             border-top: 1px solid #000;
-            margin: 4px 0;
+            margin: 5px 0;
         }
 
         .os-table th,
         .os-table td {
             border: 1px solid #000;
-            padding: 1px 2px;
-            font-size: 7px;
+            padding: 2px 3px;
+            font-size: 8.8px;
         }
 
         .os-table th {
             background: #eee;
             font-weight: 700;
+        }
+
+        .os-table-outer {
+            border: 1px solid #000;
+        }
+
+        .os-table-outer th,
+        .os-table-outer td {
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+        }
+
+        .os-table-outer tr:last-child td {
+            border-bottom: 1px solid #000;
         }
 
         .os-table-no-outer thead th {
@@ -153,24 +167,24 @@
         }
 
         .os-small {
-            font-size: 6.8px;
+            font-size: 8.6px;
         }
 
         .os-note {
             border: 1px solid #000;
-            padding: 2px 3px;
-            font-size: 8px;
+            padding: 3px 4px;
+            font-size: 9.4px;
         }
 
         .os-footer {
             border-top: 1px solid #000;
-            margin-top: 3px;
-            padding-top: 2px;
-            font-size: 7px;
+            margin-top: 4px;
+            padding-top: 3px;
+            font-size: 8.8px;
         }
 
         .os-block {
-            margin-top: 4px;
+            margin-top: 5px;
         }
 
         .cut-line {
@@ -302,7 +316,7 @@
 
             <table class="os-row">
                 <tr>
-                    <td style="width: 64%; padding-right: 4px;">
+                    <td style="width: 100%; padding-right: 4px;">
                         <table class="os-table">
                             <thead>
                                 <tr>
@@ -311,9 +325,10 @@
                                     <th style="width: 16%;" class="os-center">Esférico</th>
                                     <th style="width: 16%;" class="os-center">Cilíndrico</th>
                                     <th style="width: 12%;" class="os-center">Eixo</th>
+                                    <th style="width: 12%;" class="os-center">Adição</th>
                                     <th style="width: 12%;" class="os-center">DNP</th>
                                     <th style="width: 12%;" class="os-center">Altura</th>
-                                    <th style="width: 12%;" class="os-center">Adição</th>
+
                                 </tr>
                             </thead>
                             <tbody>
@@ -323,18 +338,20 @@
                                     <td class="os-center">{{ $rx?->esfera_od ?? '-' }}</td>
                                     <td class="os-center">{{ $rx?->cilindro_od ?? '-' }}</td>
                                     <td class="os-center">{{ !is_null($rx?->eixo_od) ? $rx->eixo_od : '-' }}</td>
+                                    <td class="os-center">{{ $rx?->adicao_od ?? '-' }}</td>
                                     <td class="os-center">{{ !is_null($rx?->dnp_od) ? $rx->dnp_od : '-' }}</td>
                                     <td class="os-center">{{ !is_null($rx?->altura_od) ? $rx->altura_od : '-' }}</td>
-                                    <td class="os-center">{{ $rx?->adicao_od ?? '-' }}</td>
+
                                 </tr>
                                 <tr>
                                     <td class="os-center"><b>OE</b></td>
                                     <td class="os-center">{{ $rx?->esfera_oe ?? '-' }}</td>
                                     <td class="os-center">{{ $rx?->cilindro_oe ?? '-' }}</td>
                                     <td class="os-center">{{ !is_null($rx?->eixo_oe) ? $rx->eixo_oe : '-' }}</td>
+                                    <td class="os-center">{{ $rx?->adicao_oe ?? '-' }}</td>
                                     <td class="os-center">{{ !is_null($rx?->dnp_oe) ? $rx->dnp_oe : '-' }}</td>
                                     <td class="os-center">{{ !is_null($rx?->altura_oe) ? $rx->altura_oe : '-' }}</td>
-                                    <td class="os-center">{{ $rx?->adicao_oe ?? '-' }}</td>
+
                                 </tr>
                                 <tr>
                                     <td rowspan="2" class="os-center"><b>Perto</b></td>
@@ -343,11 +360,12 @@
                                     <td class="os-center">{{ $rx?->cilindro_od_perto ?? '-' }}</td>
                                     <td class="os-center">
                                         {{ !is_null($rx?->eixo_od_perto) ? $rx->eixo_od_perto : '-' }}</td>
+                                    <td class="os-center">{{ $rx?->adicao_od_perto ?? '-' }}</td>
                                     <td class="os-center">{{ !is_null($rx?->dnp_od_perto) ? $rx->dnp_od_perto : '-' }}
                                     </td>
                                     <td class="os-center">
                                         {{ !is_null($rx?->altura_od_perto) ? $rx->altura_od_perto : '-' }}</td>
-                                    <td class="os-center">{{ $rx?->adicao_od_perto ?? '-' }}</td>
+
                                 </tr>
                                 <tr>
                                     <td class="os-center"><b>OE</b></td>
@@ -355,16 +373,19 @@
                                     <td class="os-center">{{ $rx?->cilindro_oe_perto ?? '-' }}</td>
                                     <td class="os-center">
                                         {{ !is_null($rx?->eixo_oe_perto) ? $rx->eixo_oe_perto : '-' }}</td>
+                                    <td class="os-center">{{ $rx?->adicao_oe_perto ?? '-' }}</td>
                                     <td class="os-center">{{ !is_null($rx?->dnp_oe_perto) ? $rx->dnp_oe_perto : '-' }}
                                     </td>
                                     <td class="os-center">
                                         {{ !is_null($rx?->altura_oe_perto) ? $rx->altura_oe_perto : '-' }}</td>
-                                    <td class="os-center">{{ $rx?->adicao_oe_perto ?? '-' }}</td>
+
                                 </tr>
                             </tbody>
                         </table>
                     </td>
-                    <td style="width: 36%;">
+                </tr>
+                <tr>
+                    <td style="width: 100%;  padding-right: 4px;">
                         <table class="os-table">
                             <thead>
                                 <tr>
@@ -373,7 +394,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td style="width: 30%;"><b>Tipo</b></td>
+                                    <td style="width: 10%;"><b>Tipo</b></td>
                                     <td colspan="2">{{ $rx?->tipo_lente ?? '-' }}</td>
                                 </tr>
                                 <tr>
@@ -386,18 +407,22 @@
                                 </tr>
                             </tbody>
                         </table>
-
-                        <table class="os-table os-block">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 100%;  padding-right: 4px;">
+                        <table class="os-table os-table-outer">
                             <thead>
                                 <tr>
-                                    <th colspan="3" class="os-center">ARMAÇÃO</th>
+                                    <th colspan="3" class="os-center">OBSERVAÇÃO</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td style="width: 40%;"><b>Própria</b></td>
-                                    <td class="os-center" style="width: 30%;">-</td>
-                                    <td class="os-center" style="width: 30%;">-</td>
+                                    <td style="width: 100%; height: 16px;">&nbsp;</td>
+                                </tr>
+                                <tr>
+                                    <td style="width: 100%; height: 16px;">&nbsp;</td>
                                 </tr>
                             </tbody>
                         </table>

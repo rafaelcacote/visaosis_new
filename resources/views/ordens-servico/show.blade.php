@@ -190,9 +190,9 @@
                                             <th class="text-center">Cilíndrico</th>
                                             <th class="text-center">Eixo</th>
                                             <th class="text-center">AV</th>
+                                            <th class="text-center">Adição</th>
                                             <th class="text-center">DNP</th>
                                             <th class="text-center">Altura</th>
-                                            <th class="text-center">Adição</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -216,9 +216,9 @@
                                             </td>
                                             <td class="text-center">{{ $ordemServico->prescricao->acuidade_od ?? '-' }}
                                             </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_od ?? '-' }}</td>
                                             <td class="text-center">{{ $ordemServico->prescricao->dnp_od ?? '-' }}</td>
                                             <td class="text-center">{{ $ordemServico->prescricao->altura_od ?? '-' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_od ?? '-' }}</td>
                                         </tr>
                                         <tr>
                                             <td class="text-center fw-semibold" style="white-space: nowrap;">
@@ -236,9 +236,9 @@
                                             </td>
                                             <td class="text-center">{{ $ordemServico->prescricao->acuidade_oe ?? '-' }}
                                             </td>
+                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_oe ?? '-' }}</td>
                                             <td class="text-center">{{ $ordemServico->prescricao->dnp_oe ?? '-' }}</td>
                                             <td class="text-center">{{ $ordemServico->prescricao->altura_oe ?? '-' }}</td>
-                                            <td class="text-center">{{ $ordemServico->prescricao->adicao_oe ?? '-' }}</td>
                                         </tr>
                                         <tr>
                                             <td rowspan="2" class="text-center fw-bold"
@@ -261,12 +261,12 @@
                                             </td>
                                             <td class="text-center">
                                                 {{ $ordemServico->prescricao->acuidade_od_perto ?? '-' }}</td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->adicao_od_perto ?? '-' }}</td>
                                             <td class="text-center">{{ $ordemServico->prescricao->dnp_od_perto ?? '-' }}
                                             </td>
                                             <td class="text-center">
                                                 {{ $ordemServico->prescricao->altura_od_perto ?? '-' }}</td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->adicao_od_perto ?? '-' }}</td>
                                         </tr>
                                         <tr>
                                             <td class="text-center fw-semibold" style="white-space: nowrap;">
@@ -285,12 +285,12 @@
                                             </td>
                                             <td class="text-center">
                                                 {{ $ordemServico->prescricao->acuidade_oe_perto ?? '-' }}</td>
+                                            <td class="text-center">
+                                                {{ $ordemServico->prescricao->adicao_oe_perto ?? '-' }}</td>
                                             <td class="text-center">{{ $ordemServico->prescricao->dnp_oe_perto ?? '-' }}
                                             </td>
                                             <td class="text-center">
                                                 {{ $ordemServico->prescricao->altura_oe_perto ?? '-' }}</td>
-                                            <td class="text-center">
-                                                {{ $ordemServico->prescricao->adicao_oe_perto ?? '-' }}</td>
                                         </tr>
                                     </tbody>
                                 </table>

@@ -40,75 +40,75 @@
 
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="width: 44px;"></th>
-                    <th style="width: 90px;"></th>
-                    <th class="text-center">Esférico</th>
-                    <th class="text-center">Cilíndrico</th>
-                    <th class="text-center">Eixo</th>
-                    <th class="text-center">AV</th>
-                    <th class="text-center">DNP</th>
-                    <th class="text-center">Altura</th>
-                    <th class="text-center">Adição</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td rowspan="2" class="text-center fw-bold rx-side rx-side--longe">
-                        <span class="rx-side__text">LONGE</span>
-                    </td>
-                    <td class="text-center fw-semibold" style="white-space: nowrap;">
-                        <i class="mdi mdi-eye-outline me-1"></i>OD
-                    </td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_esferico'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_cilindrico'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_eixo'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_acuidade'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_dnp'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_altura'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_adicao'] ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td class="text-center fw-semibold" style="white-space: nowrap;">
-                        <i class="mdi mdi-eye-outline me-1"></i>OE
-                    </td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_esferico'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_cilindrico'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_eixo'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_acuidade'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_dnp'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_altura'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_adicao'] ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td rowspan="2" class="text-center fw-bold rx-side rx-side--perto">
-                        <span class="rx-side__text">PERTO</span>
-                    </td>
-                    <td class="text-center fw-semibold" style="white-space: nowrap;">
-                        <i class="mdi mdi-eye-outline me-1"></i>OD
-                    </td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_esferico_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_cilindrico_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_eixo_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_acuidade_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_dnp_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_altura_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['od_adicao_perto'] ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td class="text-center fw-semibold" style="white-space: nowrap;">
-                        <i class="mdi mdi-eye-outline me-1"></i>OE
-                    </td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_esferico_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_cilindrico_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_eixo_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_acuidade_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_dnp_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_altura_perto'] ?? '-' }}</td>
-                    <td class="text-center">{{ $prescription['prescricao']['oe_adicao_perto'] ?? '-' }}</td>
-                </tr>
-            </tbody>
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 44px;"></th>
+                        <th style="width: 90px;"></th>
+                        <th class="text-center">Esférico</th>
+                        <th class="text-center">Cilíndrico</th>
+                        <th class="text-center">Eixo</th>
+                        <th class="text-center">AV</th>
+                        <th class="text-center">Adição</th>
+                        <th class="text-center">DNP</th>
+                        <th class="text-center">Altura</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="2" class="text-center fw-bold rx-side rx-side--longe">
+                            <span class="rx-side__text">LONGE</span>
+                        </td>
+                        <td class="text-center fw-semibold" style="white-space: nowrap;">
+                            <i class="mdi mdi-eye-outline me-1"></i>OD
+                        </td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_esferico'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_cilindrico'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_eixo'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_acuidade'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_adicao'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_dnp'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_altura'] ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center fw-semibold" style="white-space: nowrap;">
+                            <i class="mdi mdi-eye-outline me-1"></i>OE
+                        </td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_esferico'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_cilindrico'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_eixo'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_acuidade'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_adicao'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_dnp'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_altura'] ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="2" class="text-center fw-bold rx-side rx-side--perto">
+                            <span class="rx-side__text">PERTO</span>
+                        </td>
+                        <td class="text-center fw-semibold" style="white-space: nowrap;">
+                            <i class="mdi mdi-eye-outline me-1"></i>OD
+                        </td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_esferico_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_cilindrico_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_eixo_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_acuidade_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_adicao_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_dnp_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['od_altura_perto'] ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center fw-semibold" style="white-space: nowrap;">
+                            <i class="mdi mdi-eye-outline me-1"></i>OE
+                        </td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_esferico_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_cilindrico_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_eixo_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_acuidade_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_adicao_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_dnp_perto'] ?? '-' }}</td>
+                        <td class="text-center">{{ $prescription['prescricao']['oe_altura_perto'] ?? '-' }}</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 

@@ -298,9 +298,9 @@
                                     <th class="text-center">Cilíndrico</th>
                                     <th class="text-center">Eixo</th>
                                     <th class="text-center">AV</th>
+                                    <th class="text-center">Adição</th>
                                     <th class="text-center">DNP</th>
                                     <th class="text-center">Altura</th>
-                                    <th class="text-center">Adição</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -316,9 +316,9 @@
                                     <td class="text-center" id="rxLongeOdCilindrico">-</td>
                                     <td class="text-center" id="rxLongeOdEixo">-</td>
                                     <td class="text-center" id="rxLongeOdAv">-</td>
+                                    <td class="text-center" id="rxLongeOdAdicao">-</td>
                                     <td class="text-center" id="rxLongeOdDnp">-</td>
                                     <td class="text-center" id="rxLongeOdAltura">-</td>
-                                    <td class="text-center" id="rxLongeOdAdicao">-</td>
                                 </tr>
                                 <tr>
                                     <td class="text-center fw-semibold" style="white-space: nowrap;">
@@ -328,9 +328,9 @@
                                     <td class="text-center" id="rxLongeOeCilindrico">-</td>
                                     <td class="text-center" id="rxLongeOeEixo">-</td>
                                     <td class="text-center" id="rxLongeOeAv">-</td>
+                                    <td class="text-center" id="rxLongeOeAdicao">-</td>
                                     <td class="text-center" id="rxLongeOeDnp">-</td>
                                     <td class="text-center" id="rxLongeOeAltura">-</td>
-                                    <td class="text-center" id="rxLongeOeAdicao">-</td>
                                 </tr>
                                 <tr>
                                     <td rowspan="2" class="text-center fw-bold"
@@ -344,9 +344,9 @@
                                     <td class="text-center" id="rxPertoOdCilindrico">-</td>
                                     <td class="text-center" id="rxPertoOdEixo">-</td>
                                     <td class="text-center" id="rxPertoOdAv">-</td>
+                                    <td class="text-center" id="rxPertoOdAdicao">-</td>
                                     <td class="text-center" id="rxPertoOdDnp">-</td>
                                     <td class="text-center" id="rxPertoOdAltura">-</td>
-                                    <td class="text-center" id="rxPertoOdAdicao">-</td>
                                 </tr>
                                 <tr>
                                     <td class="text-center fw-semibold" style="white-space: nowrap;">
@@ -356,9 +356,9 @@
                                     <td class="text-center" id="rxPertoOeCilindrico">-</td>
                                     <td class="text-center" id="rxPertoOeEixo">-</td>
                                     <td class="text-center" id="rxPertoOeAv">-</td>
+                                    <td class="text-center" id="rxPertoOeAdicao">-</td>
                                     <td class="text-center" id="rxPertoOeDnp">-</td>
                                     <td class="text-center" id="rxPertoOeAltura">-</td>
-                                    <td class="text-center" id="rxPertoOeAdicao">-</td>
                                 </tr>
                             </tbody>
                         </table>
