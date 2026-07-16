@@ -82,9 +82,9 @@
                                                                 <th class="text-center">Cilíndrico</th>
                                                                 <th class="text-center">Eixo</th>
                                                                 <th class="text-center">AV</th>
+                                                                <th class="text-center">Adição</th>
                                                                 <th class="text-center">DNP</th>
                                                                 <th class="text-center">Altura</th>
-                                                                <th class="text-center">Adição</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -106,11 +106,11 @@
                                                                 <td class="text-center">
                                                                     {{ $consultation['od_acuidade'] ?? '-' }}</td>
                                                                 <td class="text-center">
+                                                                    {{ $consultation['od_adicao'] ?? '-' }}</td>
+                                                                <td class="text-center">
                                                                     {{ $consultation['od_dnp'] ?? '-' }}</td>
                                                                 <td class="text-center">
                                                                     {{ $consultation['od_altura'] ?? '-' }}</td>
-                                                                <td class="text-center">
-                                                                    {{ $consultation['od_adicao'] ?? '-' }}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td class="text-center fw-semibold"
@@ -126,11 +126,11 @@
                                                                 <td class="text-center">
                                                                     {{ $consultation['oe_acuidade'] ?? '-' }}</td>
                                                                 <td class="text-center">
+                                                                    {{ $consultation['oe_adicao'] ?? '-' }}</td>
+                                                                <td class="text-center">
                                                                     {{ $consultation['oe_dnp'] ?? '-' }}</td>
                                                                 <td class="text-center">
                                                                     {{ $consultation['oe_altura'] ?? '-' }}</td>
-                                                                <td class="text-center">
-                                                                    {{ $consultation['oe_adicao'] ?? '-' }}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td rowspan="2" class="text-center fw-bold"
@@ -150,11 +150,11 @@
                                                                 <td class="text-center">
                                                                     {{ $consultation['od_acuidade_perto'] ?? '-' }}</td>
                                                                 <td class="text-center">
+                                                                    {{ $consultation['od_adicao_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
                                                                     {{ $consultation['od_dnp_perto'] ?? '-' }}</td>
                                                                 <td class="text-center">
                                                                     {{ $consultation['od_altura_perto'] ?? '-' }}</td>
-                                                                <td class="text-center">
-                                                                    {{ $consultation['od_adicao_perto'] ?? '-' }}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td class="text-center fw-semibold"
@@ -170,11 +170,11 @@
                                                                 <td class="text-center">
                                                                     {{ $consultation['oe_acuidade_perto'] ?? '-' }}</td>
                                                                 <td class="text-center">
+                                                                    {{ $consultation['oe_adicao_perto'] ?? '-' }}</td>
+                                                                <td class="text-center">
                                                                     {{ $consultation['oe_dnp_perto'] ?? '-' }}</td>
                                                                 <td class="text-center">
                                                                     {{ $consultation['oe_altura_perto'] ?? '-' }}</td>
-                                                                <td class="text-center">
-                                                                    {{ $consultation['oe_adicao_perto'] ?? '-' }}</td>
                                                             </tr>
                                                         </tbody>
                                                     </table>

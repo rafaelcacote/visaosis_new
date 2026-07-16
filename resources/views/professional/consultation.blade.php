@@ -68,6 +68,34 @@
             </div>
 
             <!-- Última Receita -->
+            @php
+                $ultimaReceita = $patient['ultima_receita'] ?? null;
+                $camposPerto = [
+                    'od_esferico_perto',
+                    'od_cilindrico_perto',
+                    'od_eixo_perto',
+                    'od_acuidade_perto',
+                    'od_dnp_perto',
+                    'od_altura_perto',
+                    'od_adicao_perto',
+                    'oe_esferico_perto',
+                    'oe_cilindrico_perto',
+                    'oe_eixo_perto',
+                    'oe_acuidade_perto',
+                    'oe_dnp_perto',
+                    'oe_altura_perto',
+                    'oe_adicao_perto',
+                ];
+                $mostrarPerto = false;
+                if ($ultimaReceita) {
+                    foreach ($camposPerto as $campoPerto) {
+                        if (trim((string) ($ultimaReceita[$campoPerto] ?? '')) !== '') {
+                            $mostrarPerto = true;
+                            break;
+                        }
+                    }
+                }
+            @endphp
             @if ($patient['ultima_receita'])
                 <div class="card">
                     <div class="card-header">
@@ -78,108 +106,14 @@
                         </h6>
                     </div>
                     <div class="card-body">
-                        @php
-                            $ultimaReceita = $patient['ultima_receita'];
-                            $camposPerto = [
-                                'od_esferico_perto',
-                                'od_cilindrico_perto',
-                                'od_eixo_perto',
-                                'od_acuidade_perto',
-                                'od_dnp_perto',
-                                'od_altura_perto',
-                                'od_adicao_perto',
-                                'oe_esferico_perto',
-                                'oe_cilindrico_perto',
-                                'oe_eixo_perto',
-                                'oe_acuidade_perto',
-                                'oe_dnp_perto',
-                                'oe_altura_perto',
-                                'oe_adicao_perto',
-                            ];
-                            $mostrarPerto = false;
-                            foreach ($camposPerto as $campoPerto) {
-                                if (trim((string) ($ultimaReceita[$campoPerto] ?? '')) !== '') {
-                                    $mostrarPerto = true;
-                                    break;
-                                }
-                            }
-                        @endphp
 
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 44px;"></th>
-                                        <th style="width: 62px;"></th>
-                                        <th class="text-center">Esférico</th>
-                                        <th class="text-center">Cilíndrico</th>
-                                        <th class="text-center">Eixo</th>
-                                        <th class="text-center">AV</th>
-                                        <th class="text-center">DNP</th>
-                                        <th class="text-center">Altura</th>
-                                        <th class="text-center">Adição</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td rowspan="2" class="text-center fw-bold"
-                                            style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.45);">
-                                            LONGE
-                                        </td>
-                                        <td class="text-center fw-semibold">OD</td>
-                                        <td class="text-center">{{ $ultimaReceita['od_esferico'] ?: '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['od_cilindrico'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['od_eixo'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['od_acuidade'] ?: '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['od_dnp'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['od_altura'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['od_adicao'] ?? '-' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-center fw-semibold">OE</td>
-                                        <td class="text-center">{{ $ultimaReceita['oe_esferico'] ?: '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['oe_cilindrico'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['oe_eixo'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['oe_acuidade'] ?: '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['oe_dnp'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['oe_altura'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $ultimaReceita['oe_adicao'] ?? '-' }}</td>
-                                    </tr>
-                                    @if ($mostrarPerto)
-                                        <tr>
-                                            <td rowspan="2" class="text-center fw-bold"
-                                                style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">
-                                                PERTO
-                                            </td>
-                                            <td class="text-center fw-semibold">OD</td>
-                                            <td class="text-center">{{ $ultimaReceita['od_esferico_perto'] ?: '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['od_cilindrico_perto'] ?? '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['od_eixo_perto'] ?? '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['od_acuidade_perto'] ?: '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['od_dnp_perto'] ?? '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['od_altura_perto'] ?? '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['od_adicao_perto'] ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-center fw-semibold">OE</td>
-                                            <td class="text-center">{{ $ultimaReceita['oe_esferico_perto'] ?: '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['oe_cilindrico_perto'] ?? '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['oe_eixo_perto'] ?? '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['oe_acuidade_perto'] ?: '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['oe_dnp_perto'] ?? '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['oe_altura_perto'] ?? '-' }}</td>
-                                            <td class="text-center">{{ $ultimaReceita['oe_adicao_perto'] ?? '-' }}</td>
-                                        </tr>
-                                    @endif
-                                </tbody>
-                            </table>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal"
+                                data-bs-target="#lastPrescriptionModal">
+                                <i class="mdi mdi-eye-outline me-2"></i>
+                                Ver Última Receita
+                            </button>
                         </div>
-
-                        @if (!empty($ultimaReceita['observacoes']))
-                            <div class="mt-3">
-                                <small><strong>Obs:</strong> {{ $ultimaReceita['observacoes'] }}</small>
-                            </div>
-                        @endif
                     </div>
                 </div>
             @endif
@@ -247,14 +181,10 @@
                                         'oe_dnp',
                                         'od_altura',
                                         'oe_altura',
-                                        'od_adicao',
-                                        'oe_adicao',
                                         'od_dnp_perto',
                                         'oe_dnp_perto',
                                         'od_altura_perto',
                                         'oe_altura_perto',
-                                        'od_adicao_perto',
-                                        'oe_adicao_perto',
                                     ];
                                     $showGlassesFields = false;
                                     foreach ($glassesFields as $f) {
@@ -270,7 +200,7 @@
                                     <input class="form-check-input" type="checkbox" id="toggleGlassesFields"
                                         {{ $showGlassesFields ? 'checked' : '' }}>
                                     <label class="form-check-label" for="toggleGlassesFields">
-                                        Informar DNP/Altura/Adição (confecção dos óculos)
+                                        Informar DNP/Altura (confecção dos óculos)
                                     </label>
                                 </div>
                                 <!-- Tabela de Prescrição -->
@@ -284,12 +214,12 @@
                                                 <th>Cilíndrico</th>
                                                 <th>Eixo </th>
                                                 <th>Acuidade</th>
+                                                <th>Adição</th>
                                                 <th class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">DNP
                                                 </th>
                                                 <th class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">Altura
                                                 </th>
-                                                <th class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">Adição
-                                                </th>
+
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -331,6 +261,14 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="od_adicao"
+                                                        placeholder="+0.00"
+                                                        value="{{ old('od_adicao', $patient['prescricao']['od_adicao'] ?? '') }}">
+                                                    @error('od_adicao')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
                                                 <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="od_dnp"
                                                         value="{{ old('od_dnp', $patient['prescricao']['od_dnp'] ?? '') }}">
@@ -345,14 +283,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
-                                                    <input type="text" class="form-control" name="od_adicao"
-                                                        placeholder="+0.00"
-                                                        value="{{ old('od_adicao', $patient['prescricao']['od_adicao'] ?? '') }}">
-                                                    @error('od_adicao')
-                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                                                    @enderror
-                                                </td>
+
                                             </tr>
                                             <tr>
                                                 <td class="text-center fw-bold" style="white-space: nowrap;">
@@ -388,6 +319,14 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="oe_adicao"
+                                                        placeholder="+0.00"
+                                                        value="{{ old('oe_adicao', $patient['prescricao']['oe_adicao'] ?? '') }}">
+                                                    @error('oe_adicao')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
                                                 <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="oe_dnp"
                                                         value="{{ old('oe_dnp', $patient['prescricao']['oe_dnp'] ?? '') }}">
@@ -402,14 +341,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
-                                                    <input type="text" class="form-control" name="oe_adicao"
-                                                        placeholder="+0.00"
-                                                        value="{{ old('oe_adicao', $patient['prescricao']['oe_adicao'] ?? '') }}">
-                                                    @error('oe_adicao')
-                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                                                    @enderror
-                                                </td>
+
                                             </tr>
                                             <tr>
                                                 <td rowspan="2" class="text-center fw-bold"
@@ -449,6 +381,14 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="od_adicao_perto"
+                                                        placeholder="+0.00"
+                                                        value="{{ old('od_adicao_perto', $patient['prescricao']['od_adicao_perto'] ?? '') }}">
+                                                    @error('od_adicao_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
                                                 <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="od_dnp_perto"
                                                         value="{{ old('od_dnp_perto', $patient['prescricao']['od_dnp_perto'] ?? '') }}">
@@ -463,14 +403,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
-                                                    <input type="text" class="form-control" name="od_adicao_perto"
-                                                        placeholder="+0.00"
-                                                        value="{{ old('od_adicao_perto', $patient['prescricao']['od_adicao_perto'] ?? '') }}">
-                                                    @error('od_adicao_perto')
-                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                                                    @enderror
-                                                </td>
+
                                             </tr>
                                             <tr>
                                                 <td class="text-center fw-bold" style="white-space: nowrap;">
@@ -506,6 +439,14 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="oe_adicao_perto"
+                                                        placeholder="+0.00"
+                                                        value="{{ old('oe_adicao_perto', $patient['prescricao']['oe_adicao_perto'] ?? '') }}">
+                                                    @error('oe_adicao_perto')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </td>
                                                 <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
                                                     <input type="text" class="form-control" name="oe_dnp_perto"
                                                         value="{{ old('oe_dnp_perto', $patient['prescricao']['oe_dnp_perto'] ?? '') }}">
@@ -520,14 +461,7 @@
                                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                                     @enderror
                                                 </td>
-                                                <td class="glasses-fields {{ $showGlassesFields ? '' : 'd-none' }}">
-                                                    <input type="text" class="form-control" name="oe_adicao_perto"
-                                                        placeholder="+0.00"
-                                                        value="{{ old('oe_adicao_perto', $patient['prescricao']['oe_adicao_perto'] ?? '') }}">
-                                                    @error('oe_adicao_perto')
-                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                                                    @enderror
-                                                </td>
+
                                             </tr>
                                         </tbody>
                                     </table>
@@ -612,8 +546,7 @@
                             <h5 class="card-title mb-0">Exame</h5>
                         </div>
                         <div class="card-body">
-                            <form id="exameForm" action="/professional/save-exame/{{ $consulta['id'] }}"
-                                method="POST">
+                            <form id="exameForm" action="/professional/save-exame/{{ $consulta['id'] }}" method="POST">
                                 @csrf
 
                                 <div class="row mb-3">
@@ -930,6 +863,106 @@
     </div>
 
     <!-- Modal de Receita Gerada -->
+    @if ($ultimaReceita)
+        <div class="modal fade" id="lastPrescriptionModal" tabindex="-1" aria-labelledby="lastPrescriptionModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="lastPrescriptionModalLabel">
+                            <i class="mdi mdi-file-document text-success me-2"></i>
+                            Última Receita
+                            ({{ $ultimaReceita['data']->format('d/m/Y') }})
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 44px;"></th>
+                                        <th style="width: 62px;"></th>
+                                        <th class="text-center">Esférico</th>
+                                        <th class="text-center">Cilíndrico</th>
+                                        <th class="text-center">Eixo</th>
+                                        <th class="text-center">AV</th>
+                                        <th class="text-center">Adição</th>
+                                        <th class="text-center">DNP</th>
+                                        <th class="text-center">Altura</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td rowspan="2" class="text-center fw-bold"
+                                            style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.45);">
+                                            LONGE
+                                        </td>
+                                        <td class="text-center fw-semibold">OD</td>
+                                        <td class="text-center">{{ $ultimaReceita['od_esferico'] ?: '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['od_cilindrico'] ?? '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['od_eixo'] ?? '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['od_acuidade'] ?: '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['od_adicao'] ?? '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['od_dnp'] ?? '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['od_altura'] ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center fw-semibold">OE</td>
+                                        <td class="text-center">{{ $ultimaReceita['oe_esferico'] ?: '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['oe_cilindrico'] ?? '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['oe_eixo'] ?? '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['oe_acuidade'] ?: '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['oe_adicao'] ?? '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['oe_dnp'] ?? '-' }}</td>
+                                        <td class="text-center">{{ $ultimaReceita['oe_altura'] ?? '-' }}</td>
+                                    </tr>
+                                    @if ($mostrarPerto)
+                                        <tr>
+                                            <td rowspan="2" class="text-center fw-bold"
+                                                style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">
+                                                PERTO
+                                            </td>
+                                            <td class="text-center fw-semibold">OD</td>
+                                            <td class="text-center">{{ $ultimaReceita['od_esferico_perto'] ?: '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['od_cilindrico_perto'] ?? '-' }}
+                                            </td>
+                                            <td class="text-center">{{ $ultimaReceita['od_eixo_perto'] ?? '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['od_acuidade_perto'] ?: '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['od_adicao_perto'] ?? '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['od_dnp_perto'] ?? '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['od_altura_perto'] ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-center fw-semibold">OE</td>
+                                            <td class="text-center">{{ $ultimaReceita['oe_esferico_perto'] ?: '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['oe_cilindrico_perto'] ?? '-' }}
+                                            </td>
+                                            <td class="text-center">{{ $ultimaReceita['oe_eixo_perto'] ?? '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['oe_acuidade_perto'] ?: '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['oe_adicao_perto'] ?? '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['oe_dnp_perto'] ?? '-' }}</td>
+                                            <td class="text-center">{{ $ultimaReceita['oe_altura_perto'] ?? '-' }}</td>
+                                        </tr>
+                                    @endif
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if (!empty($ultimaReceita['observacoes']))
+                            <div class="mt-3">
+                                <small><strong>Obs:</strong> {{ $ultimaReceita['observacoes'] }}</small>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="modal fade" id="prescriptionModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -1385,14 +1418,10 @@
                     'oe_dnp',
                     'od_altura',
                     'oe_altura',
-                    'od_adicao',
-                    'oe_adicao',
                     'od_dnp_perto',
                     'oe_dnp_perto',
                     'od_altura_perto',
                     'oe_altura_perto',
-                    'od_adicao_perto',
-                    'oe_adicao_perto',
                 ];
                 const hasGlassesValues = glassesFields.some((name) => {
                     const input = document.querySelector(`input[name="${name}"]`);
@@ -1458,9 +1487,9 @@
                 '<th class="text-center">Cilíndrico</th>' +
                 '<th class="text-center">Eixo</th>' +
                 '<th class="text-center">AV</th>' +
+                '<th class="text-center">Adição</th>' +
                 '<th class="text-center">DNP</th>' +
                 '<th class="text-center">Altura</th>' +
-                '<th class="text-center">Adição</th>' +
                 '</tr>' +
                 '</thead>' +
                 '<tbody>' +
@@ -1471,9 +1500,9 @@
                 '<td class="text-center">' + v('od_cilindrico', '-') + '</td>' +
                 '<td class="text-center">' + v('od_eixo', '-') + '</td>' +
                 '<td class="text-center">' + v('od_acuidade', '-') + '</td>' +
+                '<td class="text-center">' + v('od_adicao', '-') + '</td>' +
                 '<td class="text-center">' + v('od_dnp', '-') + '</td>' +
                 '<td class="text-center">' + v('od_altura', '-') + '</td>' +
-                '<td class="text-center">' + v('od_adicao', '-') + '</td>' +
                 '</tr>' +
                 '<tr>' +
                 '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OE</td>' +
@@ -1481,9 +1510,9 @@
                 '<td class="text-center">' + v('oe_cilindrico', '-') + '</td>' +
                 '<td class="text-center">' + v('oe_eixo', '-') + '</td>' +
                 '<td class="text-center">' + v('oe_acuidade', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_adicao', '-') + '</td>' +
                 '<td class="text-center">' + v('oe_dnp', '-') + '</td>' +
                 '<td class="text-center">' + v('oe_altura', '-') + '</td>' +
-                '<td class="text-center">' + v('oe_adicao', '-') + '</td>' +
                 '</tr>' +
                 '<tr>' +
                 '<td rowspan="2" class="text-center fw-bold" style="writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 0.12em; color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.45);">PERTO</td>' +
@@ -1492,9 +1521,9 @@
                 '<td class="text-center">' + v('od_cilindrico_perto', '-') + '</td>' +
                 '<td class="text-center">' + v('od_eixo_perto', '-') + '</td>' +
                 '<td class="text-center">' + v('od_acuidade_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('od_adicao_perto', '-') + '</td>' +
                 '<td class="text-center">' + v('od_dnp_perto', '-') + '</td>' +
                 '<td class="text-center">' + v('od_altura_perto', '-') + '</td>' +
-                '<td class="text-center">' + v('od_adicao_perto', '-') + '</td>' +
                 '</tr>' +
                 '<tr>' +
                 '<td class="text-center fw-semibold" style="white-space: nowrap;"><i class="mdi mdi-eye-outline me-1"></i>OE</td>' +
@@ -1502,9 +1531,9 @@
                 '<td class="text-center">' + v('oe_cilindrico_perto', '-') + '</td>' +
                 '<td class="text-center">' + v('oe_eixo_perto', '-') + '</td>' +
                 '<td class="text-center">' + v('oe_acuidade_perto', '-') + '</td>' +
+                '<td class="text-center">' + v('oe_adicao_perto', '-') + '</td>' +
                 '<td class="text-center">' + v('oe_dnp_perto', '-') + '</td>' +
                 '<td class="text-center">' + v('oe_altura_perto', '-') + '</td>' +
-                '<td class="text-center">' + v('oe_adicao_perto', '-') + '</td>' +
                 '</tr>' +
                 '</tbody>' +
                 '</table>' +
