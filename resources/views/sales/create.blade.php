@@ -27,11 +27,11 @@
                         <div class="col-12">
                             <label for="client_search" class="form-label">Buscar Cliente</label>
                             <div id="client_search_container" class="position-relative">
-                            <div class="input-group">
+                                <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="mdi mdi-magnify"></i>
                                     </span>
-                                <input type="text" class="form-control" id="client_search"
+                                    <input type="text" class="form-control" id="client_search"
                                         placeholder="Digite nome, CPF ou e-mail..." autocomplete="off"
                                         oninput="handleClientInput(this.value)">
                                 </div>
@@ -130,10 +130,10 @@
                                             data-product-price="{{ $product['preco'] ?? '' }}"
                                             data-product-stock="{{ $product['stock'] ?? 'null' }}"
                                             onclick='addToCart(@json($product['id']), @json($product['nome']), @json($product['preco']), @json($product['stock']))'
-                                            {{ $product['stock'] === 0 ? 'disabled' : '' }}
-                                            disabled>
+                                            {{ $product['stock'] === 0 ? 'disabled' : '' }} disabled>
                                             <i class="mdi mdi-cart-plus me-1"></i>
-                                            <span class="btn-text">{{ $product['stock'] === 0 ? 'Sem Estoque' : 'Adicionar' }}</span>
+                                            <span
+                                                class="btn-text">{{ $product['stock'] === 0 ? 'Sem Estoque' : 'Adicionar' }}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -188,16 +188,16 @@
                             </select>
                             <div id="discount_percent_wrap">
                                 <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control" id="discount_percent"
-                                        inputmode="decimal" placeholder="0,00" autocomplete="off">
+                                    <input type="text" class="form-control" id="discount_percent" inputmode="decimal"
+                                        placeholder="0,00" autocomplete="off">
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
                             <div id="discount_value_wrap" class="d-none">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">R$</span>
-                                    <input type="text" class="form-control" id="discount_value"
-                                        inputmode="numeric" placeholder="0,00" autocomplete="off">
+                                    <input type="text" class="form-control" id="discount_value" inputmode="numeric"
+                                        placeholder="0,00" autocomplete="off">
                                 </div>
                             </div>
                             <small id="discount_auth_status" class="text-muted d-none mt-1"></small>
@@ -218,18 +218,20 @@
 
                             <div id="payment_entries"></div>
 
-                            <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-1" id="add_payment_btn" onclick="addPaymentEntry()">
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-1"
+                                id="add_payment_btn" onclick="addPaymentEntry()">
                                 <i class="mdi mdi-plus me-1"></i>
                                 Adicionar outra forma de pagamento
                             </button>
 
                             <div class="mt-2 p-2 rounded d-none" id="payment_summary_bar"
-                                 style="background:#f8f9fb; border:1px solid #e5e7eb;">
+                                style="background:#f8f9fb; border:1px solid #e5e7eb;">
                                 <div class="d-flex justify-content-between align-items-center small">
                                     <span class="text-muted">Alocado:</span>
                                     <span id="payment_allocated_display" class="fw-semibold">R$ 0,00</span>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center small d-none" id="payment_remaining_row">
+                                <div class="d-flex justify-content-between align-items-center small d-none"
+                                    id="payment_remaining_row">
                                     <span class="text-warning fw-semibold">Restante:</span>
                                     <span id="payment_remaining_display" class="text-warning fw-semibold">R$ 0,00</span>
                                 </div>
@@ -258,7 +260,8 @@
     </div>
 
     <!-- Modal de Autorização de Desconto -->
-    <div class="modal fade" id="discountAuthModal" tabindex="-1" aria-labelledby="discountAuthModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade" id="discountAuthModal" tabindex="-1" aria-labelledby="discountAuthModalLabel"
+        aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header">
@@ -283,8 +286,8 @@
                     </div>
                     <div class="mb-2">
                         <label for="supervisor_password" class="form-label">Senha do supervisor</label>
-                        <input type="password" class="form-control" id="supervisor_password" autocomplete="current-password"
-                            placeholder="Senha">
+                        <input type="password" class="form-control" id="supervisor_password"
+                            autocomplete="current-password" placeholder="Senha">
                     </div>
                     <div id="discount_auth_error" class="alert alert-danger d-none mt-3 mb-0" role="alert"></div>
                 </div>
@@ -300,7 +303,8 @@
     </div>
 
     <!-- Modal de Confirmação de Venda -->
-    <div class="modal fade" id="confirmSaleModal" tabindex="-1" aria-labelledby="confirmSaleModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade" id="confirmSaleModal" tabindex="-1" aria-labelledby="confirmSaleModalLabel"
+        aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered confirm-sale-dialog">
             <div class="modal-content confirm-sale-content border-0 shadow">
                 <div class="modal-header confirm-sale-header">
@@ -364,18 +368,21 @@
     </div>
 
     <!-- Modal de Sucesso -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true"
+        data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-body text-center py-5">
                     <div class="mb-4">
-                        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style="width: 80px; height: 80px;">
                             <i class="mdi mdi-check-circle text-success" style="font-size: 3rem;"></i>
                         </div>
                     </div>
                     <h4 class="modal-title mb-3" id="successModalLabel">Venda Realizada com Sucesso!</h4>
                     <p class="text-muted mb-4" id="success_message">A venda foi registrada com sucesso no sistema.</p>
-                    <button type="button" class="btn btn-success px-4" id="success_ok_btn" onclick="window.location.href='{{ route('sales.index') }}'">
+                    <button type="button" class="btn btn-success px-4" id="success_ok_btn"
+                        onclick="window.location.href='{{ route('sales.index') }}'">
                         <i class="mdi mdi-check-circle me-2"></i>
                         OK
                     </button>
@@ -390,7 +397,8 @@
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-body text-center py-5">
                     <div class="mb-4">
-                        <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style="width: 80px; height: 80px;">
                             <i class="mdi mdi-alert text-danger" style="font-size: 3rem;"></i>
                         </div>
                     </div>
@@ -406,12 +414,14 @@
     </div>
 
     <!-- Modal de Validação -->
-    <div class="modal fade" id="validationModal" tabindex="-1" aria-labelledby="validationModalLabel" aria-hidden="true">
+    <div class="modal fade" id="validationModal" tabindex="-1" aria-labelledby="validationModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-body text-center py-5">
                     <div class="mb-4">
-                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style="width: 80px; height: 80px;">
                             <i class="mdi mdi-alert-circle text-warning" style="font-size: 3rem;"></i>
                         </div>
                     </div>
@@ -427,23 +437,27 @@
     </div>
 
     <!-- Modal de Confirmação para Sair da Tela -->
-    <div class="modal fade" id="confirmLeavePageModal" tabindex="-1" aria-labelledby="confirmLeavePageModalLabel" aria-hidden="true">
+    <div class="modal fade" id="confirmLeavePageModal" tabindex="-1" aria-labelledby="confirmLeavePageModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-body text-center py-5">
                     <div class="mb-4">
-                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style="width: 80px; height: 80px;">
                             <i class="mdi mdi-exit-to-app text-warning" style="font-size: 3rem;"></i>
                         </div>
                     </div>
                     <h4 class="modal-title mb-3" id="confirmLeavePageModalLabel">Sair da venda?</h4>
-                    <p class="text-muted mb-4">Você tem produtos no carrinho e/ou um cliente selecionado. Se sair agora, essas informações serão perdidas.</p>
+                    <p class="text-muted mb-4">Você tem produtos no carrinho e/ou um cliente selecionado. Se sair agora,
+                        essas informações serão perdidas.</p>
                     <div class="d-flex gap-2 justify-content-center">
                         <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
                             <i class="mdi mdi-arrow-left me-2"></i>
                             Continuar na venda
                         </button>
-                        <button type="button" class="btn btn-warning px-4" id="confirm_leave_page_btn" onclick="confirmLeavePage()">
+                        <button type="button" class="btn btn-warning px-4" id="confirm_leave_page_btn"
+                            onclick="confirmLeavePage()">
                             <i class="mdi mdi-exit-to-app me-2"></i>
                             Sair mesmo assim
                         </button>
@@ -454,23 +468,27 @@
     </div>
 
     <!-- Modal de Confirmação para Limpar Carrinho -->
-    <div class="modal fade" id="confirmClearCartModal" tabindex="-1" aria-labelledby="confirmClearCartModalLabel" aria-hidden="true">
+    <div class="modal fade" id="confirmClearCartModal" tabindex="-1" aria-labelledby="confirmClearCartModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-body text-center py-5">
                     <div class="mb-4">
-                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style="width: 80px; height: 80px;">
                             <i class="mdi mdi-delete text-warning" style="font-size: 3rem;"></i>
                         </div>
                     </div>
                     <h4 class="modal-title mb-3" id="confirmClearCartModalLabel">Limpar Carrinho</h4>
-                    <p class="text-muted mb-4">Tem certeza que deseja limpar o carrinho? Todos os itens serão removidos.</p>
+                    <p class="text-muted mb-4">Tem certeza que deseja limpar o carrinho? Todos os itens serão removidos.
+                    </p>
                     <div class="d-flex gap-2 justify-content-center">
                         <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
                             <i class="mdi mdi-close-circle me-2"></i>
                             Cancelar
                         </button>
-                        <button type="button" class="btn btn-warning px-4" id="confirm_clear_cart_btn" onclick="confirmClearCart()">
+                        <button type="button" class="btn btn-warning px-4" id="confirm_clear_cart_btn"
+                            onclick="confirmClearCart()">
                             <i class="mdi mdi-delete me-2"></i>
                             Limpar Carrinho
                         </button>
@@ -611,7 +629,7 @@
             min-width: 0;
         }
 
-        .confirm-sale-meta-item > i {
+        .confirm-sale-meta-item>i {
             font-size: 1rem;
             color: #9ca3af;
             margin-top: 1px;
@@ -739,9 +757,12 @@
         }
 
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
             }
+
             50% {
                 transform: scale(1.05);
             }
@@ -765,6 +786,7 @@
             from {
                 transform: rotate(0deg);
             }
+
             to {
                 transform: rotate(360deg);
             }
@@ -1080,14 +1102,15 @@
             } else {
                 cartItems.innerHTML = cart.map(item => {
                     const maxAttr = item.stock !== null && item.stock !== undefined ? `max="${item.stock}"` : '';
-                    const disableIncrease = item.stock !== null && item.stock !== undefined && item.quantity >= item.stock;
-                    const priceValue = item.price !== null && item.price !== undefined
-                        ? Number(item.price).toFixed(2)
-                        : '';
+                    const disableIncrease = item.stock !== null && item.stock !== undefined && item.quantity >= item
+                        .stock;
+                    const priceValue = item.price !== null && item.price !== undefined ?
+                        Number(item.price).toFixed(2) :
+                        '';
                     const priceInvalidClass = isValidCartItemPrice(item.price) ? '' : 'is-invalid';
-                    const priceHint = isValidCartItemPrice(item.price)
-                        ? ''
-                        : '<small class="text-danger d-block mt-1">Informe o preço unitário</small>';
+                    const priceHint = isValidCartItemPrice(item.price) ?
+                        '' :
+                        '<small class="text-danger d-block mt-1">Informe o preço unitário</small>';
 
                     return `
             <div class="cart-item">
@@ -1181,7 +1204,8 @@
             const subtotal = getCartSubtotal();
 
             if (getDiscountType() === 'percent') {
-                const percent = Math.min(Math.max(parsePercentInput(document.getElementById('discount_percent').value), 0), 100);
+                const percent = Math.min(Math.max(parsePercentInput(document.getElementById('discount_percent').value), 0),
+                    100);
                 return Math.round(percent * 100) / 100;
             }
 
@@ -1290,13 +1314,15 @@
 
             statusEl.classList.remove('d-none');
 
-            if (discountAuthToken && discountAuthorizedFor
-                && Math.abs(discountAuthorizedFor.valor - discountAmount) < 0.01) {
+            if (discountAuthToken && discountAuthorizedFor &&
+                Math.abs(discountAuthorizedFor.valor - discountAmount) < 0.01) {
                 statusEl.className = 'text-success d-block mt-1';
-                statusEl.innerHTML = `<i class="mdi mdi-check-circle-outline me-1"></i>Autorizado por ${discountAuthorizedFor.name}`;
+                statusEl.innerHTML =
+                    `<i class="mdi mdi-check-circle-outline me-1"></i>Autorizado por ${discountAuthorizedFor.name}`;
             } else {
                 statusEl.className = 'text-warning d-block mt-1';
-                statusEl.innerHTML = '<i class="mdi mdi-alert-circle-outline me-1"></i>Autorização de supervisor necessária';
+                statusEl.innerHTML =
+                '<i class="mdi mdi-alert-circle-outline me-1"></i>Autorização de supervisor necessária';
             }
         }
 
@@ -1311,9 +1337,9 @@
             }
 
             return Boolean(
-                discountAuthToken
-                && discountAuthorizedFor
-                && Math.abs(discountAuthorizedFor.valor - discountAmount) < 0.01
+                discountAuthToken &&
+                discountAuthorizedFor &&
+                Math.abs(discountAuthorizedFor.valor - discountAmount) < 0.01
             );
         }
 
@@ -1323,8 +1349,8 @@
             if (discountAmount <= 0) {
                 resetDiscountAuthorization();
             } else if (
-                discountAuthorizedFor
-                && Math.abs(discountAuthorizedFor.valor - discountAmount) >= 0.01
+                discountAuthorizedFor &&
+                Math.abs(discountAuthorizedFor.valor - discountAmount) >= 0.01
             ) {
                 resetDiscountAuthorization();
             }
@@ -1348,7 +1374,8 @@
             };
 
             document.getElementById('discount_auth_amount').textContent = `R$ ${formatCurrency(discountAmount)}`;
-            document.getElementById('discount_auth_percent').textContent = `(${discountPercent.toFixed(2).replace('.', ',')}%)`;
+            document.getElementById('discount_auth_percent').textContent =
+                `(${discountPercent.toFixed(2).replace('.', ',')}%)`;
             document.getElementById('discount_auth_error').classList.add('d-none');
             document.getElementById('discount_auth_error').textContent = '';
             document.getElementById('supervisor_password').value = '';
@@ -1459,8 +1486,8 @@
                         Math.round(subtotal * 100).toString()
                     );
                     if (
-                        discountAuthorizedFor
-                        && Math.abs(discountAuthorizedFor.valor - subtotal) >= 0.01
+                        discountAuthorizedFor &&
+                        Math.abs(discountAuthorizedFor.valor - subtotal) >= 0.01
                     ) {
                         resetDiscountAuthorization();
                     }
@@ -1487,12 +1514,25 @@
 
         // ---- Funções de múltiplas formas de pagamento ----
 
+        function getDefaultFirstDueDate() {
+            const today = new Date();
+            const dueDate = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+            return dueDate.toLocaleDateString('en-CA');
+        }
+
         function addPaymentEntry() {
             const id = ++paymentEntryCounter;
             const cartTotal = getCartTotal();
             const allocated = getTotalAllocated();
             const remaining = cartTotal > 0 ? Math.max(0, cartTotal - allocated) : '';
-            paymentEntries.push({ id, method: '', value: remaining > 0.001 ? parseFloat(remaining.toFixed(2)) : '', installments: 1, userModified: remaining > 0.001 });
+            paymentEntries.push({
+                id,
+                method: '',
+                value: remaining > 0.001 ? parseFloat(remaining.toFixed(2)) : '',
+                installments: 1,
+                firstDueDate: getDefaultFirstDueDate(),
+                userModified: remaining > 0.001
+            });
             renderPaymentEntries();
             updatePaymentSummary();
             updateFinalizeButton();
@@ -1513,11 +1553,19 @@
 
             const installmentsDiv = document.getElementById(`payment-installments-${id}`);
             const isInstallable = entry.method === 'cartao_credito' || entry.method === 'crediario';
+            const isCrediario = entry.method === 'crediario';
             if (installmentsDiv) {
                 installmentsDiv.style.display = isInstallable ? 'block' : 'none';
             }
             if (!isInstallable) {
                 entry.installments = 1;
+            }
+            if (!entry.firstDueDate) {
+                entry.firstDueDate = getDefaultFirstDueDate();
+            }
+            const firstDueDateDiv = document.getElementById(`payment-first-due-date-${id}`);
+            if (firstDueDateDiv) {
+                firstDueDateDiv.style.display = isCrediario ? 'block' : 'none';
             }
 
             updateInstallmentHint(id);
@@ -1540,6 +1588,13 @@
             if (!entry) return;
             entry.installments = parseInt(document.getElementById(`payment-installments-select-${id}`).value) || 1;
             updateInstallmentHint(id);
+        }
+
+        function onPaymentFirstDueDateChange(id) {
+            const entry = paymentEntries.find(e => e.id === id);
+            if (!entry) return;
+            entry.firstDueDate = document.getElementById(`payment-first-due-date-input-${id}`).value ||
+                getDefaultFirstDueDate();
         }
 
         function updateInstallmentHint(id) {
@@ -1565,6 +1620,7 @@
 
             for (const entry of paymentEntries) {
                 if (!entry.method || !(parseFloat(entry.value) > 0)) return false;
+                if (entry.method === 'crediario' && !entry.firstDueDate) return false;
             }
 
             return Math.abs(getTotalAllocated() - cartTotal) <= 0.02;
@@ -1595,15 +1651,24 @@
                 remainingRow.classList.remove('d-none');
                 remainingDisplay.textContent = `R$ ${formatCurrency(remaining)}`;
                 allocatedDisplay.className = 'fw-semibold text-warning';
-                if (addBtn) { addBtn.disabled = false; addBtn.title = ''; }
+                if (addBtn) {
+                    addBtn.disabled = false;
+                    addBtn.title = '';
+                }
             } else if (allocated > cartTotal + 0.02) {
                 remainingRow.classList.add('d-none');
                 allocatedDisplay.className = 'fw-semibold text-danger';
-                if (addBtn) { addBtn.disabled = false; addBtn.title = ''; }
+                if (addBtn) {
+                    addBtn.disabled = false;
+                    addBtn.title = '';
+                }
             } else {
                 remainingRow.classList.add('d-none');
                 allocatedDisplay.className = 'fw-semibold text-success';
-                if (addBtn) { addBtn.disabled = true; addBtn.title = 'Total já totalmente alocado'; }
+                if (addBtn) {
+                    addBtn.disabled = true;
+                    addBtn.title = 'Total já totalmente alocado';
+                }
             }
         }
 
@@ -1612,18 +1677,22 @@
             const showRemove = paymentEntries.length > 1;
 
             const optionsHtml = (selectedMethod) => ['dinheiro', 'cartao_debito', 'cartao_credito', 'crediario', 'pix']
-                .map(v => `<option value="${v}" ${selectedMethod === v ? 'selected' : ''}>${PAYMENT_METHODS_MAP[v]}</option>`)
+                .map(v =>
+                    `<option value="${v}" ${selectedMethod === v ? 'selected' : ''}>${PAYMENT_METHODS_MAP[v]}</option>`)
                 .join('');
 
-            const installmentsOptions = (selected) => Array.from({length: 12}, (_, i) => i + 1)
+            const installmentsOptions = (selected) => Array.from({
+                    length: 12
+                }, (_, i) => i + 1)
                 .map(n => `<option value="${n}" ${selected === n ? 'selected' : ''}>${n}x sem juros</option>`)
                 .join('');
 
             container.innerHTML = paymentEntries.map(entry => {
                 const isInstallable = entry.method === 'cartao_credito' || entry.method === 'crediario';
-                const hintText = (entry.value > 0 && entry.installments > 1)
-                    ? `${entry.installments}x de R$ ${formatCurrency(entry.value / entry.installments)}`
-                    : '';
+                const isCrediario = entry.method === 'crediario';
+                const hintText = (entry.value > 0 && entry.installments > 1) ?
+                    `${entry.installments}x de R$ ${formatCurrency(entry.value / entry.installments)}` :
+                    '';
 
                 return `
                     <div class="payment-entry border rounded p-2 mb-2" id="payment-entry-${entry.id}">
@@ -1634,9 +1703,9 @@
                                 ${optionsHtml(entry.method)}
                             </select>
                             ${showRemove ? `<button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0"
-                                    onclick="removePaymentEntry(${entry.id})">
-                                    <i class="mdi mdi-close"></i>
-                                </button>` : ''}
+                                        onclick="removePaymentEntry(${entry.id})">
+                                        <i class="mdi mdi-close"></i>
+                                    </button>` : ''}
                         </div>
                         <div class="input-group input-group-sm mb-1">
                             <span class="input-group-text">R$</span>
@@ -1653,6 +1722,13 @@
                             </select>
                             <small class="text-muted" id="payment-installment-value-${entry.id}">${hintText}</small>
                         </div>
+                        <div id="payment-first-due-date-${entry.id}" class="mt-2" style="display:${isCrediario ? 'block' : 'none'};">
+                            <label class="form-label form-label-sm mb-1">Primeiro Vencimento</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   id="payment-first-due-date-input-${entry.id}"
+                                   value="${entry.firstDueDate || getDefaultFirstDueDate()}"
+                                   onchange="onPaymentFirstDueDateChange(${entry.id})">
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -1665,7 +1741,7 @@
             addToCartButtons.forEach(btn => {
                 const stock = btn.dataset.productStock;
                 const isOutOfStock = stock === '0' || stock === 0;
-                
+
                 // Desabilitar se não há cliente ou se está sem estoque
                 if (!hasClient || isOutOfStock) {
                     btn.disabled = true;
@@ -1737,7 +1813,13 @@
             paymentEntries = [];
             paymentEntryCounter = 0;
             const initId = ++paymentEntryCounter;
-            paymentEntries.push({ id: initId, method: '', value: '', installments: 1, userModified: false });
+            paymentEntries.push({
+                id: initId,
+                method: '',
+                value: '',
+                installments: 1,
+                userModified: false
+            });
             renderPaymentEntries();
 
             updateFinalizeButton();
@@ -1772,7 +1854,8 @@
         function showConfirmSaleModal() {
             // Preencher informações do cliente
             document.getElementById('confirm_client_name').textContent = selectedClient.name;
-            document.getElementById('confirm_client_document').textContent = selectedClient.cpf ? `CPF: ${selectedClient.cpf}` : '';
+            document.getElementById('confirm_client_document').textContent = selectedClient.cpf ?
+                `CPF: ${selectedClient.cpf}` : '';
 
             // Preencher formas de pagamento (múltiplas)
             const paymentSummaryLines = paymentEntries.map(e => {
@@ -1838,7 +1921,8 @@
             }
 
             if (!cartHasValidPrices()) {
-                showValidationModal('Informe o preço unitário de todos os produtos no carrinho antes de finalizar a venda!');
+                showValidationModal(
+                'Informe o preço unitário de todos os produtos no carrinho antes de finalizar a venda!');
                 return;
             }
 
@@ -1850,6 +1934,11 @@
 
             if (paymentEntries.length === 0 || paymentEntries.some(e => !e.method)) {
                 showValidationModal('Selecione uma forma de pagamento para cada entrada!');
+                return;
+            }
+
+            if (paymentEntries.some(e => e.method === 'crediario' && !e.firstDueDate)) {
+                showValidationModal('Informe o primeiro vencimento para todas as entradas com crediário.');
                 return;
             }
 
@@ -1892,7 +1981,8 @@
                 pagamentos: paymentEntries.map(e => ({
                     forma_pagamento: e.method,
                     valor: parseFloat(e.value) || 0,
-                    parcelas: e.installments || 1
+                    parcelas: e.installments || 1,
+                    primeiro_vencimento: e.method === 'crediario' ? (e.firstDueDate || null) : null
                 })),
                 desconto_percentual: discountPercent,
                 desconto_valor: discountAmount,
@@ -1915,7 +2005,7 @@
             finalizeBtn.innerHTML = '<i class="mdi mdi-loading me-2"></i>Processando...';
 
             try {
-                const response = await fetch('{{ route("sales.store") }}', {
+                const response = await fetch('{{ route('sales.store') }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1931,35 +2021,35 @@
                 if (!response.ok) {
                     // Tratar erros de validação
                     let errorMessage = data.message || 'Erro ao processar a venda';
-                    
+
                     if (data.errors) {
                         const errorMessages = Object.values(data.errors).flat();
                         errorMessage = errorMessages.join('\n');
                     }
-                    
+
                     throw new Error(errorMessage);
                 }
 
                 // Sucesso - mostrar modal de sucesso
                 allowNavigation = true;
                 showSuccessModal('A venda foi registrada com sucesso no sistema.');
-                
+
                 // Redirecionar após 2 segundos
                 setTimeout(() => {
-                    window.location.href = '{{ route("sales.index") }}';
+                    window.location.href = '{{ route('sales.index') }}';
                 }, 2000);
 
             } catch (error) {
                 console.error('Erro:', error);
-                
+
                 // Exibir mensagem de erro
                 let errorMessage = 'Erro ao finalizar a venda. Por favor, tente novamente.';
                 if (error.message) {
                     errorMessage = error.message;
                 }
-                
+
                 showErrorModal(errorMessage);
-                
+
                 finalizeBtn.disabled = false;
                 finalizeBtn.innerHTML = originalText;
             }
@@ -2008,14 +2098,18 @@
             event.returnValue = '';
         });
 
-        history.pushState({ saleCreate: true }, '');
+        history.pushState({
+            saleCreate: true
+        }, '');
 
         window.addEventListener('popstate', () => {
             if (!shouldConfirmLeave()) {
                 return;
             }
 
-            history.pushState({ saleCreate: true }, '');
+            history.pushState({
+                saleCreate: true
+            }, '');
             pendingNavigationUrl = null;
             pendingNavigationAction = 'back';
             showConfirmLeaveModal();
@@ -2063,7 +2157,14 @@
 
         // Inicializar primeira entrada de pagamento (sem valor pré-preenchido, pois carrinho está vazio)
         const initPaymentId = ++paymentEntryCounter;
-        paymentEntries.push({ id: initPaymentId, method: '', value: '', installments: 1, userModified: false });
+        paymentEntries.push({
+            id: initPaymentId,
+            method: '',
+            value: '',
+            installments: 1,
+            firstDueDate: getDefaultFirstDueDate(),
+            userModified: false
+        });
         renderPaymentEntries();
 
         // Event listeners
@@ -2130,14 +2231,14 @@
         productSearchInput.addEventListener('input', applyProductFilters);
         categoryFilter.addEventListener('change', applyProductFilters);
         applyProductFilters();
-        
+
         // Inicializar estado dos botões ao carregar a página
         updateAddToCartButtons();
 
         if (preselectedClient) {
             selectClientFromSearch(preselectedClient);
         }
-        
+
         // Mostrar alerta inicial se não há cliente selecionado
         if (!selectedClient) {
             document.getElementById('client_required_alert').style.display = 'block';
