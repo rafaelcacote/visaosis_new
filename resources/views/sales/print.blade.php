@@ -241,11 +241,7 @@
                             @foreach ($sale['pagamentos'] as $pag)
                                 <span class="value">
                                     {{ $pag['forma_pagamento'] }}
-                                    — R$ {{ number_format($pag['valor'], 2, ',', '.') }}
-                                    @if ($pag['parcelas'] > 1)
-                                        ({{ $pag['parcelas'] }}x de R$
-                                        {{ number_format($pag['valor'] / $pag['parcelas'], 2, ',', '.') }})
-                                    @endif
+
                                 </span><br>
                             @endforeach
                         @else
@@ -355,8 +351,8 @@
                         <tr>
                             <th style="width: 16%;">Parcela</th>
                             <th style="width: 20%;">Vencimento</th>
-                            <th style="width: 22%;" class="text-right">Valor</th>
-                            <th style="width: 20%;" class="text-center">Status</th>
+                            <th style="width: 22%;">Valor</th>
+                            <th style="width: 20%;">Status</th>
                             <th style="width: 22%;">Pago em</th>
                         </tr>
                     </thead>
@@ -381,14 +377,14 @@
                                 }
                             @endphp
                             <tr>
-                                <td>
+                                <td style="width: 16%;">
                                     <strong>{{ $parcela['parcela'] }}</strong>
                                     @if (!empty($parcela['forma_pagamento']))
                                         <br><span
                                             style="font-size: 9px; color: #64748b;">{{ $parcela['forma_pagamento'] }}</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td style="width: 20%;">
                                     @if (!empty($parcela['vencimento']))
                                         {{ \Carbon\Carbon::parse($parcela['vencimento'])->format('d/m/Y') }}
                                     @else
@@ -400,7 +396,7 @@
                                             dias atraso</span>
                                     @endif
                                 </td>
-                                <td class="text-right">
+                                <td style="width: 22%;">
                                     @if (($parcela['juros'] ?? 0) > 0)
                                         <span style="text-decoration: line-through; color: #64748b;">
                                             R$ {{ number_format($parcela['valor_parcela'], 2, ',', '.') }}
@@ -416,10 +412,10 @@
                                             {{ number_format($parcela['valor_atualizado'], 2, ',', '.') }}</strong>
                                     @endif
                                 </td>
-                                <td class="text-center">
+                                <td style="width: 20%;">
                                     <span class="status-label {{ $statusClass }}">{{ $statusLabel }}</span>
                                 </td>
-                                <td>
+                                <td style="width: 22%;">
                                     @if (!empty($parcela['pago_em']))
                                         {{ $parcela['pago_em']->format('d/m/Y H:i') }}
                                     @else
