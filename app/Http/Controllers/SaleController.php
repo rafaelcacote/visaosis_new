@@ -9,7 +9,6 @@ use App\Models\Categoria;
 use App\Models\PedidoVenda;
 use App\Models\ItemPedido;
 use App\Models\PedidoVendaParcela;
-use App\Models\PedidoVendaPagamento;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -553,16 +552,6 @@ class SaleController extends Controller
                 $nParcelasPag    = (int) $pagamento['parcelas'];
                 $nomeMetodo      = $paymentMethods[$metodoPagamento] ?? $metodoPagamento;
 
-                // Persistir no novo registro de formas de pagamento
-                PedidoVendaPagamento::create([
-                    'tenant_id'       => $tenantId,
-                    'location_id'     => $locationId,
-                    'pedido_venda_id' => $pedidoVenda->id,
-                    'forma_pagamento' => $nomeMetodo,
-                    'valor'           => $valorPagamento,
-                    'parcelas'        => $metodoPagamento === 'crediario' ? $nParcelasPag : 1,
-                ]);
-
                 if ($metodoPagamento === 'crediario') {
                     $totalCents   = (int) round($valorPagamento * 100);
                     $parcelaCents = (int) floor($totalCents / $nParcelasPag);
@@ -701,15 +690,21 @@ class SaleController extends Controller
         // Forma de pagamento do banco
         $formaPagamento = $pedidoVenda->forma_pagamento ?? 'Não informado';
 
-        // Formas de pagamento detalhadas (novo modelo multi-pagamento)
-        $pagamentosDetalhados = PedidoVendaPagamento::where('pedido_venda_id', $pedidoVenda->id)
+        // Formas de pagamento detalhadas a partir das parcelas
+        $pagamentosDetalhados = PedidoVendaParcela::where('pedido_venda_id', $pedidoVenda->id)
             ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
             ->get()
-            ->map(fn($p) => [
-                'forma_pagamento' => $p->forma_pagamento,
-                'valor'           => (float) $p->valor,
-                'parcelas'        => (int) $p->parcelas,
-            ])
+            ->groupBy(fn($parcela) => strtolower(trim((string) $parcela->forma_pagamento)))
+            ->map(function ($parcelasGrupo) {
+                $primeiraParcela = $parcelasGrupo->first();
+
+                return [
+                    'forma_pagamento' => $primeiraParcela->forma_pagamento ?? 'Não informado',
+                    'valor' => (float) $parcelasGrupo->sum(fn($parcela) => (float) ($parcela->valor ?? 0)),
+                    'parcelas' => (int) $parcelasGrupo->count(),
+                ];
+            })
+            ->values()
             ->toArray();
 
         $today = Carbon::today($tz)->startOfDay();
@@ -908,14 +903,20 @@ class SaleController extends Controller
             'email' => $user ? $user->email : null
         ];
 
-        $pagamentosImpressao = PedidoVendaPagamento::where('pedido_venda_id', $pedidoVenda->id)
+        $pagamentosImpressao = PedidoVendaParcela::where('pedido_venda_id', $pedidoVenda->id)
             ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
             ->get()
-            ->map(fn($p) => [
-                'forma_pagamento' => $p->forma_pagamento,
-                'valor'           => (float) $p->valor,
-                'parcelas'        => (int) $p->parcelas,
-            ])
+            ->groupBy(fn($parcela) => strtolower(trim((string) $parcela->forma_pagamento)))
+            ->map(function ($parcelasGrupo) {
+                $primeiraParcela = $parcelasGrupo->first();
+
+                return [
+                    'forma_pagamento' => $primeiraParcela->forma_pagamento ?? 'Não informado',
+                    'valor' => (float) $parcelasGrupo->sum(fn($parcela) => (float) ($parcela->valor ?? 0)),
+                    'parcelas' => (int) $parcelasGrupo->count(),
+                ];
+            })
+            ->values()
             ->toArray();
 
         $sale = [

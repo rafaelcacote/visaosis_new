@@ -20,14 +20,20 @@ class PedidoVendaParcela extends Model
         'valor',
         'vencimento_em',
         'pago_em',
+        'vencimento_em',
         'status',
         'forma_pagamento',
+        'valor_recebido',
+        'valor_desconto',
+        'observacoes'
     ];
 
     protected $casts = [
         'valor' => 'decimal:2',
         'vencimento_em' => 'date',
         'pago_em' => 'datetime',
+        'valor_recebido' => 'decimal:2',
+        'valor_desconto' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

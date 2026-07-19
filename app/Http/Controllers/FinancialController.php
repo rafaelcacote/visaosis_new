@@ -545,6 +545,53 @@ class FinancialController extends Controller
         ]);
     }
 
+    public function paymentForm(string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        if (! $tenantId) {
+            return redirect()->route('financial.receivables')->with('error', 'Tenant não informado na sessão.');
+        }
+
+        $parcela = $this->findAccessibleParcela((int) $id, $tenantId, $locationIds);
+
+        if (! $parcela) {
+            return redirect()->route('financial.receivables')->with('error', 'Parcela não encontrada.');
+        }
+
+        $tz = 'America/Manaus';
+        $cliente = $parcela->pedido?->cliente;
+        $dataPedido = $parcela->pedido?->data_pedido ? Carbon::parse($parcela->pedido->data_pedido, $tz) : null;
+        $year = $dataPedido ? $dataPedido->format('Y') : now($tz)->format('Y');
+        $vendaId = 'VD-' . $year . '-' . str_pad((int) $parcela->pedido_venda_id, 4, '0', STR_PAD_LEFT);
+        $valorParcela = (float) ($parcela->valor ?? 0);
+        $juros = 0.0;
+
+        $receivable = [
+            'id' => (int) $parcela->id,
+            'cliente' => $cliente?->nome ?? 'Cliente não informado',
+            'cpf' => $cliente?->cpf_formatado ?? $cliente?->cpf ?? '',
+            'venda_id' => $vendaId,
+            'parcela' => (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
+            'valor_parcela' => $valorParcela,
+            'juros' => $juros,
+            'valor_atualizado' => $valorParcela + $juros,
+            'data_pagamento' => old('date', now($tz)->toDateString()),
+            'forma_pagamento' => old('method', ''),
+            'banco' => old('bank', ''),
+            'referencia' => old('reference', ''),
+            'desconto' => old('discount', '0.00'),
+            'valor_recebido' => old('received_value', number_format($valorParcela + $juros, 2, '.', '')),
+            'observacoes' => old('notes', ''),
+            'return_url' => old('return_url', request('return_url', route('financial.receivables'))),
+        ];
+
+        return view('financial.receive-payment', compact('receivable'));
+    }
+
     public function receivableDetails(string $id)
     {
         $tenantId = session('tenant_id');
@@ -2264,22 +2311,17 @@ class FinancialController extends Controller
             'date' => 'Data do pagamento',
         ]);
 
-        $parcela = PedidoVendaParcela::query()
-            ->whereNull('deleted_at')
-            ->where('tenant_id', $tenantId)
-            ->where('id', (int) $validated['receivable_id'])
-            ->when(! empty($locationIds), function ($q) use ($locationIds) {
-                $q->where(function ($q2) use ($locationIds) {
-                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
-                });
-            })
-            ->first();
+        $parcela = $this->findAccessibleParcela((int) $validated['receivable_id'], $tenantId, $locationIds);
 
         if (! $parcela) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Parcela não encontrada.',
-            ], 404);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Parcela não encontrada.',
+                ], 404);
+            }
+
+            return redirect()->route('financial.receivables')->with('error', 'Parcela não encontrada.');
         }
 
         $tz = 'America/Manaus';
@@ -2287,14 +2329,70 @@ class FinancialController extends Controller
         $paidAt = Carbon::createFromFormat('Y-m-d', $validated['date'], $tz)
             ->setTime((int) $agora->format('H'), (int) $agora->format('i'), (int) $agora->format('s'));
 
+        $paymentMethods = [
+            'dinheiro' => 'Dinheiro',
+            'pix' => 'PIX',
+            'cartao_debito' => 'Cartão de Débito',
+            'cartao_credito' => 'Cartão de Crédito',
+            'transferencia' => 'Transferência Bancária',
+            'boleto' => 'Boleto Bancário',
+            'cheque' => 'Cheque',
+        ];
+
+        $formaPagamento = null;
+        if (! empty($validated['method'])) {
+            $formaPagamento = $paymentMethods[$validated['method']] ?? $validated['method'];
+        }
+
+        $observacoes = trim((string) ($validated['notes'] ?? ''));
+        $detalhesExtras = [];
+
+        if (! empty($validated['bank'])) {
+            $detalhesExtras[] = 'Banco: ' . $validated['bank'];
+        }
+
+        if (! empty($validated['reference'])) {
+            $detalhesExtras[] = 'Referência: ' . $validated['reference'];
+        }
+
+        if (! empty($detalhesExtras)) {
+            $observacoes = trim($observacoes . ($observacoes !== '' ? ' | ' : '') . implode(' | ', $detalhesExtras));
+        }
+
         $parcela->pago_em = $paidAt;
         $parcela->status = 'pago';
+        $parcela->forma_pagamento = $formaPagamento;
+        $parcela->valor_recebido = (float) ($validated['received_value'] ?? 0);
+        $parcela->valor_desconto = (float) ($validated['discount'] ?? 0);
+        $parcela->observacoes = $observacoes !== '' ? $observacoes : null;
         $parcela->save();
+
+        if (! $request->expectsJson()) {
+            $returnUrl = $request->input('return_url');
+
+            return redirect()->to($returnUrl ?: route('financial.receivables'))
+                ->with('success', 'Pagamento registrado com sucesso!');
+        }
 
         return response()->json([
             'success' => true,
             'id' => $parcela->id,
             'pago_em' => $parcela->pago_em,
         ]);
+    }
+
+    private function findAccessibleParcela(int $id, $tenantId, array $locationIds): ?PedidoVendaParcela
+    {
+        return PedidoVendaParcela::query()
+            ->with(['pedido.cliente'])
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
     }
 }
