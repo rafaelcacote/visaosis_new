@@ -300,10 +300,10 @@
 
                                                     @if ($receivable['status'] !== 'paga')
                                                         <li>
-                                                            <button type="button" class="dropdown-item"
-                                                                onclick="openPaymentModal({{ $receivable['id'] }}, '{{ $receivable['cliente'] }}', '{{ $receivable['cpf'] ?? '' }}', '{{ $receivable['venda_id'] }}', {{ (float) $receivable['valor_parcela'] }}, {{ (float) $receivable['juros'] }}, {{ (float) $receivable['valor_atualizado'] }})">
+                                                            <a href="{{ route('financial.receivables.payment', ['id' => $receivable['id'], 'return_url' => url()->full()]) }}"
+                                                                class="dropdown-item">
                                                                 <i class="mdi mdi-cash me-2"></i>Dar Baixa
-                                                            </button>
+                                                            </a>
                                                         </li>
                                                         <li>
                                                             <button type="button" class="dropdown-item text-warning"
@@ -347,8 +347,6 @@
             </div>
         </div>
     </div>
-
-    @include('financial.payment-modal')
 
     <div class="modal fade" id="receivableDetailsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">

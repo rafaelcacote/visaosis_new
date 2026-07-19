@@ -138,6 +138,40 @@
             color: #0f172a;
         }
 
+        .status-label {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .status-vencida {
+            background: #fef2f2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        .status-vence-hoje {
+            background: #fffbeb;
+            color: #b45309;
+            border-color: #fde68a;
+        }
+
+        .status-vence-semana {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+
+        .status-paga,
+        .status-em-dia {
+            background: #ecfdf5;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
         .note-box {
             border: 1px solid #dbe3ee;
             background: #fafcff;
@@ -207,10 +241,7 @@
                             @foreach ($sale['pagamentos'] as $pag)
                                 <span class="value">
                                     {{ $pag['forma_pagamento'] }}
-                                    — R$ {{ number_format($pag['valor'], 2, ',', '.') }}
-                                    @if ($pag['parcelas'] > 1)
-                                        ({{ $pag['parcelas'] }}x de R$ {{ number_format($pag['valor'] / $pag['parcelas'], 2, ',', '.') }})
-                                    @endif
+
                                 </span><br>
                             @endforeach
                         @else
@@ -218,16 +249,7 @@
                         @endif
                     </td>
                 </tr>
-                @if (!empty($sale['parcelas']) && $sale['parcelas'] > 1)
-                    <tr>
-                        <td>
-                            <span class="label">Parcelas:</span>
-                            <span class="value">{{ $sale['parcelas'] }}x de R$
-                                {{ number_format($sale['valor_parcela'], 2, ',', '.') }}</span>
-                        </td>
-                        <td></td>
-                    </tr>
-                @endif
+
 
             </table>
         </section>
@@ -311,6 +333,92 @@
                         {{ number_format($sale['total'], 2, ',', '.') }}</strong></p>
             </div>
         </section>
+
+        @if (collect($sale['parcelas_detalhes'] ?? [])->count() > 0)
+            <section class="section">
+                <h3 class="section-title">Parcelas da Venda</h3>
+                <table class="table-data">
+                    <thead>
+                        <tr>
+                            <th style="width: 16%;">Parcela</th>
+                            <th style="width: 20%;">Vencimento</th>
+                            <th style="width: 22%;">Valor</th>
+                            <th style="width: 20%;">Status</th>
+                            <th style="width: 22%;">Pago em</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($sale['parcelas_detalhes'] as $parcela)
+                            @php
+                                $statusLabel = 'Em Dia';
+                                $statusClass = 'status-em-dia';
+
+                                if ($parcela['status'] === 'vencida') {
+                                    $statusLabel = 'Vencida';
+                                    $statusClass = 'status-vencida';
+                                } elseif ($parcela['status'] === 'vence_hoje') {
+                                    $statusLabel = 'Vence Hoje';
+                                    $statusClass = 'status-vence-hoje';
+                                } elseif ($parcela['status'] === 'vence_semana') {
+                                    $statusLabel = 'Vence na Semana';
+                                    $statusClass = 'status-vence-semana';
+                                } elseif ($parcela['status'] === 'paga') {
+                                    $statusLabel = 'Paga';
+                                    $statusClass = 'status-paga';
+                                }
+                            @endphp
+                            <tr>
+                                <td style="width: 16%;">
+                                    <strong>{{ $parcela['parcela'] }}</strong>
+                                    @if (!empty($parcela['forma_pagamento']))
+                                        <br><span
+                                            style="font-size: 9px; color: #64748b;">{{ $parcela['forma_pagamento'] }}</span>
+                                    @endif
+                                </td>
+                                <td style="width: 20%;">
+                                    @if (!empty($parcela['vencimento']))
+                                        {{ \Carbon\Carbon::parse($parcela['vencimento'])->format('d/m/Y') }}
+                                    @else
+                                        <span style="color: #64748b;">Nao informado</span>
+                                    @endif
+
+                                    @if (($parcela['dias_atraso'] ?? 0) > 0)
+                                        <br><span style="font-size: 9px; color: #b91c1c;">{{ $parcela['dias_atraso'] }}
+                                            dias atraso</span>
+                                    @endif
+                                </td>
+                                <td style="width: 22%;">
+                                    @if (($parcela['juros'] ?? 0) > 0)
+                                        <span style="text-decoration: line-through; color: #64748b;">
+                                            R$ {{ number_format($parcela['valor_parcela'], 2, ',', '.') }}
+                                        </span>
+                                        <br>
+                                        <strong style="color: #b91c1c;">R$
+                                            {{ number_format($parcela['valor_atualizado'], 2, ',', '.') }}</strong>
+                                        <br><span style="font-size: 9px; color: #b91c1c;">
+                                            +R$ {{ number_format($parcela['juros'], 2, ',', '.') }} juros
+                                        </span>
+                                    @else
+                                        <strong>R$
+                                            {{ number_format($parcela['valor_atualizado'], 2, ',', '.') }}</strong>
+                                    @endif
+                                </td>
+                                <td style="width: 20%;">
+                                    <span class="status-label {{ $statusClass }}">{{ $statusLabel }}</span>
+                                </td>
+                                <td style="width: 22%;">
+                                    @if (!empty($parcela['pago_em']))
+                                        {{ $parcela['pago_em']->format('d/m/Y H:i') }}
+                                    @else
+                                        <span style="color: #64748b;">Pendente</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </section>
+        @endif
 
         @if (!empty($sale['observacoes']))
             <table class="info-grid">

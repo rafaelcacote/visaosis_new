@@ -76,11 +76,19 @@ class PedidoVenda extends Model
     }
 
     /**
-     * Relacionamento com as formas de pagamento da venda
+     * Relacionamento com as parcelas da venda.
+     */
+    public function parcelas()
+    {
+        return $this->hasMany(PedidoVendaParcela::class, 'pedido_venda_id');
+    }
+
+    /**
+     * Compatibilidade com usos antigos do nome "pagamentos".
      */
     public function pagamentos()
     {
-        return $this->hasMany(PedidoVendaPagamento::class, 'pedido_venda_id');
+        return $this->parcelas();
     }
 
     /**

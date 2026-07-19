@@ -9,7 +9,6 @@ use App\Models\Categoria;
 use App\Models\PedidoVenda;
 use App\Models\ItemPedido;
 use App\Models\PedidoVendaParcela;
-use App\Models\PedidoVendaPagamento;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -352,6 +351,7 @@ class SaleController extends Controller
                 'pagamentos.*.forma_pagamento' => 'required|string|in:dinheiro,cartao_debito,cartao_credito,crediario,pix',
                 'pagamentos.*.valor' => 'required|numeric|gt:0',
                 'pagamentos.*.parcelas' => 'required|integer|min:1|max:12',
+                'pagamentos.*.primeiro_vencimento' => 'nullable|date',
                 'desconto_percentual' => 'nullable|numeric|min:0|max:100',
                 'desconto_valor' => 'nullable|numeric|min:0',
                 'desconto_autorizacao_token' => 'nullable|string|max:100',
@@ -460,6 +460,14 @@ class SaleController extends Controller
             ], 422);
         }
 
+        foreach ($validated['pagamentos'] as $pagamento) {
+            if (($pagamento['forma_pagamento'] ?? null) === 'crediario' && empty($pagamento['primeiro_vencimento'])) {
+                return response()->json([
+                    'message' => 'Informe o primeiro vencimento para pagamentos no crediário.',
+                ], 422);
+            }
+        }
+
         // Criar o pedido de venda e seus itens em uma transação
         try {
             DB::beginTransaction();
@@ -553,22 +561,14 @@ class SaleController extends Controller
                 $nParcelasPag    = (int) $pagamento['parcelas'];
                 $nomeMetodo      = $paymentMethods[$metodoPagamento] ?? $metodoPagamento;
 
-                // Persistir no novo registro de formas de pagamento
-                PedidoVendaPagamento::create([
-                    'tenant_id'       => $tenantId,
-                    'location_id'     => $locationId,
-                    'pedido_venda_id' => $pedidoVenda->id,
-                    'forma_pagamento' => $nomeMetodo,
-                    'valor'           => $valorPagamento,
-                    'parcelas'        => $metodoPagamento === 'crediario' ? $nParcelasPag : 1,
-                ]);
-
                 if ($metodoPagamento === 'crediario') {
                     $totalCents   = (int) round($valorPagamento * 100);
                     $parcelaCents = (int) floor($totalCents / $nParcelasPag);
                     $lastCents    = $totalCents - ($parcelaCents * ($nParcelasPag - 1));
 
-                    $primeiroVencimento = Carbon::today($tz)->addMonthNoOverflow();
+                    $primeiroVencimento = !empty($pagamento['primeiro_vencimento'])
+                        ? Carbon::parse($pagamento['primeiro_vencimento'], $tz)->startOfDay()
+                        : Carbon::today($tz)->addMonthNoOverflow();
                     for ($n = 1; $n <= $nParcelasPag; $n++) {
                         $parcelaNumeroGlobal++;
                         PedidoVendaParcela::create([
@@ -701,15 +701,21 @@ class SaleController extends Controller
         // Forma de pagamento do banco
         $formaPagamento = $pedidoVenda->forma_pagamento ?? 'Não informado';
 
-        // Formas de pagamento detalhadas (novo modelo multi-pagamento)
-        $pagamentosDetalhados = PedidoVendaPagamento::where('pedido_venda_id', $pedidoVenda->id)
+        // Formas de pagamento detalhadas a partir das parcelas
+        $pagamentosDetalhados = PedidoVendaParcela::where('pedido_venda_id', $pedidoVenda->id)
             ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
             ->get()
-            ->map(fn($p) => [
-                'forma_pagamento' => $p->forma_pagamento,
-                'valor'           => (float) $p->valor,
-                'parcelas'        => (int) $p->parcelas,
-            ])
+            ->groupBy(fn($parcela) => strtolower(trim((string) $parcela->forma_pagamento)))
+            ->map(function ($parcelasGrupo) {
+                $primeiraParcela = $parcelasGrupo->first();
+
+                return [
+                    'forma_pagamento' => $primeiraParcela->forma_pagamento ?? 'Não informado',
+                    'valor' => (float) $parcelasGrupo->sum(fn($parcela) => (float) ($parcela->valor ?? 0)),
+                    'parcelas' => (int) $parcelasGrupo->count(),
+                ];
+            })
+            ->values()
             ->toArray();
 
         $today = Carbon::today($tz)->startOfDay();
@@ -908,15 +914,72 @@ class SaleController extends Controller
             'email' => $user ? $user->email : null
         ];
 
-        $pagamentosImpressao = PedidoVendaPagamento::where('pedido_venda_id', $pedidoVenda->id)
+        $pagamentosImpressao = PedidoVendaParcela::where('pedido_venda_id', $pedidoVenda->id)
             ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
             ->get()
-            ->map(fn($p) => [
-                'forma_pagamento' => $p->forma_pagamento,
-                'valor'           => (float) $p->valor,
-                'parcelas'        => (int) $p->parcelas,
-            ])
+            ->groupBy(fn($parcela) => strtolower(trim((string) $parcela->forma_pagamento)))
+            ->map(function ($parcelasGrupo) {
+                $primeiraParcela = $parcelasGrupo->first();
+
+                return [
+                    'forma_pagamento' => $primeiraParcela->forma_pagamento ?? 'Não informado',
+                    'valor' => (float) $parcelasGrupo->sum(fn($parcela) => (float) ($parcela->valor ?? 0)),
+                    'parcelas' => (int) $parcelasGrupo->count(),
+                ];
+            })
+            ->values()
             ->toArray();
+
+        $tz = 'America/Manaus';
+        $today = Carbon::today($tz)->startOfDay();
+        $tomorrow = $today->copy()->addDay();
+        $weekEnd = $today->copy()->addDays(7);
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $parcelasDetalhes = PedidoVendaParcela::query()
+            ->where('pedido_venda_id', $pedidoVenda->id)
+            ->when($tenantId, fn($query) => $query->where('tenant_id', $tenantId))
+            ->orderBy('numero_parcela')
+            ->get()
+            ->map(function ($parcela) use ($today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
+                $venc = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em, $tz)->startOfDay() : null;
+                $isPaid = !empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+
+                $status = 'em_dia';
+                if ($isPaid) {
+                    $status = 'paga';
+                } elseif ($venc && $venc->lt($today)) {
+                    $status = 'vencida';
+                } elseif ($venc && $venc->equalTo($today)) {
+                    $status = 'vence_hoje';
+                } elseif ($venc && $venc->gte($tomorrow) && $venc->lte($weekEnd)) {
+                    $status = 'vence_semana';
+                }
+
+                $diasAtraso = 0;
+                if (!$isPaid && $venc && $venc->lt($today)) {
+                    $diasAtraso = $venc->diffInDays($today);
+                }
+
+                $valor = (float) ($parcela->valor ?? 0);
+                $juros = 0.0;
+
+                return [
+                    'id' => $parcela->id,
+                    'parcela' => (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
+                    'numero_parcela' => (int) $parcela->numero_parcela,
+                    'total_parcelas' => (int) $parcela->total_parcelas,
+                    'valor_parcela' => $valor,
+                    'valor_atualizado' => $valor + $juros,
+                    'juros' => $juros,
+                    'vencimento' => $venc ? $venc->toDateString() : null,
+                    'pago_em' => $parcela->pago_em ? Carbon::parse($parcela->pago_em, $tz) : null,
+                    'status' => $status,
+                    'status_original' => $parcela->status,
+                    'dias_atraso' => $diasAtraso,
+                    'forma_pagamento' => $parcela->forma_pagamento,
+                ];
+            });
 
         $sale = [
             'id' => $pedidoVenda->id,
@@ -931,8 +994,9 @@ class SaleController extends Controller
             'total' => $total,
             'forma_pagamento' => $pedidoVenda->forma_pagamento ?? 'Não informado',
             'pagamentos' => $pagamentosImpressao,
-            'parcelas' => 1,
-            'valor_parcela' => $total,
+            'parcelas' => $parcelasDetalhes->count() > 0 ? $parcelasDetalhes->count() : 1,
+            'valor_parcela' => $parcelasDetalhes->count() > 0 ? (float) $parcelasDetalhes->first()['valor_parcela'] : $total,
+            'parcelas_detalhes' => $parcelasDetalhes,
             'status' => $status,
             'observacoes' => $pedidoVenda->observacoes,
             'created_at' => $pedidoVenda->created_at
