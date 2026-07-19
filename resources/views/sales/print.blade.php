@@ -249,16 +249,7 @@
                         @endif
                     </td>
                 </tr>
-                @if (!empty($sale['parcelas']) && $sale['parcelas'] > 1)
-                    <tr>
-                        <td>
-                            <span class="label">Parcelas:</span>
-                            <span class="value">{{ $sale['parcelas'] }}x de R$
-                                {{ number_format($sale['valor_parcela'], 2, ',', '.') }}</span>
-                        </td>
-                        <td></td>
-                    </tr>
-                @endif
+
 
             </table>
         </section>
