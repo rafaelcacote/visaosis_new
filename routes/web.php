@@ -194,6 +194,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Módulo de Vendas
     Route::post('/sales/authorize-discount', [SaleController::class, 'authorizeDiscount'])->name('sales.authorize-discount');
+    Route::get('/sales/products/search', [SaleController::class, 'searchProducts'])->name('sales.products.search');
     Route::resource('sales', SaleController::class);
     Route::get('/sales/{id}/print', [SaleController::class, 'print'])->name('sales.print');
 

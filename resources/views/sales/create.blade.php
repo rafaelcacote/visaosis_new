@@ -67,89 +67,48 @@
 
             <!-- Catálogo de Produtos -->
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="mdi mdi-view-grid text-primary me-2"></i>
-                        Catálogo de Produtos
-                    </h5>
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="mdi mdi-view-list text-primary me-2"></i>
+                            Catálogo de Produtos
+                        </h5>
+                        <span class="text-muted small" id="products_count_label"></span>
+                    </div>
                     <div class="d-flex gap-2">
-                        <select class="form-select form-select-sm" id="category_filter">
+                        <div class="input-group input-group-sm flex-grow-1" id="product_search_container">
+                            <span class="input-group-text bg-white">
+                                <i class="mdi mdi-magnify"></i>
+                            </span>
+                            <input type="text" class="form-control" id="product_search" autocomplete="off"
+                                placeholder="Buscar por nome ou marca...">
+                            <button type="button" class="btn btn-outline-secondary d-none" id="product_search_clear"
+                                title="Limpar busca">
+                                <i class="mdi mdi-close"></i>
+                            </button>
+                        </div>
+                        <select class="form-select form-select-sm" id="category_filter" style="max-width: 190px;">
                             <option value="">Todas as categorias</option>
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}">{{ $category->descricao }}</option>
                             @endforeach
                         </select>
-                        <input type="text" class="form-control form-control-sm" id="product_search"
-                            placeholder="Buscar produto...">
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="row" id="products_grid">
-                        @forelse ($products as $product)
-                            <div class="col-md-6 col-lg-4 mb-3 product-item"
-                                data-category-id="{{ $product['categoria_id'] }}"
-                                data-name="{{ strtolower($product['nome']) }}">
-                                <div class="card h-100 product-card">
-                                    <div class="card-body text-center">
-                                        <div class="product-image mb-3">
-                                            @if (!empty($product['image_url']))
-                                                <img src="{{ $product['image_url'] }}" alt="{{ $product['nome'] }}"
-                                                    class="img-fluid rounded"
-                                                    style="height: 120px; width: 100%; object-fit: cover;">
-                                            @else
-                                                <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                                                    style="height: 120px;">
-                                                    <i class="mdi mdi-glasses text-muted" style="font-size: 3rem;"></i>
-                                                </div>
-                                            @endif
-                                        </div>
-                                        <h6 class="card-title">{{ $product['nome'] }}</h6>
-                                        <p class="card-text">
-                                            <span class="badge bg-secondary">{{ $product['categoria'] }}</span>
-                                        </p>
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            @if (is_null($product['preco']))
-                                                <h6 class="text-muted mb-0">Preço a definir</h6>
-                                            @else
-                                                <h5 class="text-success mb-0">R$
-                                                    {{ number_format($product['preco'], 2, ',', '.') }}</h5>
-                                            @endif
-                                            <small class="text-muted">
-                                                @if (is_null($product['stock']))
-                                                    Disponível
-                                                @elseif ($product['stock'] === 0)
-                                                    Sem estoque
-                                                @else
-                                                    Estoque: {{ $product['stock'] }}
-                                                @endif
-                                            </small>
-                                        </div>
-                                        <button class="btn btn-primary btn-sm w-100 add-to-cart-btn"
-                                            data-product-id="{{ $product['id'] }}"
-                                            data-product-name="{{ $product['nome'] }}"
-                                            data-product-price="{{ $product['preco'] ?? '' }}"
-                                            data-product-stock="{{ $product['stock'] ?? 'null' }}"
-                                            onclick='addToCart(@json($product['id']), @json($product['nome']), @json($product['preco']), @json($product['stock']))'
-                                            {{ $product['stock'] === 0 ? 'disabled' : '' }} disabled>
-                                            <i class="mdi mdi-cart-plus me-1"></i>
-                                            <span
-                                                class="btn-text">{{ $product['stock'] === 0 ? 'Sem Estoque' : 'Adicionar' }}</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="col-12">
-                                <div class="text-center text-muted py-4">
-                                    <i class="mdi mdi-package-variant" style="font-size: 3rem;"></i>
-                                    <p class="mt-2 mb-0">Nenhum produto disponível no momento.</p>
-                                </div>
-                            </div>
-                        @endforelse
+                <div class="card-body p-0">
+                    <div id="products_list" class="products-list"></div>
+
+                    <div class="text-center text-muted py-5" id="no_products_message" style="display: none;">
+                        <i class="mdi mdi-package-variant-closed" style="font-size: 2.5rem;"></i>
+                        <p class="mt-2 mb-0" id="no_products_text">Nenhum produto encontrado.</p>
                     </div>
-                    <div class="text-center text-muted py-4" id="no_products_message" style="display: none;">
-                        <i class="mdi mdi-package-variant" style="font-size: 3rem;"></i>
-                        <p class="mt-2 mb-0">Nenhum produto encontrado.</p>
+
+                    <div class="text-center py-3 border-top" id="load_more_wrap" style="display: none;">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="load_more_btn"
+                            onclick="loadMoreProducts()">
+                            <i class="mdi mdi-chevron-down me-1"></i>
+                            <span id="load_more_text">Carregar mais produtos</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -501,14 +460,121 @@
 
 @push('styles')
     <style>
-        .product-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            border: 1px solid #e5e7eb;
+        /* Catálogo de produtos — lista compacta */
+        .products-list {
+            max-height: 560px;
+            overflow-y: auto;
         }
 
-        .product-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .product-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-bottom: 1px solid #f1f2f4;
+            transition: background-color 0.15s ease;
+        }
+
+        .product-row:hover {
+            background-color: #f8f9fb;
+        }
+
+        .product-row-disabled {
+            opacity: 0.65;
+        }
+
+        .product-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #f1f2f4;
+        }
+
+        .product-thumb-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 1.25rem;
+        }
+
+        .product-row-info {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .product-row-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1f2937;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-row-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 2px;
+            flex-wrap: wrap;
+        }
+
+        .product-row-meta .badge {
+            font-size: 0.68rem;
+            font-weight: 500;
+        }
+
+        .cart-qty-badge {
+            background-color: #dcfce7;
+            color: #15803d;
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        .product-row-price {
+            flex-shrink: 0;
+            min-width: 92px;
+            line-height: 1.3;
+        }
+
+        .product-row-price small {
+            display: block;
+        }
+
+        .add-to-cart-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        /* Skeleton de carregamento */
+        .product-row-skeleton {
+            pointer-events: none;
+        }
+
+        .skeleton-block,
+        .skeleton-line {
+            background: linear-gradient(90deg, #eef0f3 25%, #f6f7f9 37%, #eef0f3 63%);
+            background-size: 400% 100%;
+            animation: skeleton-shimmer 1.4s ease infinite;
+            border-radius: 6px;
+        }
+
+        .skeleton-line {
+            height: 12px;
+            margin-bottom: 6px;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0 50%; }
         }
 
         .cart-item {
@@ -826,11 +892,239 @@
         const clientSearchInput = document.getElementById('client_search');
         const clientSuggestions = document.getElementById('client_suggestions');
         const clientSearchContainer = document.getElementById('client_search_container');
-        const productSearchInput = document.getElementById('product_search');
-        const categoryFilter = document.getElementById('category_filter');
-        const productsGrid = document.getElementById('products_grid');
-        const noProductsMessage = document.getElementById('no_products_message');
         const CLIENT_SEARCH_URL = "{{ route('pessoas.search') }}";
+
+        // --- Catálogo de produtos (busca/paginação server-side) ---
+        const PRODUCTS_SEARCH_URL = "{{ route('sales.products.search') }}";
+        const productSearchInput = document.getElementById('product_search');
+        const productSearchClearBtn = document.getElementById('product_search_clear');
+        const categoryFilter = document.getElementById('category_filter');
+        const productsListEl = document.getElementById('products_list');
+        const noProductsMessage = document.getElementById('no_products_message');
+        const noProductsText = document.getElementById('no_products_text');
+        const loadMoreWrap = document.getElementById('load_more_wrap');
+        const loadMoreBtn = document.getElementById('load_more_btn');
+        const loadMoreText = document.getElementById('load_more_text');
+        const productsCountLabel = document.getElementById('products_count_label');
+
+        const catalogState = {
+            query: '',
+            categoryId: '',
+            page: 1,
+            hasMore: @json($productsHasMore ?? false),
+            total: @json($productsTotal ?? 0),
+            loading: false,
+        };
+
+        // Mapa id -> dados do produto, alimentado conforme as linhas são renderizadas.
+        // addToCart() e updateAddToCartButtons() consultam esse mapa (nunca dados inline no HTML).
+        const catalogProductsById = {};
+        let productSearchTimeout = null;
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getCartQuantity(productId) {
+            const item = cart.find(cartItem => cartItem.id === productId);
+            return item ? item.quantity : 0;
+        }
+
+        function productRowHtml(product) {
+            catalogProductsById[product.id] = product;
+
+            const outOfStock = product.stock === 0;
+            const inCartQty = getCartQuantity(product.id);
+
+            const priceHtml = product.preco === null || product.preco === undefined
+                ? '<span class="text-muted small">Preço a definir</span>'
+                : `<span class="fw-semibold text-success">R$ ${formatCurrency(product.preco)}</span>`;
+
+            let stockHtml = '<small class="text-muted">Disponível</small>';
+            if (product.stock !== null && product.stock !== undefined) {
+                stockHtml = outOfStock
+                    ? '<small class="text-danger fw-semibold">Sem estoque</small>'
+                    : `<small class="text-muted">Estoque: ${product.stock}</small>`;
+            }
+
+            const imageHtml = product.image_url
+                ? `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.nome)}" class="product-thumb" loading="lazy">`
+                : `<div class="product-thumb product-thumb-placeholder"><i class="mdi mdi-glasses"></i></div>`;
+
+            const cartBadgeVisible = inCartQty > 0 ? '' : 'd-none';
+            const cartBadgeText = inCartQty > 0 ? `<i class="mdi mdi-cart-check me-1"></i>${inCartQty} no carrinho` : '';
+
+            return `
+                <div class="product-row ${outOfStock ? 'product-row-disabled' : ''}" data-product-row="${product.id}">
+                    ${imageHtml}
+                    <div class="product-row-info">
+                        <div class="product-row-name" title="${escapeHtml(product.nome)}">${escapeHtml(product.nome)}</div>
+                        <div class="product-row-meta">
+                            <span class="badge bg-light text-secondary border">${escapeHtml(product.categoria)}</span>
+                            ${product.marca ? `<span class="text-muted small">${escapeHtml(product.marca)}</span>` : ''}
+                            <span class="badge cart-qty-badge ${cartBadgeVisible}" data-cart-badge="${product.id}">${cartBadgeText}</span>
+                        </div>
+                    </div>
+                    <div class="product-row-price text-end">
+                        ${priceHtml}
+                        ${stockHtml}
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm add-to-cart-btn flex-shrink-0"
+                        data-product-id="${product.id}" onclick="addToCart(${product.id})"
+                        ${outOfStock ? 'disabled' : ''} title="Adicionar ao carrinho">
+                        <i class="mdi mdi-cart-plus"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderSkeletonRows(count = 5) {
+            productsListEl.innerHTML = Array.from({ length: count }, () => `
+                <div class="product-row product-row-skeleton">
+                    <div class="product-thumb skeleton-block"></div>
+                    <div class="product-row-info">
+                        <div class="skeleton-line" style="width: 70%;"></div>
+                        <div class="skeleton-line" style="width: 40%; height: 10px;"></div>
+                    </div>
+                    <div class="skeleton-line" style="width: 60px;"></div>
+                </div>
+            `).join('');
+            noProductsMessage.style.display = 'none';
+            loadMoreWrap.style.display = 'none';
+        }
+
+        function updateProductsCountLabel() {
+            if (!catalogState.total) {
+                productsCountLabel.textContent = '';
+                return;
+            }
+            const shown = productsListEl.querySelectorAll('[data-product-row]').length;
+            productsCountLabel.textContent =
+                `Exibindo ${shown} de ${catalogState.total} produto${catalogState.total === 1 ? '' : 's'}`;
+        }
+
+        async function fetchProducts(options = {}) {
+            const reset = options.reset !== false;
+
+            if (catalogState.loading) {
+                return;
+            }
+            catalogState.loading = true;
+
+            if (reset) {
+                catalogState.page = 1;
+                renderSkeletonRows();
+            } else {
+                loadMoreBtn.disabled = true;
+                loadMoreText.textContent = 'Carregando...';
+            }
+
+            try {
+                const params = new URLSearchParams({ page: catalogState.page });
+                if (catalogState.query) {
+                    params.set('q', catalogState.query);
+                }
+                if (catalogState.categoryId) {
+                    params.set('category_id', catalogState.categoryId);
+                }
+
+                const response = await fetch(`${PRODUCTS_SEARCH_URL}?${params.toString()}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Não foi possível buscar os produtos.');
+                }
+
+                const data = await response.json();
+                catalogState.total = data.meta.total;
+                catalogState.hasMore = data.meta.has_more;
+
+                if (reset) {
+                    productsListEl.innerHTML = '';
+                }
+
+                if (data.data.length === 0 && reset) {
+                    noProductsText.textContent = (catalogState.query || catalogState.categoryId)
+                        ? 'Nenhum produto encontrado para os filtros selecionados.'
+                        : 'Nenhum produto disponível no momento.';
+                    noProductsMessage.style.display = 'block';
+                } else {
+                    noProductsMessage.style.display = 'none';
+                    productsListEl.insertAdjacentHTML('beforeend', data.data.map(productRowHtml).join(''));
+                }
+
+                loadMoreWrap.style.display = catalogState.hasMore ? 'block' : 'none';
+                loadMoreBtn.disabled = false;
+                loadMoreText.textContent = 'Carregar mais produtos';
+
+                updateProductsCountLabel();
+                updateAddToCartButtons();
+
+                // Se a página atual ficou vazia (itens sem estoque filtrados) mas ainda há mais,
+                // busca a próxima página automaticamente para não parecer que travou.
+                if (data.data.length === 0 && catalogState.hasMore) {
+                    catalogState.page += 1;
+                    catalogState.loading = false;
+                    await fetchProducts({ reset: false });
+                    return;
+                }
+            } catch (error) {
+                console.error(error);
+                if (reset) {
+                    productsListEl.innerHTML = '';
+                    noProductsText.textContent = 'Erro ao carregar produtos. Tente novamente.';
+                    noProductsMessage.style.display = 'block';
+                }
+            } finally {
+                catalogState.loading = false;
+            }
+        }
+
+        function loadMoreProducts() {
+            if (!catalogState.hasMore || catalogState.loading) {
+                return;
+            }
+            catalogState.page += 1;
+            fetchProducts({ reset: false });
+        }
+
+        function handleProductSearchInput(value) {
+            catalogState.query = value.trim();
+            productSearchClearBtn.classList.toggle('d-none', !value);
+            clearTimeout(productSearchTimeout);
+            productSearchTimeout = setTimeout(() => fetchProducts({ reset: true }), 350);
+        }
+
+        function clearProductSearch() {
+            productSearchInput.value = '';
+            handleProductSearchInput('');
+            productSearchInput.focus();
+        }
+
+        function handleCategoryFilterChange() {
+            catalogState.categoryId = categoryFilter.value;
+            fetchProducts({ reset: true });
+        }
+
+        function syncCatalogCartBadges() {
+            document.querySelectorAll('[data-cart-badge]').forEach(badge => {
+                const id = Number(badge.dataset.cartBadge);
+                const qty = getCartQuantity(id);
+                if (qty > 0) {
+                    badge.classList.remove('d-none');
+                    badge.innerHTML = `<i class="mdi mdi-cart-check me-1"></i>${qty} no carrinho`;
+                } else {
+                    badge.classList.add('d-none');
+                    badge.innerHTML = '';
+                }
+            });
+        }
 
         function handleClientInput(value) {
             const term = value.trim();
@@ -997,13 +1291,22 @@
             return cart.length > 0 && cart.every(item => isValidCartItemPrice(item.price));
         }
 
-        function addToCart(id, name, price, stock) {
+        function addToCart(id) {
             // Verificar se há cliente selecionado
             if (!selectedClient) {
                 showValidationModal('Selecione um cliente antes de adicionar produtos ao carrinho!');
                 document.getElementById('client_search').focus();
                 return;
             }
+
+            const product = catalogProductsById[id];
+            if (!product) {
+                return;
+            }
+
+            const name = product.nome;
+            const stock = product.stock;
+            const price = product.preco;
 
             const stockLimit = Number.isFinite(stock) ? stock : null;
             const catalogPrice = price !== null && price !== undefined ? parsePrice(price) : null;
@@ -1154,6 +1457,8 @@
                 }).join('');
                 cartSummary.style.display = 'block';
             }
+
+            syncCatalogCartBadges();
         }
 
         function getCartSubtotal() {
@@ -1739,15 +2044,13 @@
             const hasClient = selectedClient !== null;
 
             addToCartButtons.forEach(btn => {
-                const stock = btn.dataset.productStock;
-                const isOutOfStock = stock === '0' || stock === 0;
+                const product = catalogProductsById[Number(btn.dataset.productId)];
+                const isOutOfStock = product && product.stock === 0;
 
                 // Desabilitar se não há cliente ou se está sem estoque
                 if (!hasClient || isOutOfStock) {
                     btn.disabled = true;
-                    if (!hasClient) {
-                        btn.title = 'Selecione um cliente primeiro';
-                    }
+                    btn.title = !hasClient ? 'Selecione um cliente primeiro' : 'Sem estoque';
                 } else {
                     btn.disabled = false;
                     btn.title = 'Adicionar ao carrinho';
@@ -2055,39 +2358,6 @@
             }
         }
 
-        function applyProductFilters() {
-            const searchTerm = productSearchInput.value.toLowerCase().trim();
-            const categoryId = categoryFilter.value;
-            const products = productsGrid.querySelectorAll('.product-item');
-
-            if (!products.length) {
-                if (noProductsMessage) {
-                    noProductsMessage.style.display = 'none';
-                }
-                return;
-            }
-
-            let visibleCount = 0;
-
-            products.forEach(product => {
-                const name = product.dataset.name;
-                const productCategoryId = product.dataset.categoryId;
-                const matchesSearch = !searchTerm || name.includes(searchTerm);
-                const matchesCategory = !categoryId || productCategoryId === categoryId;
-                const shouldShow = matchesSearch && matchesCategory;
-
-                product.style.display = shouldShow ? 'block' : 'none';
-
-                if (shouldShow) {
-                    visibleCount++;
-                }
-            });
-
-            if (noProductsMessage) {
-                noProductsMessage.style.display = visibleCount === 0 ? 'block' : 'none';
-            }
-        }
-
         // Confirmação ao sair da tela com venda em andamento
         window.addEventListener('beforeunload', event => {
             if (!shouldConfirmLeave()) {
@@ -2228,9 +2498,20 @@
             }
         });
 
-        productSearchInput.addEventListener('input', applyProductFilters);
-        categoryFilter.addEventListener('change', applyProductFilters);
-        applyProductFilters();
+        productSearchInput.addEventListener('input', event => handleProductSearchInput(event.target.value));
+        productSearchClearBtn.addEventListener('click', clearProductSearch);
+        categoryFilter.addEventListener('change', handleCategoryFilterChange);
+
+        // Hidrata a lista com a primeira página já renderizada pelo servidor (sem flash de loading).
+        const initialProducts = @json($initialProducts ?? []);
+        if (initialProducts.length > 0) {
+            productsListEl.innerHTML = initialProducts.map(productRowHtml).join('');
+            loadMoreWrap.style.display = catalogState.hasMore ? 'block' : 'none';
+            updateProductsCountLabel();
+        } else {
+            noProductsText.textContent = 'Nenhum produto disponível no momento.';
+            noProductsMessage.style.display = 'block';
+        }
 
         // Inicializar estado dos botões ao carregar a página
         updateAddToCartButtons();
