@@ -32,9 +32,9 @@
 
         <div class="row">
             <!-- Informações da Venda -->
-            <div class="col-lg-8">
+            <div class="col-lg-12">
                 <!-- Cabeçalho da Venda -->
-                <div class="card mb-4">
+                <div class="col-lg-12">
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">
@@ -85,41 +85,31 @@
                                 </small>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">
-                                    <i class="mdi mdi-credit-card me-1"></i>
-                                    Forma de Pagamento
-                                </label>
-                                @if (!empty($sale['pagamentos']))
-                                    @foreach ($sale['pagamentos'] as $pag)
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span class="fw-medium">{{ $pag['forma_pagamento'] }}</span>
-                                            <span class="text-success fw-semibold">
-                                                R$ {{ number_format($pag['valor'], 2, ',', '.') }}
-                                            </span>
-                                        </div>
-                                        @if ($pag['parcelas'] > 1)
-                                            <small class="text-muted d-block mb-1">
-                                                {{ $pag['parcelas'] }}x de
-                                                R$ {{ number_format($pag['valor'] / $pag['parcelas'], 2, ',', '.') }}
-                                            </small>
-                                        @endif
-                                    @endforeach
-                                @else
-                                    <div class="fw-medium">{{ $sale['forma_pagamento'] }}</div>
-                                    @if ($sale['parcelas'] > 1)
-                                        <small class="text-muted">
-                                            {{ $sale['parcelas'] }}x de R$
-                                            {{ number_format($sale['valor_parcela'], 2, ',', '.') }}
-                                        </small>
-                                    @endif
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Subtotal:</span>
+                                    <span class="fw-medium">R$ {{ number_format($sale['subtotal'], 2, ',', '.') }}</span>
+                                </div>
+                                @if ($sale['desconto'] > 0)
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted">Desconto:</span>
+                                        <span class="text-danger fw-medium">
+                                            - R$ {{ number_format($sale['desconto'], 2, ',', '.') }}
+                                        </span>
+                                    </div>
                                 @endif
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <strong class="fs-5">Total:</strong>
+                                    <strong class="fs-4 text-success">
+                                        R$ {{ number_format($sale['total'], 2, ',', '.') }}
+                                    </strong>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <!-- Informações do Cliente -->
-                <div class="card mb-4">
+                <div class="col-lg-12">
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             <i class="mdi mdi-account-circle text-primary me-2"></i>
@@ -344,77 +334,36 @@
                         </div>
                     </div>
                 @endif
-            </div>
+                <div class="col-lg-12">
 
-            <!-- Resumo Financeiro -->
-            <div class="col-lg-4">
-                <div class="card sticky-top" style="top: 20px;">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="mdi mdi-calculator text-success me-2"></i>
-                            Resumo Financeiro
-                        </h5>
-                    </div>
-                    <div class="card-body">
+                    @if ($sale['observacoes'])
                         <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">Subtotal:</span>
-                                <span class="fw-medium">R$ {{ number_format($sale['subtotal'], 2, ',', '.') }}</span>
-                            </div>
-                            @if ($sale['desconto'] > 0)
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Desconto:</span>
-                                    <span class="text-danger fw-medium">
-                                        - R$ {{ number_format($sale['desconto'], 2, ',', '.') }}
-                                    </span>
-                                </div>
-                            @endif
-                            <hr>
+                            <h6 class="text-muted mb-2">
+                                <i class="mdi mdi-note-text me-1"></i>
+                                Observações
+                            </h6>
+                            <p class="mb-0 text-muted small">{{ $sale['observacoes'] }}</p>
+                        </div>
+                    @endif
+
+                    <hr>
+
+                    <div class="small text-muted">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Venda criada em:</span>
+                            <span>{{ $sale['created_at']->format('d/m/Y H:i') }}</span>
+                        </div>
+                        @if ($sale['updated_at'] && $sale['updated_at'] != $sale['created_at'])
                             <div class="d-flex justify-content-between">
-                                <strong class="fs-5">Total:</strong>
-                                <strong class="fs-4 text-success">
-                                    R$ {{ number_format($sale['total'], 2, ',', '.') }}
-                                </strong>
-                            </div>
-                        </div>
-
-                        @if ($sale['parcelas'] > 1)
-                            <div class="alert alert-info mb-3">
-                                <small>
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    <strong>Parcelado em {{ $sale['parcelas'] }}x</strong><br>
-                                    Valor da parcela: R$ {{ number_format($sale['valor_parcela'], 2, ',', '.') }}
-                                </small>
+                                <span>Última atualização:</span>
+                                <span>{{ $sale['updated_at']->format('d/m/Y H:i') }}</span>
                             </div>
                         @endif
-
-                        @if ($sale['observacoes'])
-                            <div class="mb-3">
-                                <h6 class="text-muted mb-2">
-                                    <i class="mdi mdi-note-text me-1"></i>
-                                    Observações
-                                </h6>
-                                <p class="mb-0 text-muted small">{{ $sale['observacoes'] }}</p>
-                            </div>
-                        @endif
-
-                        <hr>
-
-                        <div class="small text-muted">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Venda criada em:</span>
-                                <span>{{ $sale['created_at']->format('d/m/Y H:i') }}</span>
-                            </div>
-                            @if ($sale['updated_at'] && $sale['updated_at'] != $sale['created_at'])
-                                <div class="d-flex justify-content-between">
-                                    <span>Última atualização:</span>
-                                    <span>{{ $sale['updated_at']->format('d/m/Y H:i') }}</span>
-                                </div>
-                            @endif
-                        </div>
                     </div>
                 </div>
             </div>
+
+
         </div>
     </div>
 @endsection

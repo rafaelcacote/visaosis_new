@@ -25,6 +25,11 @@ class SaleController extends Controller
      */
     public function index(Request $request)
     {
+        $perPage = (int) $request->get('per_page', 10);
+        if (!in_array($perPage, [10, 25, 50, 100], true)) {
+            $perPage = 10;
+        }
+
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
@@ -39,8 +44,9 @@ class SaleController extends Controller
             $locationIds = [$locationId];
         }
 
-        $query = PedidoVenda::with(['cliente', 'itens'])
+        $query = PedidoVenda::with(['cliente', 'itens', 'parcelas'])
             ->where('ativo', true);
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
 
         if ($tenantId) {
             $query->where('tenant_id', $tenantId);
@@ -66,7 +72,34 @@ class SaleController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->get('status'));
+            $statusPagamento = $request->get('status');
+
+            if ($statusPagamento === 'pendente') {
+                $query->whereDoesntHave('parcelas', function ($q) use ($paidStatuses) {
+                    $q->whereNotNull('pago_em')
+                        ->orWhereIn(DB::raw('lower(status)'), $paidStatuses);
+                });
+            } elseif ($statusPagamento === 'pagamento_parcial') {
+                $query->whereHas('parcelas', function ($q) use ($paidStatuses) {
+                    $q->whereNotNull('pago_em')
+                        ->orWhereIn(DB::raw('lower(status)'), $paidStatuses);
+                })->whereHas('parcelas', function ($q) use ($paidStatuses) {
+                    $q->whereNull('pago_em')
+                        ->where(function ($subQ) use ($paidStatuses) {
+                            $subQ->whereNull('status')
+                                ->orWhereNotIn(DB::raw('lower(status)'), $paidStatuses);
+                        });
+                });
+            } elseif ($statusPagamento === 'quitada') {
+                $query->whereHas('parcelas')
+                    ->whereDoesntHave('parcelas', function ($q) use ($paidStatuses) {
+                        $q->whereNull('pago_em')
+                            ->where(function ($subQ) use ($paidStatuses) {
+                                $subQ->whereNull('status')
+                                    ->orWhereNotIn(DB::raw('lower(status)'), $paidStatuses);
+                            });
+                    });
+            }
         }
 
         if ($request->filled('pagamento')) {
@@ -89,13 +122,26 @@ class SaleController extends Controller
             }
         }
 
-        $pedidos = $query->get();
+        $pedidosStats = (clone $query)->get();
+        $pedidos = $query->paginate($perPage)->appends($request->query());
 
         // Formatar dados para a view
-        $sales = $pedidos->map(function ($pedido) {
+        $sales = $pedidos->through(function ($pedido) use ($paidStatuses) {
             $clienteNome = $pedido->cliente ? $pedido->cliente->nome : 'Cliente não informado';
             $quantidadeItens = $pedido->itens->sum('quantidade');
             $quantidadeProdutos = $pedido->itens->count();
+            $totalParcelas = $pedido->parcelas->count();
+            $parcelasPagas = $pedido->parcelas->filter(function ($parcela) use ($paidStatuses) {
+                return !empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+            })->count();
+
+            if ($totalParcelas > 0 && $parcelasPagas === $totalParcelas) {
+                $statusPagamento = 'quitada';
+            } elseif ($parcelasPagas > 0) {
+                $statusPagamento = 'pagamento_parcial';
+            } else {
+                $statusPagamento = 'pendente';
+            }
 
             // Gerar número da venda baseado no ID
             $numero = 'VD-' . date('Y', strtotime($pedido->data_pedido)) . '-' . str_pad($pedido->id, 4, '0', STR_PAD_LEFT);
@@ -119,6 +165,7 @@ class SaleController extends Controller
                 'data' => $pedido->data_pedido->format('Y-m-d'),
                 'total' => (float) $pedido->valor_total,
                 'status' => $status,
+                'status_pagamento' => $statusPagamento,
                 'forma_pagamento' => $formaPagamento,
                 'parcelas' => $parcelas,
                 'produtos' => $quantidadeProdutos,
@@ -127,15 +174,15 @@ class SaleController extends Controller
         });
 
         // Calcular estatísticas
-        $vendasHoje = $pedidos->filter(function ($pedido) {
+        $vendasHoje = $pedidosStats->filter(function ($pedido) {
             return $pedido->data_pedido->format('Y-m-d') === today()->format('Y-m-d');
         })->sum('valor_total');
 
-        $totalVendas = $pedidos->count();
-        $ticketMedio = $totalVendas > 0 ? $pedidos->sum('valor_total') / $totalVendas : 0;
-        $pendentes = $pedidos->where('status', 'aberto')->count();
+        $totalVendas = $pedidosStats->count();
+        $ticketMedio = $totalVendas > 0 ? $pedidosStats->sum('valor_total') / $totalVendas : 0;
+        $pendentes = $pedidosStats->where('status', 'aberto')->count();
 
-        return view('sales.index', compact('sales', 'vendasHoje', 'totalVendas', 'ticketMedio', 'pendentes'));
+        return view('sales.index', compact('sales', 'vendasHoje', 'totalVendas', 'ticketMedio', 'pendentes', 'perPage'));
     }
 
     /**
