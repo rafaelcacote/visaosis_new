@@ -1252,6 +1252,12 @@
                 return Number.isFinite(n) ? n : null;
             };
 
+            const parseSphereNumber = (value) => {
+                const s = String(value ?? '').trim().toUpperCase();
+                if (s === 'PL') return 0;
+                return parseRxNumber(value);
+            };
+
             const formatRxNumber = (n) => {
                 if (!Number.isFinite(n)) return '';
                 const fixed = n.toFixed(2);
@@ -1293,8 +1299,8 @@
                 const oeAddRaw = parseRxNumber($('oe_adicao')?.value);
                 const oeAdd = oeAddRaw != null ? oeAddRaw : odAdd;
 
-                const odEsf = parseRxNumber($('od_esferico')?.value);
-                const oeEsf = parseRxNumber($('oe_esferico')?.value);
+                const odEsf = parseSphereNumber($('od_esferico')?.value);
+                const oeEsf = parseSphereNumber($('oe_esferico')?.value);
 
                 if (odAdd != null && odEsf != null) {
                     setIfNotManual('od_esferico_perto', formatRxNumber(odEsf + odAdd));

@@ -560,6 +560,12 @@
                 return Number.isFinite(n) ? n : null;
             };
 
+            const parseSphereNumber = (value) => {
+                const s = String(value ?? '').trim().toUpperCase();
+                if (s === 'PL') return 0;
+                return parseRxNumber(value);
+            };
+
             const formatRxNumber = (n) => {
                 if (!Number.isFinite(n)) return '';
                 const fixed = n.toFixed(2);
@@ -600,8 +606,8 @@
                 const oeAddRaw = parseRxNumber(getField('oe_adicao')?.value);
                 const oeAdd = oeAddRaw != null ? oeAddRaw : odAdd;
 
-                const odEsf = parseRxNumber(getField('od_esferico')?.value);
-                const oeEsf = parseRxNumber(getField('oe_esferico')?.value);
+                const odEsf = parseSphereNumber(getField('od_esferico')?.value);
+                const oeEsf = parseSphereNumber(getField('oe_esferico')?.value);
 
                 if (odAdd != null && odEsf != null) {
                     setIfNotManual('od_esferico_perto', formatRxNumber(odEsf + odAdd));
