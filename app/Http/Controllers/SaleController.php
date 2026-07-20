@@ -354,6 +354,7 @@ class SaleController extends Controller
     {
         $page = max(1, $page);
         $perPage = self::PRODUCTS_PAGE_SIZE;
+        $like = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
 
         $baseQuery = $this->saleableProductsQuery();
 
@@ -362,9 +363,9 @@ class SaleController extends Controller
         }
 
         if ($search) {
-            $baseQuery->where(function ($q) use ($search) {
-                $q->where('nome', 'ILIKE', "%{$search}%")
-                    ->orWhere('marca', 'ILIKE', "%{$search}%");
+            $baseQuery->where(function ($q) use ($search, $like) {
+                $q->where('nome', $like, "%{$search}%")
+                    ->orWhere('marca', $like, "%{$search}%");
             });
         }
 
@@ -377,8 +378,8 @@ class SaleController extends Controller
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
             ->get()
-            ->map(fn (Produto $product) => $this->mapProductForCatalog($product))
-            ->filter(fn (array $product) => $product['stock'] === null || $product['stock'] > 0)
+            ->map(fn(Produto $product) => $this->mapProductForCatalog($product))
+            ->filter(fn(array $product) => $product['stock'] === null || $product['stock'] > 0)
             ->values();
 
         return [
