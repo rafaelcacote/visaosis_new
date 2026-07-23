@@ -1,4 +1,4 @@
-<tr>
+<tr onclick="window.location='{{ route('pessoas.show', $pessoa->id) }}'" style="cursor: pointer;">
     <td>
         <div class="d-flex align-items-center">
             <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3"
@@ -49,7 +49,8 @@
     </td>
     <td>
         <div class="actions">
-            <a href="{{ route('pessoas.show', $pessoa->id) }}" class="btn-action btn-action-view" title="Visualizar">
+            <a href="{{ route('pessoas.show', $pessoa->id) }}" class="btn-action btn-action-view" title="Visualizar"
+                onclick="event.stopPropagation();">
                 <i class="mdi mdi-eye"></i>
             </a>
         </div>

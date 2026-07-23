@@ -25,6 +25,11 @@ class SaleController extends Controller
      */
     public function index(Request $request)
     {
+        $perPage = (int) $request->get('per_page', 10);
+        if (!in_array($perPage, [10, 25, 50, 100], true)) {
+            $perPage = 10;
+        }
+
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
@@ -39,8 +44,9 @@ class SaleController extends Controller
             $locationIds = [$locationId];
         }
 
-        $query = PedidoVenda::with(['cliente', 'itens'])
+        $query = PedidoVenda::with(['cliente', 'itens', 'parcelas'])
             ->where('ativo', true);
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
 
         if ($tenantId) {
             $query->where('tenant_id', $tenantId);
@@ -66,7 +72,34 @@ class SaleController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->get('status'));
+            $statusPagamento = $request->get('status');
+
+            if ($statusPagamento === 'pendente') {
+                $query->whereDoesntHave('parcelas', function ($q) use ($paidStatuses) {
+                    $q->whereNotNull('pago_em')
+                        ->orWhereIn(DB::raw('lower(status)'), $paidStatuses);
+                });
+            } elseif ($statusPagamento === 'pagamento_parcial') {
+                $query->whereHas('parcelas', function ($q) use ($paidStatuses) {
+                    $q->whereNotNull('pago_em')
+                        ->orWhereIn(DB::raw('lower(status)'), $paidStatuses);
+                })->whereHas('parcelas', function ($q) use ($paidStatuses) {
+                    $q->whereNull('pago_em')
+                        ->where(function ($subQ) use ($paidStatuses) {
+                            $subQ->whereNull('status')
+                                ->orWhereNotIn(DB::raw('lower(status)'), $paidStatuses);
+                        });
+                });
+            } elseif ($statusPagamento === 'quitada') {
+                $query->whereHas('parcelas')
+                    ->whereDoesntHave('parcelas', function ($q) use ($paidStatuses) {
+                        $q->whereNull('pago_em')
+                            ->where(function ($subQ) use ($paidStatuses) {
+                                $subQ->whereNull('status')
+                                    ->orWhereNotIn(DB::raw('lower(status)'), $paidStatuses);
+                            });
+                    });
+            }
         }
 
         if ($request->filled('pagamento')) {
@@ -89,13 +122,26 @@ class SaleController extends Controller
             }
         }
 
-        $pedidos = $query->get();
+        $pedidosStats = (clone $query)->get();
+        $pedidos = $query->paginate($perPage)->appends($request->query());
 
         // Formatar dados para a view
-        $sales = $pedidos->map(function ($pedido) {
+        $sales = $pedidos->through(function ($pedido) use ($paidStatuses) {
             $clienteNome = $pedido->cliente ? $pedido->cliente->nome : 'Cliente não informado';
             $quantidadeItens = $pedido->itens->sum('quantidade');
             $quantidadeProdutos = $pedido->itens->count();
+            $totalParcelas = $pedido->parcelas->count();
+            $parcelasPagas = $pedido->parcelas->filter(function ($parcela) use ($paidStatuses) {
+                return !empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+            })->count();
+
+            if ($totalParcelas > 0 && $parcelasPagas === $totalParcelas) {
+                $statusPagamento = 'quitada';
+            } elseif ($parcelasPagas > 0) {
+                $statusPagamento = 'pagamento_parcial';
+            } else {
+                $statusPagamento = 'pendente';
+            }
 
             // Gerar número da venda baseado no ID
             $numero = 'VD-' . date('Y', strtotime($pedido->data_pedido)) . '-' . str_pad($pedido->id, 4, '0', STR_PAD_LEFT);
@@ -119,6 +165,7 @@ class SaleController extends Controller
                 'data' => $pedido->data_pedido->format('Y-m-d'),
                 'total' => (float) $pedido->valor_total,
                 'status' => $status,
+                'status_pagamento' => $statusPagamento,
                 'forma_pagamento' => $formaPagamento,
                 'parcelas' => $parcelas,
                 'produtos' => $quantidadeProdutos,
@@ -127,35 +174,52 @@ class SaleController extends Controller
         });
 
         // Calcular estatísticas
-        $vendasHoje = $pedidos->filter(function ($pedido) {
+        $vendasHoje = $pedidosStats->filter(function ($pedido) {
             return $pedido->data_pedido->format('Y-m-d') === today()->format('Y-m-d');
         })->sum('valor_total');
 
-        $totalVendas = $pedidos->count();
-        $ticketMedio = $totalVendas > 0 ? $pedidos->sum('valor_total') / $totalVendas : 0;
-        $pendentes = $pedidos->where('status', 'aberto')->count();
+        $totalVendas = $pedidosStats->count();
+        $ticketMedio = $totalVendas > 0 ? $pedidosStats->sum('valor_total') / $totalVendas : 0;
+        $pendentes = $pedidosStats->where('status', 'aberto')->count();
 
-        return view('sales.index', compact('sales', 'vendasHoje', 'totalVendas', 'ticketMedio', 'pendentes'));
+        return view('sales.index', compact('sales', 'vendasHoje', 'totalVendas', 'ticketMedio', 'pendentes', 'perPage'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Quantidade de produtos retornados por página no catálogo da tela de venda.
      */
-    public function create(Request $request)
+    private const PRODUCTS_PAGE_SIZE = 20;
+
+    /**
+     * Ids das localizações que o usuário logado pode visualizar, considerando tenant/location da sessão.
+     */
+    private function currentLocationIds(): array
     {
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
 
-        $locationIds = [];
         if ($tenantId) {
-            $locationIds = collect($userLocations)
+            return collect($userLocations)
                 ->where('tenant_id', $tenantId)
                 ->pluck('location_id')
                 ->toArray();
-        } elseif ($locationId) {
-            $locationIds = [$locationId];
         }
+
+        if ($locationId) {
+            return [$locationId];
+        }
+
+        return [];
+    }
+
+    /**
+     * Query base de produtos ativos disponíveis para venda, já filtrada por tenant/location.
+     */
+    private function saleableProductsQuery()
+    {
+        $tenantId = session('tenant_id');
+        $locationIds = $this->currentLocationIds();
 
         $query = Produto::with([
             'categoria',
@@ -179,53 +243,57 @@ class SaleController extends Controller
             });
         }
 
-        $products = $query->orderBy('nome')
-            ->get()
-            ->map(function (Produto $product) {
-                $stockFromAttributes = null;
+        return $query;
+    }
 
-                if (is_array($product->atributos) && array_key_exists('estoque', $product->atributos)) {
-                    $stockFromAttributes = (int) $product->atributos['estoque'];
-                } else {
-                    $stockColumn = $product->getAttribute('estoque');
-                    if (!is_null($stockColumn)) {
-                        $stockFromAttributes = (int) $stockColumn;
-                    }
-                }
+    /**
+     * Converte um Produto no array usado pelo catálogo/carrinho da tela de venda.
+     */
+    private function mapProductForCatalog(Produto $product): array
+    {
+        $stockFromAttributes = null;
 
-                $primaryImage = $product->images->first();
-                $imageUrl = null;
+        if (is_array($product->atributos) && array_key_exists('estoque', $product->atributos)) {
+            $stockFromAttributes = (int) $product->atributos['estoque'];
+        } else {
+            $stockColumn = $product->getAttribute('estoque');
+            if (!is_null($stockColumn)) {
+                $stockFromAttributes = (int) $stockColumn;
+            }
+        }
 
-                if ($primaryImage && $primaryImage->caminho_arquivo) {
-                    $storagePath = ltrim($primaryImage->caminho_arquivo, '/');
+        $primaryImage = $product->images->first();
+        $imageUrl = null;
 
-                    if (Storage::disk('public')->exists($storagePath)) {
-                        $imageUrl = asset('storage/' . $storagePath);
-                    }
-                }
+        if ($primaryImage && $primaryImage->caminho_arquivo) {
+            $storagePath = ltrim($primaryImage->caminho_arquivo, '/');
 
-                return [
-                    'id' => $product->id,
-                    'nome' => $product->nome,
-                    'categoria' => optional($product->categoria)->descricao ?? 'Sem categoria',
-                    'categoria_id' => $product->categoria_id,
-                    'preco' => $product->preco_venda !== null ? (float) $product->preco_venda : null,
-                    'stock' => $stockFromAttributes,
-                    'image_url' => $imageUrl,
-                ];
-            })
-            ->filter(function (array $product) {
-                if ($product['stock'] === null) {
-                    return true;
-                }
+            if (Storage::disk('public')->exists($storagePath)) {
+                $imageUrl = asset('storage/' . $storagePath);
+            }
+        }
 
-                return $product['stock'] > 0;
-            })
-            ->values()
-            ->toArray();
+        return [
+            'id' => $product->id,
+            'nome' => $product->nome,
+            'marca' => $product->marca,
+            'categoria' => optional($product->categoria)->descricao ?? 'Sem categoria',
+            'categoria_id' => $product->categoria_id,
+            'preco' => $product->preco_venda !== null ? (float) $product->preco_venda : null,
+            'stock' => $stockFromAttributes,
+            'image_url' => $imageUrl,
+        ];
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create(Request $request)
+    {
+        $firstPage = $this->searchProductsData();
 
         $categoriesQuery = Categoria::where('ativo', true);
-        if ($tenantId) {
+        if ($tenantId = session('tenant_id')) {
             $categoriesQuery->where('tenant_id', $tenantId);
         }
         $categories = $categoriesQuery->orderBy('descricao')
@@ -237,6 +305,9 @@ class SaleController extends Controller
         $clienteId = (int) $request->query('cliente_id');
 
         if ($clienteId > 0) {
+            $locationIds = $this->currentLocationIds();
+            $locationId = session('location_id');
+
             $clientQuery = Pessoa::query()
                 ->where('id', $clienteId)
                 ->where('ativo', true);
@@ -265,7 +336,75 @@ class SaleController extends Controller
             }
         }
 
-        return view('sales.create', compact('products', 'categories', 'canApplyDiscountWithoutAuth', 'preselectedClient'));
+        return view('sales.create', [
+            'initialProducts' => $firstPage['data'],
+            'productsTotal' => $firstPage['meta']['total'],
+            'productsHasMore' => $firstPage['meta']['has_more'],
+            'categories' => $categories,
+            'canApplyDiscountWithoutAuth' => $canApplyDiscountWithoutAuth,
+            'preselectedClient' => $preselectedClient,
+        ]);
+    }
+
+    /**
+     * Monta o payload paginado de produtos (usado tanto no carregamento inicial da tela
+     * quanto no endpoint de busca AJAX), filtrando por estoque, termo de busca e categoria.
+     */
+    private function searchProductsData(?string $search = null, ?int $categoryId = null, int $page = 1): array
+    {
+        $page = max(1, $page);
+        $perPage = self::PRODUCTS_PAGE_SIZE;
+        $like = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+
+        $baseQuery = $this->saleableProductsQuery();
+
+        if ($categoryId) {
+            $baseQuery->where('categoria_id', $categoryId);
+        }
+
+        if ($search) {
+            $baseQuery->where(function ($q) use ($search, $like) {
+                $q->where('nome', $like, "%{$search}%")
+                    ->orWhere('marca', $like, "%{$search}%");
+            });
+        }
+
+        // Paginação é feita no banco (não carregamos o catálogo inteiro em memória).
+        // O estoque mora em uma coluna dinâmica (JSON `atributos`), então o filtro de
+        // "sem estoque" só é possível em memória, dentro do lote já paginado.
+        $total = (clone $baseQuery)->count();
+
+        $items = (clone $baseQuery)->orderBy('nome')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get()
+            ->map(fn(Produto $product) => $this->mapProductForCatalog($product))
+            ->filter(fn(array $product) => $product['stock'] === null || $product['stock'] > 0)
+            ->values();
+
+        return [
+            'data' => $items->toArray(),
+            'meta' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'has_more' => ($page * $perPage) < $total,
+            ],
+        ];
+    }
+
+    /**
+     * Endpoint AJAX de busca/paginação de produtos para o catálogo da tela de venda.
+     */
+    public function searchProducts(Request $request)
+    {
+        $search = trim((string) $request->get('q', ''));
+        $categoryId = $request->filled('category_id') ? (int) $request->get('category_id') : null;
+        $page = (int) $request->get('page', 1);
+
+        return response()->json(
+            $this->searchProductsData($search !== '' ? $search : null, $categoryId, $page)
+        );
     }
 
     /**

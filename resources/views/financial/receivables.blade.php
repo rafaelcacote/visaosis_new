@@ -110,7 +110,7 @@
                 </div>
                 <div class="card-body">
                     <form class="row g-3" id="filtersForm" method="GET" action="{{ route('financial.receivables') }}">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="searchInput" class="form-label">Buscar</label>
                             <input type="text" class="form-control" placeholder="cliente, venda..." id="searchInput"
                                 name="q" value="{{ $filters['q'] ?? '' }}">
@@ -152,6 +152,23 @@
                             </button>
 
                         </div>
+                        <div class="col-md-1">
+                            <label for="perPage" class="form-label">Por página</label>
+                            <select class="form-select" id="perPage" name="per_page" onchange="applyFilters()">
+                                <option value="10"
+                                    {{ (int) ($filters['per_page'] ?? ($perPage ?? 10)) === 10 ? 'selected' : '' }}>10
+                                </option>
+                                <option value="25"
+                                    {{ (int) ($filters['per_page'] ?? ($perPage ?? 10)) === 25 ? 'selected' : '' }}>25
+                                </option>
+                                <option value="50"
+                                    {{ (int) ($filters['per_page'] ?? ($perPage ?? 10)) === 50 ? 'selected' : '' }}>50
+                                </option>
+                                <option value="100"
+                                    {{ (int) ($filters['per_page'] ?? ($perPage ?? 10)) === 100 ? 'selected' : '' }}>100
+                                </option>
+                            </select>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -162,12 +179,23 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">
-                        <i class="mdi mdi-format-list-bulleted me-2"></i>
-                        Parcelas a Receber({{ $receivablesPaginator->count() }} de {{ $receivablesPaginator->total() }})
-                    </h6>
-
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h6 class="mb-0">
+                            <i class="mdi mdi-format-list-bulleted me-2"></i>
+                            Parcelas a Receber
+                        </h6>
+                        <span class="badge bg-primary">{{ $receivablesPaginator->total() }} parcelas</span>
+                    </div>
+                    <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <small class="text-muted">
+                            Página {{ $receivablesPaginator->currentPage() }} de
+                            {{ max(1, $receivablesPaginator->lastPage()) }}
+                        </small>
+                        <div>
+                            {{ $receivablesPaginator->links('pagination::bootstrap-5') }}
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -339,8 +367,17 @@
                 </div>
                 <div class="card-footer">
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Mostrando {{ $receivablesPaginator->count() }} de
-                            {{ $receivablesPaginator->total() }} parcelas</small>
+                        <small class="text-muted">
+                            Mostrando {{ $receivablesPaginator->firstItem() ?? 0 }} a
+                            {{ $receivablesPaginator->lastItem() ?? 0 }}
+                            de {{ $receivablesPaginator->total() }} parcelas
+                        </small>
+                        <small class="text-muted">
+                            Total da página: <span class="fw-bold text-success">R$
+                                {{ number_format(collect($receivables->items())->sum('valor_atualizado'), 2, ',', '.') }}</span>
+                        </small>
+                    </div>
+                    <div class="mt-3 d-flex justify-content-center">
                         {{ $receivablesPaginator->links('pagination::bootstrap-5') }}
                     </div>
                 </div>

@@ -336,8 +336,13 @@ class FinancialController extends Controller
         ]);
     }
 
-    public function receivables()
+    public function receivables(Request $request)
     {
+        $perPage = (int) $request->get('per_page', 10);
+        if (! in_array($perPage, [10, 25, 50, 100], true)) {
+            $perPage = 10;
+        }
+
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
@@ -404,11 +409,11 @@ class FinancialController extends Controller
             ],
         ];
 
-        $statusFilter = (string) request()->get('status', '');
-        $startDate = (string) request()->get('start_date', '');
-        $endDate = (string) request()->get('end_date', '');
-        $q = trim((string) request()->get('q', ''));
-        $orderBy = (string) request()->get('order_by', 'vencimento');
+        $statusFilter = (string) $request->get('status', '');
+        $startDate = (string) $request->get('start_date', '');
+        $endDate = (string) $request->get('end_date', '');
+        $q = trim((string) $request->get('q', ''));
+        $orderBy = (string) $request->get('order_by', 'vencimento');
 
         $query = (clone $base)
             ->select([
@@ -473,7 +478,7 @@ class FinancialController extends Controller
             $query->orderBy('pvp.vencimento_em')->orderBy('pvp.id');
         }
 
-        $rows = $query->paginate(50)->withQueryString();
+        $rows = $query->paginate($perPage)->withQueryString();
 
         $receivables = $rows->through(function ($row) use ($tenantId, $today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
             $cliente = (string) ($row->cliente_nome ?? 'Cliente não informado');
@@ -541,7 +546,9 @@ class FinancialController extends Controller
                 'end_date' => $endDate,
                 'q' => $q,
                 'order_by' => $orderBy,
+                'per_page' => $perPage,
             ],
+            'perPage' => $perPage,
         ]);
     }
 
@@ -1867,6 +1874,11 @@ class FinancialController extends Controller
 
     public function generateBoletosWeek(Request $request)
     {
+        $perPage = (int) $request->get('per_page', 10);
+        if (! in_array($perPage, [10, 25, 50, 100], true)) {
+            $perPage = 10;
+        }
+
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
@@ -2279,6 +2291,11 @@ class FinancialController extends Controller
 
     public function receivePayment(Request $request)
     {
+        $perPage = (int) $request->get('per_page', 10);
+        if (! in_array($perPage, [10, 25, 50, 100], true)) {
+            $perPage = 10;
+        }
+
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
