@@ -246,6 +246,7 @@
                                             <th>Parcela</th>
                                             <th>Vencimento</th>
                                             <th>Valor</th>
+                                            <th>Valor Recebido</th>
                                             <th>Status</th>
                                             <th>Pago em</th>
                                         </tr>
@@ -290,9 +291,22 @@
                                                             +R$ {{ number_format($parcela['juros'], 2, ',', '.') }} juros
                                                         </small>
                                                     @else
-                                                        <strong>R$
-                                                            {{ number_format($parcela['valor_atualizado'], 2, ',', '.') }}</strong>
+                                                        @if (($parcela['valor_recebido'] ?? 0) > 0)
+                                                            <span class="text-decoration-line-through text-muted">
+                                                                R$
+                                                                {{ number_format($parcela['valor_atualizado'], 2, ',', '.') }}
+                                                            </span>
+                                                        @else
+                                                            <strong>R$
+                                                                {{ number_format($parcela['valor_atualizado'], 2, ',', '.') }}</strong>
+                                                        @endif
                                                     @endif
+                                                </td>
+                                                <td>
+
+                                                    <strong>R$
+                                                        R$ {{ number_format($parcela['valor_recebido'], 2, ',', '.') }}
+                                                    </strong>
                                                 </td>
                                                 <td>
                                                     @if ($parcela['status'] === 'vencida')

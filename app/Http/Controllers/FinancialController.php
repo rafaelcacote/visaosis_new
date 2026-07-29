@@ -486,11 +486,16 @@ class FinancialController extends Controller
             $cpf = $row->cliente_cpf ? (string) $row->cliente_cpf : null;
 
             $venc = Carbon::parse((string) $row->vencimento_em, $tz)->startOfDay();
-            $isPaid = ! empty($row->pago_em) || in_array(strtolower((string) ($row->parcela_status ?? '')), $paidStatuses, true);
+            $rawStatus = strtolower((string) ($row->parcela_status ?? ''));
+            $isPaid = ! empty($row->pago_em) || in_array($rawStatus, $paidStatuses, true);
 
             $status = 'em_dia';
             if ($isPaid) {
                 $status = 'paga';
+            } elseif ($rawStatus === 'pagamento_parcial') {
+                $status = 'pagamento_parcial';
+            } elseif ($rawStatus === 'saldo_remanescente') {
+                $status = 'saldo_remanescente';
             } elseif ($venc->lt($today)) {
                 $status = 'vencida';
             } elseif ($venc->equalTo($today)) {
@@ -500,7 +505,8 @@ class FinancialController extends Controller
             }
 
             $diasAtraso = 0;
-            if (! $isPaid && $venc->lt($today)) {
+            $podeAtrasar = ! $isPaid && ! in_array($status, ['pagamento_parcial', 'saldo_remanescente'], true);
+            if ($podeAtrasar && $venc->lt($today)) {
                 $diasAtraso = $venc->diffInDays($today);
             }
 
@@ -533,6 +539,9 @@ class FinancialController extends Controller
                 'valor_atualizado' => $valorParcela + $juros,
                 'pago_em' => $row->pago_em,
                 'boleto_secure_url' => $boletoSecureUrl,
+                'parcela_status' => $rawStatus,
+                'valor_recebido' => (float) ($row->valor_recebido ?? 0),
+                'valor_desconto' => (float) ($row->valor_desconto ?? 0),
             ];
         });
 
@@ -576,6 +585,12 @@ class FinancialController extends Controller
         $vendaId = 'VD-' . $year . '-' . str_pad((int) $parcela->pedido_venda_id, 4, '0', STR_PAD_LEFT);
         $valorParcela = (float) ($parcela->valor ?? 0);
         $juros = 0.0;
+        $valorAtualizado = $valorParcela + $juros;
+
+        $vencimentoAnterior = $parcela->vencimento_em
+            ? Carbon::parse($parcela->vencimento_em, $tz)->toDateString()
+            : null;
+        $dataNovaParcelaSugerida = $vencimentoAnterior ?? now($tz)->addMonth()->toDateString();
 
         $receivable = [
             'id' => (int) $parcela->id,
@@ -585,15 +600,17 @@ class FinancialController extends Controller
             'parcela' => (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
             'valor_parcela' => $valorParcela,
             'juros' => $juros,
-            'valor_atualizado' => $valorParcela + $juros,
+            'valor_atualizado' => $valorAtualizado,
+            'vencimento_anterior' => $vencimentoAnterior,
             'data_pagamento' => old('date', now($tz)->toDateString()),
             'forma_pagamento' => old('method', ''),
             'banco' => old('bank', ''),
             'referencia' => old('reference', ''),
             'desconto' => old('discount', '0.00'),
-            'valor_recebido' => old('received_value', number_format($valorParcela + $juros, 2, '.', '')),
+            'valor_recebido' => old('received_value', number_format($valorAtualizado, 2, '.', '')),
             'observacoes' => old('notes', ''),
             'return_url' => old('return_url', request('return_url', route('financial.receivables'))),
+            'nova_data_saldo' => old('remaining_due_date', $dataNovaParcelaSugerida),
         ];
 
         return view('financial.receive-payment', compact('receivable'));
@@ -2291,11 +2308,6 @@ class FinancialController extends Controller
 
     public function receivePayment(Request $request)
     {
-        $perPage = (int) $request->get('per_page', 10);
-        if (! in_array($perPage, [10, 25, 50, 100], true)) {
-            $perPage = 10;
-        }
-
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
@@ -2317,6 +2329,8 @@ class FinancialController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'received_value' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
+            'remaining_due_date' => 'nullable|date_format:Y-m-d',
+            'return_url' => 'nullable|string|max:500',
         ], [
             'required' => 'O campo :attribute é obrigatório.',
             'integer' => 'O campo :attribute deve ser um número inteiro.',
@@ -2376,25 +2390,95 @@ class FinancialController extends Controller
             $observacoes = trim($observacoes . ($observacoes !== '' ? ' | ' : '') . implode(' | ', $detalhesExtras));
         }
 
-        $parcela->pago_em = $paidAt;
-        $parcela->status = 'pago';
-        $parcela->forma_pagamento = $formaPagamento;
-        $parcela->valor_recebido = (float) ($validated['received_value'] ?? 0);
-        $parcela->valor_desconto = (float) ($validated['discount'] ?? 0);
-        $parcela->observacoes = $observacoes !== '' ? $observacoes : null;
-        $parcela->save();
+        $valorDesconto = (float) ($validated['discount'] ?? 0);
+        $valorRecebido = (float) ($validated['received_value'] ?? 0);
+        $valorDevido = (float) ($parcela->valor ?? 0);
+        $valorAjustado = max(0, $valorDevido - $valorDesconto);
+        $saldoRestante = max(0, $valorAjustado - $valorRecebido);
+
+        $pagamentoParcial = $saldoRestante > 0.005;
+
+        DB::beginTransaction();
+        try {
+            $parcela->valor_recebido = $valorRecebido;
+            $parcela->valor_desconto = $valorDesconto;
+            $parcela->forma_pagamento = $formaPagamento;
+            $parcela->observacoes = $observacoes !== '' ? $observacoes : null;
+
+            if ($pagamentoParcial) {
+                $parcela->pago_em = $paidAt;
+                $parcela->status = 'pagamento_parcial';
+            } else {
+                $parcela->pago_em = $paidAt;
+                $parcela->status = 'pago';
+            }
+
+            $parcela->save();
+
+            if ($pagamentoParcial) {
+                $novaDataVencimento = null;
+                if (! empty($validated['remaining_due_date'])) {
+                    $novaDataVencimento = Carbon::createFromFormat('Y-m-d', $validated['remaining_due_date'], $tz)
+                        ->startOfDay();
+                }
+
+                $observacoesParcela = trim(
+                    'Pagamento parcial de R$ ' . number_format($valorRecebido, 2, ',', '.')
+                        . ' em ' . $paidAt->format('d/m/Y')
+                        . '. Desconto R$ ' . number_format($valorDesconto, 2, ',', '.') . '.'
+                );
+
+                if ($formaPagamento) {
+                    $observacoesParcela .= ' Forma: ' . $formaPagamento . '.';
+                }
+
+                PedidoVendaParcela::create([
+                    'tenant_id' => $parcela->tenant_id,
+                    'location_id' => $parcela->location_id,
+                    'pedido_venda_id' => $parcela->pedido_venda_id,
+                    'numero_parcela' => (int) $parcela->numero_parcela,
+                    'total_parcelas' => (int) $parcela->total_parcelas,
+                    'valor' => $saldoRestante,
+                    'vencimento_em' => $novaDataVencimento,
+                    'status' => 'saldo_remanescente',
+                    'valor_recebido' => 0,
+                    'valor_desconto' => 0,
+                    'observacoes' => $observacoesParcela,
+                ]);
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao registrar pagamento: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erro ao registrar pagamento: ' . $e->getMessage());
+        }
 
         if (! $request->expectsJson()) {
             $returnUrl = $request->input('return_url');
+            $mensagem = $pagamentoParcial
+                ? 'Pagamento parcial registrado com sucesso! O saldo remanescente foi criado como nova parcela.'
+                : 'Pagamento registrado com sucesso!';
 
             return redirect()->to($returnUrl ?: route('financial.receivables'))
-                ->with('success', 'Pagamento registrado com sucesso!');
+                ->with('success', $mensagem);
         }
 
         return response()->json([
             'success' => true,
             'id' => $parcela->id,
             'pago_em' => $parcela->pago_em,
+            'partial_payment' => $pagamentoParcial,
+            'remaining_value' => $saldoRestante,
         ]);
     }
 

@@ -888,6 +888,7 @@ class SaleController extends Controller
                 }
 
                 $valor = (float) ($parcela->valor ?? 0);
+                $valorRecebido = (float) ($parcela->valor_recebido ?? 0);
                 $juros = 0.0;
 
                 return [
@@ -897,6 +898,7 @@ class SaleController extends Controller
                     'total_parcelas' => (int) $parcela->total_parcelas,
                     'valor_parcela' => $valor,
                     'valor_atualizado' => $valor + $juros,
+                    'valor_recebido' => $valorRecebido,
                     'juros' => $juros,
                     'vencimento' => $venc ? $venc->toDateString() : null,
                     'pago_em' => $parcela->pago_em ? Carbon::parse($parcela->pago_em, $tz) : null,
@@ -921,6 +923,7 @@ class SaleController extends Controller
             'pagamentos' => $pagamentosDetalhados,
             'parcelas' => $parcelas->count() > 0 ? $parcelas->count() : 1,
             'valor_parcela' => $parcelas->count() > 0 ? (float) $parcelas->first()['valor_parcela'] : $total,
+            'valor_recebido' => $parcelas->count() > 0 ? (float) $parcelas->first()['valor_recebido'] : $totalRecebido,
             'parcelas_detalhes' => $parcelas,
             'status' => $status,
             'status_original' => $pedidoVenda->status,

@@ -214,13 +214,17 @@
                             </thead>
                             <tbody>
                                 @foreach ($receivables as $receivable)
+                                    @php
+                                        $statusPagamentoParcial = $receivable['status'] === 'pagamento_parcial';
+                                        $statusSaldoRemanescente = $receivable['status'] === 'saldo_remanescente';
+                                    @endphp
                                     <tr
-                                        class="@if ($receivable['status'] == 'vencida') table-danger @elseif($receivable['status'] == 'vence_hoje') table-warning @elseif($receivable['status'] == 'vence_semana') table-info @elseif($receivable['status'] == 'paga') table-success @endif">
+                                        class="@if ($receivable['status'] == 'vencida') table-danger @elseif($receivable['status'] == 'vence_hoje') table-warning @elseif($receivable['status'] == 'vence_semana') table-info @elseif($receivable['status'] == 'paga') table-success @elseif($statusPagamentoParcial || $statusSaldoRemanescente) table-light @endif">
 
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div
-                                                    class="avatar-sm @if ($receivable['status'] == 'vencida') bg-danger @elseif($receivable['status'] == 'vence_hoje') bg-warning @elseif($receivable['status'] == 'vence_semana') bg-info @elseif($receivable['status'] == 'paga') bg-success @else bg-success @endif text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                                    class="avatar-sm @if ($receivable['status'] == 'vencida') bg-danger @elseif($receivable['status'] == 'vence_hoje') bg-warning @elseif($receivable['status'] == 'vence_semana') bg-info @elseif($receivable['status'] == 'paga') bg-success @elseif($statusPagamentoParcial) bg-warning @elseif($statusSaldoRemanescente) bg-secondary @else bg-success @endif text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
                                                     {{ mb_substr($receivable['cliente'], 0, 2) }}
                                                 </div>
                                                 <div>
@@ -238,10 +242,14 @@
                                             <span class="badge bg-secondary">{{ $receivable['parcela'] }}</span>
                                             <br><small class="text-muted">R$
                                                 {{ number_format($receivable['valor_parcela'], 2, ',', '.') }}</small>
+                                            @if ($statusPagamentoParcial && ($receivable['valor_recebido'] ?? 0) > 0)
+                                                <br><small class="text-warning">Pago: R$
+                                                    {{ number_format($receivable['valor_recebido'], 2, ',', '.') }}</small>
+                                            @endif
                                         </td>
                                         <td>
                                             <span
-                                                class="@if ($receivable['status'] == 'vencida') text-danger @elseif($receivable['status'] == 'vence_hoje') text-warning @elseif($receivable['status'] == 'vence_semana') text-info @else text-success @endif">
+                                                class="@if ($receivable['status'] == 'vencida') text-danger @elseif($receivable['status'] == 'vence_hoje') text-warning @elseif($receivable['status'] == 'vence_semana') text-info @elseif($statusPagamentoParcial || $statusSaldoRemanescente) text-muted @else text-success @endif">
                                                 {{ \Carbon\Carbon::parse($receivable['vencimento'])->format('d/m/Y') }}
                                             </span>
                                             @if ($receivable['dias_atraso'] > 0)
@@ -261,6 +269,12 @@
                                                 <strong>R$
                                                     {{ number_format($receivable['valor_atualizado'], 2, ',', '.') }}</strong>
                                             @endif
+                                            @if ($statusPagamentoParcial)
+                                                <br><small class="text-warning">
+                                                    Saldo: R$
+                                                    {{ number_format(max(0, ($receivable['valor_parcela'] ?? 0) - ($receivable['valor_recebido'] ?? 0) - ($receivable['valor_desconto'] ?? 0)), 2, ',', '.') }}
+                                                </small>
+                                            @endif
                                         </td>
                                         <td>
                                             @if ($receivable['status'] == 'vencida')
@@ -278,6 +292,14 @@
                                             @elseif($receivable['status'] == 'paga')
                                                 <span class="badge bg-success">
                                                     <i class="mdi mdi-check-circle me-1"></i>Paga
+                                                </span>
+                                            @elseif($statusPagamentoParcial)
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="mdi mdi-cash-multiple me-1"></i>Pagamento Parcial
+                                                </span>
+                                            @elseif($statusSaldoRemanescente)
+                                                <span class="badge bg-secondary">
+                                                    <i class="mdi mdi-receipt-text me-1"></i>Saldo Remanescente
                                                 </span>
                                             @else
                                                 <span class="badge bg-success">
@@ -863,6 +885,10 @@
                                 '<span class="badge bg-danger">Vencida</span>';
                             else if (p.status === 'a_vencer') badge =
                                 '<span class="badge bg-info">A vencer</span>';
+                            else if (p.status === 'pagamento_parcial') badge =
+                                '<span class="badge bg-warning text-dark">Pagamento Parcial</span>';
+                            else if (p.status === 'saldo_remanescente') badge =
+                                '<span class="badge bg-secondary">Saldo Remanescente</span>';
 
                             const boletoBtn = p.boleto_secure_url ?
                                 ('<a class="btn btn-sm btn-outline-primary" href="' + p.boleto_secure_url +
