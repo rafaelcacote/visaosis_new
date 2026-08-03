@@ -26,7 +26,7 @@
                             <thead>
                                 <tr>
                                     <th>Produto</th>
-                                    <th class="d-none d-md-table-cell">Categoria</th>
+                                    <th class="d-none d-md-table-cell produtos-col-categoria">Categoria</th>
                                     <th class="d-none d-md-table-cell">Preços</th>
                                     <th class="d-none d-md-table-cell">Status</th>
                                     <th class="produtos-col-acoes">Ações</th>

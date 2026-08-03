@@ -19,7 +19,7 @@
             </div>
         </div>
     </td>
-    <td class="d-none d-md-table-cell">
+    <td class="d-none d-md-table-cell produtos-col-categoria">
         {{ $produto->categoria ? $produto->categoria->descricao : '—' }}
     </td>
     <td class="d-none d-md-table-cell">
