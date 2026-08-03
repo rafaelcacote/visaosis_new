@@ -2,6 +2,10 @@
 
 @section('title', 'Ordens de Serviço - Connect Plus')
 
+@push('plugin-css')
+    <link rel="stylesheet" href="{{ asset('assets/css/list-actions.css') }}">
+@endpush
+
 @section('content')
     <div class="d-xl-flex justify-content-between align-items-start mb-4">
         <div>
@@ -94,24 +98,24 @@
 
                 <div class="card-body p-0">
                     @if ($ordensServico->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                        <div class="table-responsive list-actions-table-wrap">
+                            <table class="table table-hover mb-0 list-actions-table">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Ordem</th>
-                                        <th>Cliente</th>
-                                        <th>Fornecedor</th>
-                                        <th>Valor</th>
-                                        <th>Entrega</th>
-                                        <th>Status</th>
-                                        <th>Prioridade</th>
-                                        <th width="150">Ações</th>
+                                        <th class="d-none d-lg-table-cell os-col-shrink">Ordem</th>
+                                        <th class="list-actions-col-descricao os-col-cliente">Cliente</th>
+                                        <th class="d-none list-actions-col-descricao os-col-fornecedor">Fornecedor</th>
+                                        <th class="os-col-shrink">Valor</th>
+                                        <th class="d-none d-md-table-cell os-col-shrink">Entrega</th>
+                                        <th class="d-none d-md-table-cell os-col-shrink">Status</th>
+                                        <th class="d-none d-md-table-cell os-col-shrink">Prioridade</th>
+                                        <th class="list-actions-col-acoes">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($ordensServico as $ordem)
                                         <tr data-id="{{ $ordem->id }}">
-                                            <td>
+                                            <td class="d-none d-lg-table-cell os-col-shrink">
                                                 <div>
                                                     <h6 class="mb-0">#{{ str_pad($ordem->id, 6, '0', STR_PAD_LEFT) }}
                                                     </h6>
@@ -119,15 +123,18 @@
                                                         class="text-muted">{{ $ordem->created_at->format('d/m/Y H:i') }}</small>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div>
+                                            <td class="list-actions-col-descricao os-col-cliente">
+                                                <div class="list-actions-desc-text">
                                                     <h6 class="mb-0">{{ $ordem->pedido->cliente->nome ?? 'N/A' }}</h6>
                                                     <small class="text-muted">Venda:
                                                         #{{ $ordem->pedido->numero ?? 'N/A' }}</small>
+                                                    <div class="d-md-none mt-1">
+                                                        @include('ordens-servico.partials.status-tag')
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div>
+                                            <td class="d-none list-actions-col-descricao os-col-fornecedor">
+                                                <div class="list-actions-desc-text">
                                                     <h6 class="mb-0">{{ $ordem->fornecedor->razao_social ?? 'N/A' }}</h6>
                                                     @if ($ordem->fornecedor && $ordem->fornecedor->nome_fantasia)
                                                         <small
@@ -135,13 +142,22 @@
                                                     @endif
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td class="os-col-shrink">
                                                 <div>
                                                     <strong>{{ $ordem->total_formatado }}</strong><br>
                                                     <small class="text-muted">Qtd: {{ $ordem->quantidade }}</small>
+                                                    <div class="d-md-none">
+                                                        @if ($ordem->entrega_em)
+                                                            <small class="text-muted d-block">
+                                                                Entrega: {{ $ordem->entrega_em->format('d/m/Y H:i') }}
+                                                            </small>
+                                                        @else
+                                                            <small class="text-muted d-block">Entrega: não definida</small>
+                                                        @endif
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td class="d-none d-md-table-cell os-col-shrink">
                                                 @if ($ordem->entrega_em)
                                                     <div>
                                                         {{ $ordem->entrega_em->format('d/m/Y') }}<br>
@@ -152,55 +168,10 @@
                                                     <span class="text-muted">Não definida</span>
                                                 @endif
                                             </td>
-                                            <td>
-                                                @switch($ordem->status)
-                                                    @case('pendente')
-                                                        <span class="tag" style="background-color: #fff8e6; color: #d97706;">
-                                                            <i class="mdi mdi-clock"></i>
-                                                            Pendente
-                                                        </span>
-                                                    @break
-
-                                                    @case('enviado')
-                                                        <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
-                                                            <i class="mdi mdi-send"></i>
-                                                            Enviado
-                                                        </span>
-                                                    @break
-
-                                                    @case('em_producao')
-                                                        <span class="tag" style="background-color: #f3e8ff; color: #9333ea;">
-                                                            <i class="mdi mdi-cog"></i>
-                                                            Em Produção
-                                                        </span>
-                                                    @break
-
-                                                    @case('pronto')
-                                                        <span class="tag tag-status tag-status-ativo">
-                                                            <i class="mdi mdi-check-circle"></i>
-                                                            Pronto
-                                                        </span>
-                                                    @break
-
-                                                    @case('entregue')
-                                                        <span class="tag" style="background-color: #dcfce7; color: #16a34a;">
-                                                            <i class="mdi mdi-package-check"></i>
-                                                            Entregue
-                                                        </span>
-                                                    @break
-
-                                                    @case('cancelado')
-                                                        <span class="tag tag-status tag-status-inativo">
-                                                            <i class="mdi mdi-close-circle"></i>
-                                                            Cancelado
-                                                        </span>
-                                                    @break
-
-                                                    @default
-                                                        <span class="text-muted">{{ $ordem->status_label }}</span>
-                                                @endswitch
+                                            <td class="d-none d-md-table-cell os-col-shrink">
+                                                @include('ordens-servico.partials.status-tag')
                                             </td>
-                                            <td>
+                                            <td class="d-none d-md-table-cell os-col-shrink">
                                                 @switch($ordem->prioridade)
                                                     @case('normal')
                                                         <span class="tag" style="background-color: #f3f4f6; color: #6b7280;">
@@ -227,8 +198,8 @@
                                                         <span class="text-muted">{{ $ordem->prioridade_label }}</span>
                                                 @endswitch
                                             </td>
-                                            <td>
-                                                <div class="actions">
+                                            <td class="list-actions-col-acoes">
+                                                <div class="actions list-actions-buttons">
                                                     <a href="{{ route('ordens-servico.show', $ordem) }}"
                                                         class="btn-action"
                                                         style="background-color: #e0f0ff; color: #1d7dd6;"
@@ -594,6 +565,36 @@
         .tag-status-inativo {
             background-color: #fee2e2 !important;
             color: #dc2626 !important;
+        }
+
+        /* Encolhe colunas de conteúdo curto para dar mais espaço às colunas Cliente/Fornecedor */
+        .list-actions-table th.os-col-shrink,
+        .list-actions-table td.os-col-shrink {
+            width: 1%;
+            white-space: nowrap;
+        }
+
+        /* Cliente com mais espaço e Fornecedor um pouco mais estreito, harmônicos na tela grande */
+        @media (min-width: 768px) {
+
+            .list-actions-table th.os-col-cliente,
+            .list-actions-table td.os-col-cliente {
+                width: 26%;
+            }
+
+            .list-actions-table th.os-col-fornecedor,
+            .list-actions-table td.os-col-fornecedor {
+                width: 16%;
+            }
+        }
+
+        /* Na tela média há mais colunas visíveis ao mesmo tempo, então Cliente precisa de mais espaço proporcional */
+        @media (min-width: 768px) and (max-width: 991.98px) {
+
+            .list-actions-table th.os-col-cliente,
+            .list-actions-table td.os-col-cliente {
+                width: 45%;
+            }
         }
     </style>
 @endpush
