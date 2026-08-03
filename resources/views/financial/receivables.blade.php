@@ -2,6 +2,10 @@
 
 @section('title', 'Contas a Receber - Connect Plus')
 
+@push('plugin-css')
+    <link rel="stylesheet" href="{{ asset('assets/css/list-actions.css') }}">
+@endpush
+
 @section('content')
     <div class="d-xl-flex justify-content-between align-items-start mb-4">
         <div>
@@ -198,18 +202,18 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                    <div class="table-responsive list-actions-table-wrap">
+                        <table class="table table-hover mb-0 list-actions-table">
                             <thead class="table-light">
                                 <tr>
 
                                     <th>Cliente</th>
-                                    <th>Venda</th>
-                                    <th>Parcela</th>
+                                    <th class="d-none d-md-table-cell">Venda</th>
+                                    <th class="d-none d-md-table-cell">Parcela</th>
                                     <th>Vencimento</th>
                                     <th>Valor</th>
                                     <th>Status</th>
-                                    <th>Ações</th>
+                                    <th class="list-actions-col-acoes">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -233,12 +237,12 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td class="d-none d-md-table-cell">
                                             <strong>{{ $receivable['venda_id'] }}</strong>
                                             <br><small class="text-muted">Total: R$
                                                 {{ number_format($receivable['valor_total'], 2, ',', '.') }}</small>
                                         </td>
-                                        <td>
+                                        <td class="d-none d-md-table-cell">
                                             <span class="badge bg-secondary">{{ $receivable['parcela'] }}</span>
                                             <br><small class="text-muted">R$
                                                 {{ number_format($receivable['valor_parcela'], 2, ',', '.') }}</small>
