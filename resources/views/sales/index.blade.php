@@ -2,6 +2,10 @@
 
 @section('title', 'Vendas - VisaoSis')
 
+@push('plugin-css')
+    <link rel="stylesheet" href="{{ asset('assets/css/list-actions.css') }}">
+@endpush
+
 @section('content')
     <div class="d-xl-flex justify-content-between align-items-start mb-4">
         <div>
@@ -219,15 +223,15 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                    <div class="table-responsive list-actions-table-wrap">
+                        <table class="table table-hover mb-0 list-actions-table">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Cliente</th>
-                                    <th>Data</th>
+                                    <th class="list-actions-col-descricao">Cliente</th>
+                                    <th class="d-none d-md-table-cell">Data</th>
                                     <th>Total</th>
-                                    <th>Status Pagamento</th>
-                                    <th width="140">Ações</th>
+                                    <th class="d-none d-md-table-cell">Status Pagamento</th>
+                                    <th class="list-actions-col-acoes">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="salesTable">
@@ -237,18 +241,21 @@
                                         style="cursor: pointer;"
                                         data-payment="{{ strtolower(str_replace(' ', '', $sale['forma_pagamento'])) }}">
 
-                                        <td>
+                                        <td class="list-actions-col-descricao">
                                             <div class="d-flex align-items-center">
-                                                <div class="avatar-circle bg-primary text-white me-3">
+                                                <div class="avatar-circle bg-primary text-white me-3 d-none d-md-flex">
                                                     <i class="mdi mdi-receipt"></i>
                                                 </div>
-                                                <div>
+                                                <div class="list-actions-desc-text">
                                                     <h6 class="mb-0">{{ $sale['cliente'] }}</h6>
                                                     <small class="text-muted">{{ $sale['produtos'] }} produto(s)</small>
+                                                    <small class="text-muted d-md-none d-block">
+                                                        {{ \Carbon\Carbon::parse($sale['data'])->format('d/m/Y') }}
+                                                    </small>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td class="d-none d-md-table-cell">
                                             <span
                                                 class="fw-bold">{{ \Carbon\Carbon::parse($sale['data'])->format('d/m/Y') }}</span>
                                             <br>
@@ -262,7 +269,7 @@
                                             <h6 class="mb-0 text-success">R$
                                                 {{ number_format($sale['total'], 2, ',', '.') }}</h6>
                                         </td>
-                                        <td>
+                                        <td class="d-none d-md-table-cell">
                                             @switch($sale['status_pagamento'])
                                                 @case('quitada')
                                                     <span class="badge bg-success">

@@ -208,14 +208,16 @@
                                                         <div class="d-md-none mt-1">
                                                             @switch($patient->status)
                                                                 @case(\App\Models\Consulta::STATUS_AGUARDANDO)
-                                                                    <span class="tag" style="background-color: #fff8e6; color: #d97706;">
+                                                                    <span class="tag"
+                                                                        style="background-color: #fff8e6; color: #d97706;">
                                                                         <i class="mdi mdi-clock"></i>
                                                                         Aguardando
                                                                     </span>
                                                                 @break
 
                                                                 @case(\App\Models\Consulta::STATUS_EM_ATENDIMENTO)
-                                                                    <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
+                                                                    <span class="tag"
+                                                                        style="background-color: #e0f0ff; color: #1d7dd6;">
                                                                         <i class="mdi mdi-account-check"></i>
                                                                         Em Atendimento
                                                                     </span>
