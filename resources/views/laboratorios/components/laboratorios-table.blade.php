@@ -3,12 +3,12 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                @if($laboratorios->isEmpty())
+                @if ($laboratorios->isEmpty())
                     <div class="text-center py-5">
                         <i class="mdi mdi-flask-outline text-muted" style="font-size: 3rem;"></i>
                         <h5 class="mt-3 text-muted">Nenhum laboratório encontrado</h5>
                         <p class="text-muted">Comece cadastrando um novo laboratório ou ajuste os filtros de busca.</p>
-                        @if(!empty($filters['search']))
+                        @if (!empty($filters['search']))
                             <a href="{{ route('laboratorios.index') }}" class="btn btn-outline-primary mt-3">
                                 <i class="mdi mdi-arrow-left me-2"></i>
                                 Voltar à lista completa
@@ -21,20 +21,22 @@
                         @endif
                     </div>
                 @else
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                    <div class="table-responsive list-actions-table-wrap">
+                        <table class="table table-hover list-actions-table">
                             <thead>
                                 <tr>
-                                    <th>Razão social / Nome fantasia</th>
-                                    <th>CNPJ</th>
-                                    <th>Contato</th>
-                                    <th>Status</th>
-                                    <th width="200">Ações</th>
+                                    <th class="list-actions-col-descricao">Razão social / Nome fantasia</th>
+                                    <th class="d-none d-md-table-cell">CNPJ</th>
+                                    <th class="d-none d-md-table-cell">Contato</th>
+                                    <th class="d-none d-md-table-cell">Status</th>
+                                    <th class="list-actions-col-acoes">Ação</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($laboratorios as $laboratorio)
-                                    @include('laboratorios.components.laboratorio-table-row', ['laboratorio' => $laboratorio])
+                                @foreach ($laboratorios as $laboratorio)
+                                    @include('laboratorios.components.laboratorio-table-row', [
+                                        'laboratorio' => $laboratorio,
+                                    ])
                                 @endforeach
                             </tbody>
                         </table>
