@@ -151,10 +151,10 @@
                             </select>
                         </div>
                         <div class="col-md-1">
+                            <label class="form-label d-block">&nbsp;</label>
                             <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
                                 <i class="mdi mdi-magnify"></i>
                             </button>
-
                         </div>
                         <div class="col-md-1">
                             <label for="perPage" class="form-label">Por página</label>
