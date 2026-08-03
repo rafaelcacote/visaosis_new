@@ -2,8 +2,9 @@
 
 @section('title', 'Painel do Profissional')
 
-
-
+@push('plugin-css')
+    <link rel="stylesheet" href="{{ asset('assets/css/list-actions.css') }}">
+@endpush
 
 @section('content')
     <div class="d-xl-flex justify-content-between align-items-start mb-4">
@@ -174,27 +175,27 @@
                             <p class="text-muted">Não há pacientes aguardando atendimento hoje.</p>
                         </div>
                     @else
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                        <div class="table-responsive list-actions-table-wrap">
+                            <table class="table table-hover mb-0 list-actions-table">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Paciente</th>
-                                        <th>Chegada</th>
-                                        <th>Motivo</th>
-                                        <th>Status</th>
-                                        <th width="120">Ações</th>
+                                        <th class="list-actions-col-descricao">Paciente</th>
+                                        <th class="d-none d-md-table-cell">Chegada</th>
+                                        <th class="d-none d-md-table-cell">Motivo</th>
+                                        <th class="d-none d-md-table-cell">Status</th>
+                                        <th class="list-actions-col-acoes">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="patientsTable">
                                     @foreach ($patients as $patient)
                                         <tr data-status="{{ $patient->status }}">
-                                            <td>
+                                            <td class="list-actions-col-descricao">
                                                 <div class="d-flex align-items-center">
-                                                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3"
+                                                    <div class="bg-primary text-white rounded-circle d-none d-md-inline-flex align-items-center justify-content-center me-3"
                                                         style="width: 40px; height: 40px; font-size: 16px; font-weight: 600;">
                                                         {{ substr($patient->paciente->nome ?? 'N', 0, 1) }}
                                                     </div>
-                                                    <div>
+                                                    <div class="list-actions-desc-text">
                                                         <h6 class="mb-0">{{ $patient->paciente->nome ?? 'N/A' }}</h6>
                                                         <small class="text-muted">
                                                             @if ($patient->paciente)
@@ -204,10 +205,41 @@
                                                                 @endif
                                                             @endif
                                                         </small>
+                                                        <div class="d-md-none mt-1">
+                                                            @switch($patient->status)
+                                                                @case(\App\Models\Consulta::STATUS_AGUARDANDO)
+                                                                    <span class="tag" style="background-color: #fff8e6; color: #d97706;">
+                                                                        <i class="mdi mdi-clock"></i>
+                                                                        Aguardando
+                                                                    </span>
+                                                                @break
+
+                                                                @case(\App\Models\Consulta::STATUS_EM_ATENDIMENTO)
+                                                                    <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
+                                                                        <i class="mdi mdi-account-check"></i>
+                                                                        Em Atendimento
+                                                                    </span>
+                                                                @break
+
+                                                                @case(\App\Models\Consulta::STATUS_ATENDIDO)
+                                                                    <span class="tag tag-status tag-status-ativo">
+                                                                        <i class="mdi mdi-check-circle"></i>
+                                                                        Atendido
+                                                                    </span>
+                                                                @break
+
+                                                                @case(\App\Models\Consulta::STATUS_CANCELADO)
+                                                                    <span class="tag tag-status tag-status-inativo">
+                                                                        <i class="mdi mdi-close-circle"></i>
+                                                                        Cancelado
+                                                                    </span>
+                                                                @break
+                                                            @endswitch
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td class="d-none d-md-table-cell">
                                                 <span class="fw-bold">
                                                     {{ $patient->agendado_em ? \Carbon\Carbon::parse($patient->agendado_em)->format('d/m/Y H:i') : '-' }}
                                                 </span>
@@ -237,7 +269,7 @@
                                                     </small>
                                                 @endif
                                             </td>
-                                            <td>
+                                            <td class="d-none d-md-table-cell">
                                                 @switch($patient->tipo)
                                                     @case(\App\Models\Consulta::TIPO_CONSULTA)
                                                         <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
@@ -267,7 +299,7 @@
                                                         </span>
                                                 @endswitch
                                             </td>
-                                            <td>
+                                            <td class="d-none d-md-table-cell">
                                                 @switch($patient->status)
                                                     @case(\App\Models\Consulta::STATUS_AGUARDANDO)
                                                         <span class="tag" style="background-color: #fff8e6; color: #d97706;">
@@ -298,7 +330,7 @@
                                                     @break
                                                 @endswitch
                                             </td>
-                                            <td>
+                                            <td class="list-actions-col-acoes">
                                                 <div class="btn-group btn-group-sm">
                                                     @if ($patient->status == \App\Models\Consulta::STATUS_AGUARDANDO)
                                                         <button class="btn btn-sm btn-primary" title="Iniciar Atendimento"
