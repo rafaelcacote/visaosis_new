@@ -218,6 +218,32 @@
         </div>
     </div>
 
+    <!-- Modal de Atributos do Produto -->
+    <div class="modal fade" id="productAttributesModal" tabindex="-1" aria-labelledby="productAttributesModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productAttributesModalLabel">
+                        <i class="mdi mdi-tag-multiple-outline me-2"></i>
+                        Atributos do produto
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3" id="product_attributes_name"></p>
+                    <div id="product_attributes_list" class="product-attributes-list"></div>
+                    <div id="product_attributes_empty" class="text-muted text-center py-3 d-none">
+                        Este produto não possui atributos cadastrados.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Autorização de Desconto -->
     <div class="modal fade" id="discountAuthModal" tabindex="-1" aria-labelledby="discountAuthModalLabel"
         aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -544,7 +570,20 @@
             display: block;
         }
 
-        .add-to-cart-btn {
+        .product-row-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .product-attributes-btn-wrap {
+            display: inline-flex;
+            cursor: not-allowed;
+        }
+
+        .add-to-cart-btn,
+        .product-attributes-btn {
             width: 36px;
             height: 36px;
             border-radius: 8px;
@@ -552,6 +591,38 @@
             align-items: center;
             justify-content: center;
             padding: 0;
+        }
+
+        .product-attributes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .product-attribute-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 12px;
+            background: #f8f9fb;
+            border: 1px solid #eef0f3;
+            border-radius: 8px;
+        }
+
+        .product-attribute-item .attr-key {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: capitalize;
+        }
+
+        .product-attribute-item .attr-value {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #1f2937;
+            text-align: right;
+            word-break: break-word;
         }
 
         /* Skeleton de carregamento */
@@ -935,11 +1006,56 @@
             return item ? item.quantity : 0;
         }
 
+        function initProductAttributeTooltips() {
+            if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) {
+                return;
+            }
+
+            productsListEl.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+                const existing = bootstrap.Tooltip.getInstance(el);
+                if (existing) {
+                    existing.dispose();
+                }
+                new bootstrap.Tooltip(el, { placement: 'top', trigger: 'hover focus' });
+            });
+        }
+
+        function productHasAttributes(product) {
+            const atributos = product && product.atributos;
+            return atributos && typeof atributos === 'object' && !Array.isArray(atributos)
+                && Object.keys(atributos).length > 0;
+        }
+
+        function showProductAttributes(productId) {
+            const product = catalogProductsById[productId];
+            if (!product || !productHasAttributes(product)) {
+                return;
+            }
+
+            const nameEl = document.getElementById('product_attributes_name');
+            const listEl = document.getElementById('product_attributes_list');
+            const emptyEl = document.getElementById('product_attributes_empty');
+            const modalEl = document.getElementById('productAttributesModal');
+
+            nameEl.textContent = product.nome || '';
+            listEl.innerHTML = Object.entries(product.atributos).map(([key, value]) => `
+                <div class="product-attribute-item">
+                    <span class="attr-key">${escapeHtml(key)}</span>
+                    <span class="attr-value">${escapeHtml(value ?? '')}</span>
+                </div>
+            `).join('');
+            emptyEl.classList.add('d-none');
+            listEl.classList.remove('d-none');
+
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+
         function productRowHtml(product) {
             catalogProductsById[product.id] = product;
 
             const outOfStock = product.stock === 0;
             const inCartQty = getCartQuantity(product.id);
+            const hasAttributes = productHasAttributes(product);
 
             const priceHtml = product.preco === null || product.preco === undefined
                 ? '<span class="text-muted small">Preço a definir</span>'
@@ -959,6 +1075,19 @@
             const cartBadgeVisible = inCartQty > 0 ? '' : 'd-none';
             const cartBadgeText = inCartQty > 0 ? `<i class="mdi mdi-cart-check me-1"></i>${inCartQty} no carrinho` : '';
 
+            const attributesBtnHtml = hasAttributes
+                ? `<button type="button" class="btn btn-outline-secondary btn-sm product-attributes-btn"
+                        onclick="showProductAttributes(${product.id})"
+                        title="Ver atributos">
+                        <i class="mdi mdi-tag-multiple-outline"></i>
+                   </button>`
+                : `<span class="product-attributes-btn-wrap" title="Sem atributos" data-bs-toggle="tooltip" data-bs-title="Sem atributos">
+                        <button type="button" class="btn btn-outline-secondary btn-sm product-attributes-btn" disabled
+                            aria-label="Sem atributos">
+                            <i class="mdi mdi-tag-multiple-outline"></i>
+                        </button>
+                   </span>`;
+
             return `
                 <div class="product-row ${outOfStock ? 'product-row-disabled' : ''}" data-product-row="${product.id}">
                     ${imageHtml}
@@ -974,11 +1103,14 @@
                         ${priceHtml}
                         ${stockHtml}
                     </div>
-                    <button type="button" class="btn btn-primary btn-sm add-to-cart-btn flex-shrink-0"
-                        data-product-id="${product.id}" onclick="addToCart(${product.id})"
-                        ${outOfStock ? 'disabled' : ''} title="Adicionar ao carrinho">
-                        <i class="mdi mdi-cart-plus"></i>
-                    </button>
+                    <div class="product-row-actions">
+                        ${attributesBtnHtml}
+                        <button type="button" class="btn btn-primary btn-sm add-to-cart-btn"
+                            data-product-id="${product.id}" onclick="addToCart(${product.id})"
+                            ${outOfStock ? 'disabled' : ''} title="Adicionar ao carrinho">
+                            <i class="mdi mdi-cart-plus"></i>
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -1057,6 +1189,7 @@
                 } else {
                     noProductsMessage.style.display = 'none';
                     productsListEl.insertAdjacentHTML('beforeend', data.data.map(productRowHtml).join(''));
+                    initProductAttributeTooltips();
                 }
 
                 loadMoreWrap.style.display = catalogState.hasMore ? 'block' : 'none';
@@ -2508,6 +2641,7 @@
             productsListEl.innerHTML = initialProducts.map(productRowHtml).join('');
             loadMoreWrap.style.display = catalogState.hasMore ? 'block' : 'none';
             updateProductsCountLabel();
+            initProductAttributeTooltips();
         } else {
             noProductsText.textContent = 'Nenhum produto disponível no momento.';
             noProductsMessage.style.display = 'block';

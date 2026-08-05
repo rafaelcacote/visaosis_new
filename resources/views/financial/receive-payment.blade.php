@@ -114,7 +114,8 @@
 
                         <div class="mb-3">
                             <label class="form-label">Forma de Pagamento *</label>
-                            <select class="form-select" id="paymentMethod" name="method" required onchange="updatePaymentFields()">
+                            <select class="form-select" id="paymentMethod" name="method" required
+                                onchange="updatePaymentFields()">
                                 <option value="">Selecione...</option>
                                 <option value="dinheiro" @selected($receivable['forma_pagamento'] === 'dinheiro')>Dinheiro</option>
                                 <option value="pix" @selected($receivable['forma_pagamento'] === 'pix')>PIX</option>
@@ -146,9 +147,9 @@
                             <label class="form-label">Valor Recebido *</label>
                             <div class="input-group">
                                 <span class="input-group-text">R$</span>
-                                <input type="number" class="form-control" id="paymentReceivedValue" name="received_value"
-                                    step="0.01" value="{{ $receivable['valor_recebido'] }}" required
-                                    onchange="calculateChange()">
+                                <input type="number" class="form-control" id="paymentReceivedValue"
+                                    name="received_value" step="0.01" value="{{ $receivable['valor_recebido'] }}"
+                                    required oninput="calculateChange()">
                             </div>
                         </div>
 
@@ -157,7 +158,7 @@
                             <div class="input-group">
                                 <span class="input-group-text">R$</span>
                                 <input type="number" class="form-control" id="paymentDiscount" name="discount"
-                                    step="0.01" value="{{ $receivable['desconto'] }}" onchange="calculateChange()">
+                                    step="0.01" value="{{ $receivable['desconto'] }}" oninput="calculateChange()">
                             </div>
                         </div>
 
@@ -173,6 +174,46 @@
                             <label class="form-label">Referência/Comprovante</label>
                             <input type="text" class="form-control" id="paymentReference" name="reference"
                                 value="{{ $receivable['referencia'] }}" placeholder="Número do comprovante, NSU, etc.">
+                        </div>
+
+                        <div class="mb-3" id="remainingBlock" style="display: none;">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-white py-2 px-3">
+                                    <small class="fw-bold">
+                                        <i class="mdi mdi-alert-circle-outline me-1"></i>
+                                        Pagamento Parcial - Saldo Remanescente
+                                    </small>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Saldo Remanescente</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">R$</span>
+                                            <input type="text" class="form-control fw-bold text-warning"
+                                                id="remainingValue" readonly>
+                                        </div>
+                                        <small class="text-muted">
+                                            Será gerada uma nova parcela com esse valor.
+                                        </small>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="form-label">
+                                            Nova Data para o Saldo Remanescente
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="date" class="form-control" id="remainingDueDate"
+                                            name="remaining_due_date" value="{{ $receivable['nova_data_saldo'] }}">
+                                        <small class="text-muted">
+                                            @if (!empty($receivable['vencimento_anterior']))
+                                                Vencimento anterior:
+                                                {{ \Carbon\Carbon::parse($receivable['vencimento_anterior'])->format('d/m/Y') }}
+                                            @else
+                                                Sugestão: 30 dias após o pagamento.
+                                            @endif
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -251,6 +292,7 @@
             const discount = parseFloat(document.getElementById('paymentDiscount').value) || 0;
             const finalTotal = totalValue - discount;
             const change = receivedValue - finalTotal;
+            const remaining = Math.max(0, finalTotal - receivedValue);
 
             document.getElementById('paymentChange').value = Math.max(0, change).toFixed(2).replace('.', ',');
 
@@ -258,11 +300,55 @@
             document.getElementById('summaryTotal').textContent = finalTotal.toFixed(2).replace('.', ',');
             document.getElementById('summaryReceived').textContent = receivedValue.toFixed(2).replace('.', ',');
             document.getElementById('summaryChange').textContent = Math.max(0, change).toFixed(2).replace('.', ',');
+
+            const remainingBlock = document.getElementById('remainingBlock');
+            const remainingValueInput = document.getElementById('remainingValue');
+            const remainingDueDateInput = document.getElementById('remainingDueDate');
+
+            if (remaining > 0.005) {
+                if (remainingValueInput) {
+                    remainingValueInput.value = remaining.toFixed(2).replace('.', ',');
+                }
+                if (remainingBlock) {
+                    remainingBlock.style.display = 'block';
+                }
+                if (remainingDueDateInput) {
+                    remainingDueDateInput.required = true;
+                }
+            } else {
+                if (remainingBlock) {
+                    remainingBlock.style.display = 'none';
+                }
+                if (remainingDueDateInput) {
+                    remainingDueDateInput.required = false;
+                }
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             updatePaymentFields();
             calculateChange();
+
+            const form = document.getElementById('paymentForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const totalValue = currentPaymentData.totalValue || 0;
+                    const receivedValue = parseFloat(document.getElementById('paymentReceivedValue')
+                        .value) || 0;
+                    const discount = parseFloat(document.getElementById('paymentDiscount').value) || 0;
+                    const finalTotal = totalValue - discount;
+                    const remaining = Math.max(0, finalTotal - receivedValue);
+
+                    if (remaining > 0.005) {
+                        const remainingDueDateInput = document.getElementById('remainingDueDate');
+                        if (remainingDueDateInput && !remainingDueDateInput.value) {
+                            e.preventDefault();
+                            alert('Informe a nova data de vencimento para o saldo remanescente.');
+                            remainingDueDateInput.focus();
+                        }
+                    }
+                });
+            }
         });
     </script>
 @endpush

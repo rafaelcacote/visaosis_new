@@ -392,70 +392,49 @@
                     Nenhum produto encontrado para os filtros selecionados.
                 </p>
             @else
-                @foreach ($produtos as $produto)
-                    <div class="produto-block">
-                        <div class="produto-header">
-                            <table style="width: 100%; border: none;">
-                                <tr>
-                                    <td style="border: none; padding: 0; width: 50%;">
-                                        <strong style="font-size: 11px;">{{ $produto->nome }}</strong>
-                                        @if ($produto->marca)
-                                            <span style="color: #6c757d; font-size: 9px;"> —
-                                                {{ $produto->marca }}</span>
-                                        @endif
-                                    </td>
-                                    <td style="border: none; padding: 0; width: 25%; text-align: center;">
-                                        <span style="font-size: 9px; color: #6c757d;">
-                                            {{ $produto->categoria->descricao ?? 'Sem Categoria' }}
-                                        </span>
-                                    </td>
-                                    <td style="border: none; padding: 0; width: 25%; text-align: right;">
-                                        @if ($produto->ativo)
-                                            <span class="status-ativo">&#10003; Ativo</span>
-                                        @else
-                                            <span class="status-inativo">&#10007; Inativo</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="produto-body">
-                            <table style="width: 100%; border: none;">
-                                <tr>
-                                    <td style="border: none; padding: 2px 4px; width: 50%;">
-                                        <strong>Preço de Custo:</strong> {{ $produto->preco_custo_formatado }}
-                                    </td>
-                                    <td style="border: none; padding: 2px 4px; width: 50%;">
-                                        <strong>Preço de Venda:</strong> {{ $produto->preco_venda_formatado }}
-                                    </td>
-                                </tr>
-                            </table>
-
+                <table class="table table-bordered table-sm" style="font-size: 9px;">
+                    <thead>
+                        <tr>
+                            <th style="background-color: #f8f9fa;">Nome</th>
+                            <th style="background-color: #f8f9fa;">Marca</th>
+                            <th style="background-color: #f8f9fa;">Categoria</th>
+                            <th style="background-color: #f8f9fa;">Preço Custo</th>
+                            <th style="background-color: #f8f9fa;">Preço Venda</th>
+                            <th style="background-color: #f8f9fa;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($produtos as $produto)
+                            <tr>
+                                <td>{{ $produto->nome }}</td>
+                                <td>{{ $produto->marca ?? '—' }}</td>
+                                <td>{{ $produto->categoria->descricao ?? 'Sem Categoria' }}</td>
+                                <td>{{ $produto->preco_custo_formatado }}</td>
+                                <td>{{ $produto->preco_venda_formatado }}</td>
+                                <td>
+                                    @if ($produto->ativo)
+                                        <span class="status-ativo"> Ativo</span>
+                                    @else
+                                        <span class="status-inativo"> Inativo</span>
+                                    @endif
+                                </td>
+                            </tr>
                             @if (!empty($produto->atributos) && count($produto->atributos) > 0)
-                                <div style="margin-top: 6px;">
-                                    <strong style="font-size: 9px; color: #495057;">Atributos:</strong>
-                                    <table class="table table-bordered table-sm"
-                                        style="margin-top: 4px; font-size: 9px;">
-                                        <thead>
-                                            <tr>
-                                                <th style="background-color: #f8f9fa; width: 40%;">Atributo</th>
-                                                <th style="background-color: #f8f9fa;">Valor</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($produto->atributos as $key => $value)
-                                                <tr>
-                                                    <td>{{ $key }}</td>
-                                                    <td>{{ $value }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <tr>
+                                    <td colspan="6" style="background-color: #f8f9fa; padding: 4px 8px;">
+                                        <strong>Atributos:</strong>
+                                        @foreach ($produto->atributos as $key => $value)
+                                            <span>{{ $key }}: {{ $value }}</span>
+                                            @if (!$loop->last)
+                                                <span> | </span>
+                                            @endif
+                                        @endforeach
+                                    </td>
+                                </tr>
                             @endif
-                        </div>
-                    </div>
-                @endforeach
+                        @endforeach
+                    </tbody>
+                </table>
             @endif
         </div>
     </div>

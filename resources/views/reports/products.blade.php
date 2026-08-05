@@ -121,9 +121,9 @@
                                 <thead class="table-light">
                                     <tr>
 
-                                        <th>Nome</th>
+                                        <th style="max-width: 220px;">Nome</th>
                                         <th>Marca</th>
-                                        <th>Categoria</th>
+                                        <th style="max-width: 140px;">Categoria</th>
                                         <th>Preço Custo</th>
                                         <th>Preço Venda</th>
                                         <th>Atributos</th>
@@ -134,11 +134,13 @@
                                     @foreach ($produtos as $produto)
                                         <tr>
 
-                                            <td>
+                                            <td style="max-width: 220px; white-space: normal; word-break: break-word;">
                                                 <h6 class="mb-0">{{ $produto->nome }}</h6>
                                             </td>
                                             <td>{{ $produto->marca ?? '—' }}</td>
-                                            <td>{{ $produto->categoria->descricao ?? '—' }}</td>
+                                            <td style="max-width: 140px; white-space: normal; word-break: break-word;">
+                                                {{ $produto->categoria->descricao ?? '—' }}
+                                            </td>
                                             <td>{{ $produto->preco_custo_formatado }}</td>
                                             <td>{{ $produto->preco_venda_formatado }}</td>
                                             <td>
@@ -162,30 +164,6 @@
                                                 @endif
                                             </td>
                                         </tr>
-                                        @if (!empty($produto->atributos))
-                                            <tr class="table-secondary">
-                                                <td colspan="8" class="py-2 px-4">
-
-                                                    <table class="table table-sm table-bordered mb-0 mt-1"
-                                                        style="max-width: 500px;">
-                                                        <thead class="table-light">
-                                                            <tr>
-                                                                <th class="py-1">Atributo</th>
-                                                                <th class="py-1">Valor</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @foreach ($produto->atributos as $key => $value)
-                                                                <tr>
-                                                                    <td class="py-1">{{ $key }}</td>
-                                                                    <td class="py-1">{{ $value }}</td>
-                                                                </tr>
-                                                            @endforeach
-                                                        </tbody>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        @endif
                                     @endforeach
                                 </tbody>
                             </table>
@@ -209,7 +187,9 @@
                     <ul class="list-group list-group-flush">
                         @php
                             // Agrupa por descrição da categoria e ordena as chaves alfabeticamente A-Z
-                            $groups = $produtos->groupBy(fn($p) => $p->categoria->descricao ?? 'Sem Categoria')->sortKeys();
+                            $groups = $produtos
+                                ->groupBy(fn($p) => $p->categoria->descricao ?? 'Sem Categoria')
+                                ->sortKeys();
                         @endphp
                         @forelse ($groups as $catNome => $grupo)
                             <li class="list-group-item d-flex justify-content-between align-items-center py-2">

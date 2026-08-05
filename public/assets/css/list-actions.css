@@ -1,0 +1,67 @@
+/*
+ * Layout genérico de listagem em 2 colunas (Descrição + Ação), reutilizável em qualquer tela.
+ * Requer users.css (define .btn-action e variações de cor).
+ *
+ * Estrutura esperada:
+ * <div class="table-responsive list-actions-table-wrap">
+ *   <table class="table table-hover list-actions-table">
+ *     <thead>
+ *       <tr>
+ *         <th class="list-actions-col-descricao">Descrição</th>
+ *         <th class="list-actions-col-acoes">Ação</th>
+ *       </tr>
+ *     </thead>
+ *     <tbody>
+ *       <tr>
+ *         <td class="list-actions-col-descricao">...</td>
+ *         <td class="list-actions-col-acoes">
+ *           <div class="actions list-actions-buttons">
+ *             <a class="btn-action btn-action-view" title="Visualizar"><i class="mdi mdi-eye"></i></a>
+ *             <a class="btn-action btn-action-edit" title="Editar"><i class="mdi mdi-pencil"></i></a>
+ *             <button class="btn-action btn-action-delete" title="Excluir"><i class="mdi mdi-delete"></i></button>
+ *           </div>
+ *         </td>
+ *       </tr>
+ *     </tbody>
+ *   </table>
+ * </div>
+ */
+
+.list-actions-table-wrap {
+    overflow-x: auto;
+}
+
+.list-actions-table td,
+.list-actions-table th {
+    vertical-align: middle;
+}
+
+/* Sempre pode quebrar linha, evitando barra de rolagem horizontal na tabela (especificidade maior que .table td do style.css) */
+.list-actions-table td.list-actions-col-descricao,
+.list-actions-table th.list-actions-col-descricao {
+    width: auto;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Evita que o texto empurre o ícone para fora quando dentro de um flex container */
+.list-actions-desc-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* width: 1% + white-space: nowrap encolhe a coluna ao conteúdo dos botões */
+.list-actions-col-acoes {
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* Os botões da coluna Ação sempre lado a lado, nunca quebram linha */
+.list-actions-buttons {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+    justify-content: flex-start;
+}

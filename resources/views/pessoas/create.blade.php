@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Novo Paciente')
+@section('title', 'Novo Cliente')
 
 @section('content')
 <div class="d-xl-flex justify-content-between align-items-start mb-4">
     <div>
         <h2 class="text-dark font-weight-bold mb-2">
             <i class="mdi mdi-account-plus-outline me-2"></i>
-            Novo Paciente
+            Novo Cliente
         </h2>
-        <p class="text-muted mb-0">Cadastrar um novo paciente no sistema</p>
+        <p class="text-muted mb-0">Cadastrar um novo cliente no sistema</p>
     </div>
     <a href="{{ route('pessoas.index') }}" class="btn btn-outline-secondary">
         <i class="mdi mdi-arrow-left me-2"></i>
@@ -340,7 +340,7 @@
                         </a>
                         <button type="submit" class="btn btn-primary">
                             <i class="mdi mdi-check me-2"></i>
-                            Cadastrar Paciente
+                            Cadastrar Cliente
                         </button>
                     </div>
                 </form>

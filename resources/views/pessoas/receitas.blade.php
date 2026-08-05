@@ -14,7 +14,7 @@
         <div class="d-flex gap-2">
             <a href="{{ route('pessoas.show', $pessoa->id) }}" class="btn btn-outline-secondary">
                 <i class="mdi mdi-account-circle-outline me-2"></i>
-                Paciente
+                Cliente
             </a>
             <a href="{{ route('pessoas.index') }}" class="btn btn-outline-secondary">
                 <i class="mdi mdi-arrow-left me-2"></i>
@@ -105,7 +105,7 @@
         </div>
         <div class="card-body">
             @if ($prescricoes->isEmpty())
-                <div class="text-muted">Nenhuma receita cadastrada para este paciente.</div>
+                <div class="text-muted">Nenhuma receita cadastrada para este cliente.</div>
             @else
                 @php
                     $now = \Carbon\Carbon::now();

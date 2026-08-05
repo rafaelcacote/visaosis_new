@@ -3,12 +3,12 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                @if($profissionais->isEmpty())
+                @if ($profissionais->isEmpty())
                     <div class="text-center py-5">
                         <i class="mdi mdi-account-off text-muted" style="font-size: 3rem;"></i>
                         <h5 class="mt-3 text-muted">Nenhum profissional encontrado</h5>
                         <p class="text-muted">Comece criando um novo profissional ou ajuste os filtros de busca.</p>
-                        @if(!empty($filters['search']))
+                        @if (!empty($filters['search']))
                             <a href="{{ route('profissionais.index') }}" class="btn btn-outline-primary mt-3">
                                 <i class="mdi mdi-arrow-left me-2"></i>
                                 Voltar à lista completa
@@ -21,21 +21,23 @@
                         @endif
                     </div>
                 @else
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                    <div class="table-responsive list-actions-table-wrap">
+                        <table class="table table-hover list-actions-table">
                             <thead>
                                 <tr>
-                                    <th>Profissional</th>
-                                    <th>Especialidade</th>
-                                    <th>CPF</th>
-                                    <th>Contato</th>
-                                    <th>Status</th>
-                                    <th width="200">Ações</th>
+                                    <th class="list-actions-col-descricao">Profissional</th>
+                                    <th class="d-none d-md-table-cell">Especialidade</th>
+                                    <th class="d-none d-md-table-cell">CPF</th>
+                                    <th class="d-none d-md-table-cell">Contato</th>
+                                    <th class="d-none d-md-table-cell">Status</th>
+                                    <th class="list-actions-col-acoes">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($profissionais as $profissional)
-                                    @include('profissionais.components.profissional-table-row', ['profissional' => $profissional])
+                                @foreach ($profissionais as $profissional)
+                                    @include('profissionais.components.profissional-table-row', [
+                                        'profissional' => $profissional,
+                                    ])
                                 @endforeach
                             </tbody>
                         </table>

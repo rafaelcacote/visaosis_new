@@ -4,6 +4,7 @@
 
 @push('plugin-css')
     <link rel="stylesheet" href="{{ asset('assets/css/users.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/list-actions.css') }}">
 @endpush
 
 @section('content')
@@ -173,26 +174,26 @@
                             </button>
                         </div>
                     @else
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                        <div class="table-responsive list-actions-table-wrap">
+                            <table class="table table-hover mb-0 list-actions-table">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Paciente</th>
-                                        <th>Chegada</th>
-                                        <th>Tipo</th>
-                                        <th>Status</th>
-                                        <th>Profissional</th>
-                                        <th width="150">Ações</th>
+                                        <th class="list-actions-col-descricao" style="min-width: 200px;">Paciente</th>
+                                        <th class="d-none d-md-table-cell">Chegada</th>
+                                        <th class="d-none d-md-table-cell">Tipo</th>
+                                        <th class="d-none d-md-table-cell">Status</th>
+                                        <th class="list-actions-col-descricao" style="min-width: 180px;">Profissional</th>
+                                        <th width="150" class="list-actions-col-acoes">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="consultasQueue">
                                     @foreach ($consultas as $consulta)
                                         <tr data-status="{{ $consulta->status }}"
                                             data-priority="{{ $consulta->prioridade }}">
-                                            <td>
+                                            <td class="list-actions-col-descricao">
                                                 <div class="d-flex align-items-center">
 
-                                                    <div>
+                                                    <div class="list-actions-desc-text">
                                                         <h6 class="mb-1">
                                                             {{ $consulta->paciente->nome ?? 'Paciente não encontrado' }}
                                                         </h6>
@@ -208,10 +209,44 @@
                                                                 Prioridade
                                                             </small>
                                                         @endif
+                                                        <div class="d-md-none mt-1">
+                                                            @switch($consulta->status)
+                                                                @case(\App\Models\Consulta::STATUS_AGUARDANDO)
+                                                                    <span class="tag" style="background-color: #fff8e6; color: #d97706;">
+                                                                        <i class="mdi mdi-clock"></i>
+                                                                        Aguardando
+                                                                    </span>
+                                                                @break
+
+                                                                @case(\App\Models\Consulta::STATUS_EM_ATENDIMENTO)
+                                                                    <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
+                                                                        <i class="mdi mdi-account-check"></i>
+                                                                        Em Atendimento
+                                                                    </span>
+                                                                @break
+
+                                                                @case(\App\Models\Consulta::STATUS_ATENDIDO)
+                                                                    <span class="tag tag-status tag-status-ativo">
+                                                                        <i class="mdi mdi-check-circle"></i>
+                                                                        Atendido
+                                                                    </span>
+                                                                @break
+
+                                                                @case(\App\Models\Consulta::STATUS_CANCELADO)
+                                                                    <span class="tag tag-status tag-status-inativo">
+                                                                        <i class="mdi mdi-close-circle"></i>
+                                                                        Cancelado
+                                                                    </span>
+                                                                @break
+
+                                                                @default
+                                                                    <span class="text-muted">{{ $consulta->status_label }}</span>
+                                                            @endswitch
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td class="d-none d-md-table-cell">
                                                 <div>
                                                     <h6 class="mb-1">
                                                         {{ $consulta->chegada_em ? $consulta->chegada_em->format('H:i') : 'N/A' }}
@@ -223,7 +258,7 @@
                                                     @endif
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td class="d-none d-md-table-cell">
                                                 @switch($consulta->tipo)
                                                     @case(\App\Models\Consulta::TIPO_CONSULTA)
                                                         <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">
@@ -250,7 +285,7 @@
                                                         <span class="text-muted">N/A</span>
                                                 @endswitch
                                             </td>
-                                            <td>
+                                            <td class="d-none d-md-table-cell">
                                                 @switch($consulta->status)
                                                     @case(\App\Models\Consulta::STATUS_AGUARDANDO)
                                                         <span class="tag" style="background-color: #fff8e6; color: #d97706;">
@@ -284,16 +319,16 @@
                                                         <span class="text-muted">{{ $consulta->status_label }}</span>
                                                 @endswitch
                                             </td>
-                                            <td>
-                                                <div>
+                                            <td class="list-actions-col-descricao">
+                                                <div class="list-actions-desc-text">
                                                     <h6 class="mb-1">{{ $consulta->profissional->nome ?? '' }}</h6>
-                                                    <small class="text-muted">
+                                                    <small class="text-muted d-none d-md-block">
                                                         {{ $consulta->profissional->especialidade->descricao ?? '' }}
                                                     </small>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div class="actions">
+                                            <td class="list-actions-col-acoes">
+                                                <div class="actions list-actions-buttons">
                                                     @if ($consulta->status == \App\Models\Consulta::STATUS_AGUARDANDO)
                                                         <button class="btn-action"
                                                             style="background-color: #e0f0ff; color: #1d7dd6;"
@@ -317,7 +352,7 @@
                                                         </button>
                                                     @endif
 
-                                                    <button class="btn-action btn-action-view"
+                                                    <button class="btn-action btn-action-view d-none d-md-inline-flex"
                                                         onclick="viewConsulta({{ $consulta->id }})" title="Visualizar">
                                                         <i class="mdi mdi-eye"></i>
                                                     </button>
