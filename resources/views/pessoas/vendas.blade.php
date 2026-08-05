@@ -10,13 +10,13 @@
                 Histórico de Vendas
             </h2>
             <p class="text-muted mb-0">
-                Vendas vinculadas ao paciente {{ $pessoa->nome }}
+                Vendas vinculadas ao cliente {{ $pessoa->nome }}
             </p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
             <a href="{{ route('pessoas.show', $pessoa) }}" class="btn btn-outline-secondary">
                 <i class="mdi mdi-arrow-left me-2"></i>
-                Voltar ao Paciente
+                Voltar ao Cliente
             </a>
             <a href="{{ route('sales.create', ['cliente_id' => $pessoa->id]) }}" class="btn btn-primary" target="_blank"
                 rel="noopener noreferrer">
@@ -42,7 +42,7 @@
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
-                        <i class="mdi mdi-account me-1"></i> Compras registradas para o paciente
+                        <i class="mdi mdi-account me-1"></i> Compras registradas para o cliente
                     </p>
                 </div>
             </div>
@@ -100,7 +100,7 @@
                 <div class="text-center py-5">
                     <i class="mdi mdi-cart-off text-muted" style="font-size: 3rem;"></i>
                     <h5 class="mt-3 text-muted">Nenhuma venda encontrada</h5>
-                    <p class="text-muted mb-0">Este paciente ainda não possui vendas registradas.</p>
+                    <p class="text-muted mb-0">Este cliente ainda não possui vendas registradas.</p>
                 </div>
             @else
                 <div class="table-responsive">

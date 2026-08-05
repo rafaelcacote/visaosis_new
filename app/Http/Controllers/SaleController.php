@@ -273,6 +273,17 @@ class SaleController extends Controller
             }
         }
 
+        $atributos = [];
+        if (is_array($product->atributos)) {
+            foreach ($product->atributos as $key => $value) {
+                $key = trim((string) $key);
+                if ($key === '') {
+                    continue;
+                }
+                $atributos[$key] = $value;
+            }
+        }
+
         return [
             'id' => $product->id,
             'nome' => $product->nome,
@@ -282,6 +293,7 @@ class SaleController extends Controller
             'preco' => $product->preco_venda !== null ? (float) $product->preco_venda : null,
             'stock' => $stockFromAttributes,
             'image_url' => $imageUrl,
+            'atributos' => $atributos,
         ];
     }
 

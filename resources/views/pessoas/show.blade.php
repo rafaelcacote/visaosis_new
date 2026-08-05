@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $pessoa->nome . ' - Paciente')
+@section('title', $pessoa->nome . ' - Cliente')
 
 @section('content')
     <div class="page-show">
@@ -8,9 +8,9 @@
             <div>
                 <h2 class="text-dark font-weight-bold mb-2">
                     <i class="mdi mdi-account-circle-outline me-2"></i>
-                    Paciente
+                    Cliente
                 </h2>
-                <p class="text-muted mb-0">Detalhes do paciente</p>
+                <p class="text-muted mb-0">Detalhes do cliente</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('pessoas.edit', $pessoa) }}" class="btn btn-primary">

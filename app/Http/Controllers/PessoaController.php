@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 class PessoaController extends Controller
 {
     /**
-     * Lista de pacientes (pessoas).
+     * Lista de clientes (pessoas).
      */
     public function index(Request $request)
     {
@@ -81,7 +81,7 @@ class PessoaController extends Controller
     }
 
     /**
-     * Armazena um novo paciente.
+     * Armazena um novo cliente.
      */
     public function store(Request $request)
     {
@@ -108,7 +108,7 @@ class PessoaController extends Controller
 
         if (! $tenantId) {
             return back()->withInput()
-                ->with('error', 'Nenhum tenant disponível para criar o paciente.');
+                ->with('error', 'Nenhum tenant disponível para criar o cliente.');
         }
 
         // Se não tem location_id, buscar a primeira location do tenant
@@ -121,7 +121,7 @@ class PessoaController extends Controller
 
         if (! $locationId) {
             return back()->withInput()
-                ->with('error', 'Nenhuma localização disponível para criar o paciente.');
+                ->with('error', 'Nenhuma localização disponível para criar o cliente.');
         }
 
         $cpfRules = ['nullable', 'string', new ValidCpf];
@@ -195,17 +195,17 @@ class PessoaController extends Controller
             DB::commit();
 
             return redirect()->route('pessoas.show', $novaPessoa)
-                ->with('success', 'Paciente cadastrado com sucesso!');
+                ->with('success', 'Cliente cadastrado com sucesso!');
         } catch (\Exception $e) {
             DB::rollBack();
 
             return back()->withInput()
-                ->with('error', 'Erro ao cadastrar paciente: ' . $e->getMessage());
+                ->with('error', 'Erro ao cadastrar cliente: ' . $e->getMessage());
         }
     }
 
     /**
-     * Exibe o paciente.
+     * Exibe o cliente.
      */
     public function show(Pessoa $pessoa)
     {
@@ -276,7 +276,7 @@ class PessoaController extends Controller
     }
 
     /**
-     * Atualiza um paciente.
+     * Atualiza um cliente.
      */
     public function update(Request $request, Pessoa $pessoa)
     {
@@ -369,17 +369,17 @@ class PessoaController extends Controller
 
             DB::commit();
 
-            return back()->with('success', 'Paciente atualizado com sucesso!');
+            return back()->with('success', 'Cliente atualizado com sucesso!');
         } catch (\Exception $e) {
             DB::rollBack();
 
             return back()->withInput()
-                ->with('error', 'Erro ao atualizar paciente: ' . $e->getMessage());
+                ->with('error', 'Erro ao atualizar cliente: ' . $e->getMessage());
         }
     }
 
     /**
-     * Remove um paciente.
+     * Remove um cliente.
      */
     public function destroy(Pessoa $pessoa)
     {
@@ -393,16 +393,16 @@ class PessoaController extends Controller
             DB::commit();
 
             return redirect()->route('pessoas.index')
-                ->with('success', 'Paciente excluído com sucesso!');
+                ->with('success', 'Cliente excluído com sucesso!');
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'Erro ao excluir paciente: ' . $e->getMessage());
+            return back()->with('error', 'Erro ao excluir cliente: ' . $e->getMessage());
         }
     }
 
     /**
-     * Busca pacientes via AJAX (para selects/autocomplete).
+     * Busca clientes via AJAX (para selects/autocomplete).
      */
     public function search(Request $request)
     {
@@ -457,7 +457,7 @@ class PessoaController extends Controller
     }
 
     /**
-     * Ativa/desativa paciente.
+     * Ativa/desativa cliente.
      */
     public function toggleStatus(Pessoa $pessoa)
     {
@@ -487,7 +487,7 @@ class PessoaController extends Controller
     }
 
     /**
-     * Garante que o paciente pertence ao tenant/location atuais.
+     * Garante que o cliente pertence ao tenant/location atuais.
      */
     private function checkTenantAccess(Pessoa $pessoa): void
     {
@@ -496,7 +496,7 @@ class PessoaController extends Controller
         $userLocations = session('user_locations', []);
 
         if (! $tenantId || (int) $pessoa->tenant_id !== (int) $tenantId) {
-            abort(403, 'Acesso negado. Este paciente não pertence ao seu tenant.');
+            abort(403, 'Acesso negado. Este cliente não pertence ao seu tenant.');
         }
 
         $locationIds = [];
@@ -510,7 +510,7 @@ class PessoaController extends Controller
         }
 
         if (! empty($locationIds) && $pessoa->location_id !== null && ! in_array($pessoa->location_id, $locationIds)) {
-            abort(403, 'Acesso negado. Este paciente não pertence à sua localização.');
+            abort(403, 'Acesso negado. Este cliente não pertence à sua localização.');
         }
     }
 

@@ -135,7 +135,7 @@ Route::middleware(['auth'])->group(function () {
     ]);
     Route::post('produtos/{produto}/toggle-status', [ProdutoController::class, 'toggleStatus'])->name('produtos.toggle-status');
 
-    // Rotas de pacientes (pessoas)
+    // Rotas de clientes (pessoas)
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
     Route::get('pessoas/{pessoa}/vendas', [PessoaController::class, 'vendas'])->name('pessoas.vendas');

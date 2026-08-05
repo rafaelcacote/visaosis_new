@@ -1,6 +1,6 @@
-{{-- Modais da página de pacientes: desativar/ativar e excluir --}}
+{{-- Modais da página de clientes: desativar/ativar e excluir --}}
 
-<!-- Modal de Confirmação de Desativar/Ativar Paciente -->
+<!-- Modal de Confirmação de Desativar/Ativar Cliente -->
 <div class="modal fade" id="toggleStatusPacienteModal" tabindex="-1" aria-labelledby="toggleStatusPacienteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -15,11 +15,11 @@
                 </div>
                 <h5 class="modal-title mb-3" id="toggleStatusPacienteModalLabel">Confirmar Desativação</h5>
                 <p class="text-muted mb-0">
-                    Tem certeza que deseja <span id="toggleStatusPacienteActionText">desativar</span> o paciente
+                    Tem certeza que deseja <span id="toggleStatusPacienteActionText">desativar</span> o cliente
                     <strong id="toggleStatusPacienteNome"></strong>?
                 </p>
                 <p class="text-muted mt-2 mb-0" style="font-size: 0.875rem;" id="toggleStatusPacienteHint">
-                    O paciente ficará inativo até ser reativado.
+                    O cliente ficará inativo até ser reativado.
                 </p>
                 <input type="hidden" id="toggleStatusPacienteId" value="">
                 <input type="hidden" id="toggleStatusPacienteNovoStatus" value="">
@@ -31,14 +31,14 @@
                 </button>
                 <button type="button" id="toggleStatusPacienteConfirmBtn" class="btn btn-warning">
                     <i class="mdi mdi-close-circle me-2"></i>
-                    Desativar Paciente
+                    Desativar Cliente
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal de Confirmação de Exclusão de Paciente -->
+<!-- Modal de Confirmação de Exclusão de Cliente -->
 <div class="modal fade" id="deletePacienteModal" tabindex="-1" aria-labelledby="deletePacienteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -53,7 +53,7 @@
                 </div>
                 <h5 class="modal-title mb-3" id="deletePacienteModalLabel">Confirmar Exclusão</h5>
                 <p class="text-muted mb-0">
-                    Tem certeza que deseja excluir o paciente <strong id="deletePacienteNome"></strong>?
+                    Tem certeza que deseja excluir o cliente <strong id="deletePacienteNome"></strong>?
                 </p>
                 <p class="text-muted mt-2 mb-0" style="font-size: 0.875rem;">
                     Esta ação não pode ser desfeita.
@@ -69,7 +69,7 @@
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger">
                         <i class="mdi mdi-delete me-2"></i>
-                        Excluir Paciente
+                        Excluir Cliente
                     </button>
                 </form>
             </div>
@@ -79,7 +79,7 @@
 
 @push('styles')
 <style>
-/* Modal Desativar/Ativar Paciente */
+/* Modal Desativar/Ativar Cliente */
 .toggle-status-icon-wrapper {
     width: 80px;
     height: 80px;
@@ -116,7 +116,7 @@
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
-/* Modal Excluir Paciente */
+/* Modal Excluir Cliente */
 .delete-icon-wrapper-paciente {
     width: 80px;
     height: 80px;
@@ -191,17 +191,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon.className = 'mdi mdi-check-circle-outline';
                 title.textContent = 'Confirmar Ativação';
                 actionText.textContent = 'ativar';
-                hint.textContent = 'O paciente voltará a estar ativo no sistema.';
+                hint.textContent = 'O cliente voltará a estar ativo no sistema.';
                 confirmBtn.className = 'btn btn-success';
-                confirmBtn.innerHTML = '<i class="mdi mdi-check-circle me-2"></i> Ativar Paciente';
+                confirmBtn.innerHTML = '<i class="mdi mdi-check-circle me-2"></i> Ativar Cliente';
             } else {
                 iconWrapper.className = 'toggle-status-icon-wrapper desativar';
                 icon.className = 'mdi mdi-close-circle-outline';
                 title.textContent = 'Confirmar Desativação';
                 actionText.textContent = 'desativar';
-                hint.textContent = 'O paciente ficará inativo até ser reativado.';
+                hint.textContent = 'O cliente ficará inativo até ser reativado.';
                 confirmBtn.className = 'btn btn-warning';
-                confirmBtn.innerHTML = '<i class="mdi mdi-close-circle me-2"></i> Desativar Paciente';
+                confirmBtn.innerHTML = '<i class="mdi mdi-close-circle me-2"></i> Desativar Cliente';
             }
         });
     }
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Erro:', error);
-                alert('Erro ao atualizar status do paciente.');
+                alert('Erro ao atualizar status do cliente.');
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
             });

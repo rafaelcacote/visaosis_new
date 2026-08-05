@@ -1,6 +1,6 @@
 {{-- Removido use DB - não é mais necessário, dados vêm da sessão --}}
 
-@push('styles')
+{{-- Style inline: o navbar é @include após @stack('styles') no layout, então @push não funciona --}}
 <style>
   /* Garantir que o navbar apareça */
   .default-layout-navbar {
@@ -22,24 +22,21 @@
     color: #16181b !important;
     text-decoration: none;
   }
-  
-  /* Garantir que o botão se comporte como os outros dropdown-items */
+
   .dropdown-menu.navbar-dropdown form {
     margin: 0;
     padding: 0;
   }
-  
+
   .dropdown-menu.navbar-dropdown form button.dropdown-item {
     width: 100%;
     text-align: left;
   }
 
-  /* Estilo para location ativa */
   .dropdown-menu.navbar-dropdown form button.dropdown-item.active {
     background-color: rgba(102, 126, 234, 0.1);
   }
 
-  /* Nome do tenant no navbar */
   .navbar-brand-wrapper .tenant-name-text-only {
     color: #ffffff !important;
     font-size: 0.95rem;
@@ -55,7 +52,6 @@
     background: #181824;
   }
 
-  /* Garantir que o link do navbar-brand não sobrescreva a cor */
   .navbar-brand-wrapper .navbar-brand,
   .navbar-brand-wrapper .navbar-brand:hover,
   .navbar-brand-wrapper .navbar-brand:focus,
@@ -67,8 +63,15 @@
     color: #ffffff !important;
   }
 
-  /* Logo principal no navbar brand */
-  .navbar-logo-main {
+  /* Desktop: logo completa (como antes) */
+  .navbar .navbar-brand-wrapper .navbar-brand.brand-logo {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+  }
+
+  .navbar .navbar-brand-wrapper .navbar-brand.brand-logo .navbar-logo-main {
     max-height: 60px !important;
     max-width: 200px !important;
     height: 60px !important;
@@ -79,68 +82,56 @@
     margin: 0 auto !important;
   }
 
-  /* Garantir que imagens dentro do navbar-brand-wrapper respeitem o tamanho */
-  .navbar-brand-wrapper img,
-  .navbar-brand-wrapper .navbar-logo-main,
-  .navbar-brand-wrapper .brand-logo img {
-    max-height: 60px !important;
-    max-width: 200px !important;
-    height: 60px !important;
-    width: auto !important;
+  /* Mini logo: escondida no desktop (padrão do tema) */
+  .navbar .navbar-brand-wrapper .navbar-brand.brand-logo-mini {
+    display: none !important;
   }
 
-  /* Centralizar o navbar-brand */
-  .navbar-brand-wrapper .navbar-brand.brand-logo {
-    justify-content: center !important;
-    align-items: center !important;
-    width: 100%;
+  /* Mobile: esconde logo grande, mostra mini com área maior */
+  @media (max-width: 991px) {
+    .navbar .navbar-brand-wrapper {
+      width: 160px !important;
+      flex-shrink: 0;
+      padding: 0 0.4rem;
+    }
+
+    .navbar .navbar-brand-wrapper .navbar-brand.brand-logo {
+      display: none !important;
+    }
+
+    .navbar .navbar-brand-wrapper .navbar-brand.brand-logo-mini {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 0.35rem !important;
+      line-height: 1 !important;
+    }
+
+    .navbar .navbar-brand-wrapper .navbar-brand.brand-logo-mini .navbar-logo-mobile {
+      height: 38px !important;
+      width: auto !important;
+      max-width: 150px !important;
+      object-fit: contain !important;
+      object-position: center !important;
+      display: block !important;
+      margin: 0 auto !important;
+    }
   }
 
-  /* Estilos para logo e nome do tenant no lugar do search */
-  .tenant-brand-display {
-    padding: 0.5rem 1rem;
-    gap: 0.75rem;
+  @media (max-width: 480px) {
+    .navbar .navbar-brand-wrapper {
+      width: 140px !important;
+    }
+
+    .navbar .navbar-brand-wrapper .navbar-brand.brand-logo-mini .navbar-logo-mobile {
+      height: 34px !important;
+      max-width: 128px !important;
+    }
   }
-
-  .tenant-logo-container {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .tenant-logo-navbar {
-    max-height: 24px !important;
-    max-width: 80px !important;
-    height: 24px !important;
-    width: auto !important;
-    object-fit: contain !important;
-    object-position: center !important;
-    display: block !important;
-  }
-
-  /* Garantir que imagens dentro do search-field respeitem o tamanho */
-  .search-field img,
-  .search-field .tenant-logo-navbar {
-    max-height: 24px !important;
-    max-width: 80px !important;
-    height: auto !important;
-    width: auto !important;
-  }
-
-  .tenant-name-navbar {
-    color: #212529;
-    font-size: 1rem;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
-  }
-
-
 </style>
-@endpush
 
 @push('scripts')
 <script>
@@ -180,42 +171,14 @@ document.addEventListener('DOMContentLoaded', function() {
 @endpush
 <nav class="navbar default-layout-navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
   <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
-    @php
-      // Buscar tenant da sessão (já cacheado no login/selectLocation)
-      $tenant = session('tenant');
-
-      // Se não encontrou tenant, usar nome padrão do sistema
-      if (!$tenant) {
-        $tenantName = 'VisaoSis';
-        $tenantLogo = asset('assets/images/logo.svg');
-      } else {
-        // Usa dados do tenant da sessão (sem queries ao banco)
-        $tenantName = (property_exists($tenant, 'name') && $tenant->name) 
-          ? $tenant->name 
-          : ((property_exists($tenant, 'trade_name') && $tenant->trade_name) 
-            ? $tenant->trade_name 
-            : 'VisaoSis');
-        
-        // Constrói a URL da logo principal
-        $logoPath = property_exists($tenant, 'logo_path') ? $tenant->logo_path : null;
-        if (!empty($logoPath)) {
-          // Se já é uma URL completa, retorna como está
-          if (filter_var($logoPath, FILTER_VALIDATE_URL)) {
-            $tenantLogo = $logoPath;
-          } else {
-            // Se é um caminho relativo, constrói a URL completa do Cerberus
-            $cerberusUrl = env('CERBERUS_URL', 'http://localhost:8000');
-            $tenantLogo = rtrim($cerberusUrl, '/') . '/storage/' . ltrim($logoPath, '/');
-          }
-        } else {
-          $tenantLogo = asset('assets/images/logo.svg');
-        }
-      }
-    @endphp
+    {{-- Desktop --}}
     <a class="navbar-brand brand-logo d-flex align-items-center justify-content-center" href="{{ route('dashboard') }}">
-      <img src="{{ asset('assets/images/visaosis_logo.svg') }}" alt="VisaoSis" class="navbar-logo-main" style="max-height: 60px; max-width: 200px; height: 60px; width: auto; object-fit: contain;" />
+      <img src="{{ asset('assets/images/visaosis_logo.svg') }}" alt="VisaoSis" class="navbar-logo-main" />
     </a>
-  
+    {{-- Mobile (tema esconde brand-logo e mostra brand-logo-mini abaixo de 991px) --}}
+    <a class="navbar-brand brand-logo-mini d-flex align-items-center justify-content-center" href="{{ route('dashboard') }}" title="VisaoSis">
+      <img src="{{ asset('assets/images/visaosis_logo.svg') }}" alt="VisaoSis" class="navbar-logo-mobile" />
+    </a>
   </div>
   <div class="navbar-menu-wrapper d-flex align-items-stretch">
     <ul class="navbar-nav navbar-nav-right">

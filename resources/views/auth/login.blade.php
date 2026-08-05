@@ -14,14 +14,18 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            background: #ffffff;
+            -webkit-text-size-adjust: 100%;
         }
         
         .login-container {
             display: flex;
             height: 100vh;
-            width: 100vw;
+            height: 100dvh;
+            width: 100%;
+            max-width: 100vw;
         }
-        
+
         /* Seção da Imagem (Lado Esquerdo) */
         .image-section {
             flex: 2;
@@ -367,50 +371,205 @@
         }
         
         /* Responsividade */
-        @media (max-width: 768px) {
+        @media (max-width: 991px) {
+            body {
+                overflow-x: hidden;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
             .login-container {
                 flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                min-height: 100dvh;
             }
-            
+
+            /* Hero lateral vira faixa compacta no topo */
             .image-section {
-                flex: 1;
-                min-height: 40vh;
+                flex: 0 0 auto;
+                min-height: 0;
+                height: auto;
+                padding: 1.25rem 1rem 1.5rem;
+                align-items: flex-start;
+                justify-content: center;
             }
-            
+
+            .image-content {
+                padding: 0;
+                width: 100%;
+                text-align: left;
+            }
+
+            .logo-section {
+                margin-bottom: 0;
+                display: flex;
+                align-items: center;
+                gap: 0.85rem;
+            }
+
+            .logo-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                margin: 0;
+                flex-shrink: 0;
+            }
+
+            .logo-icon i {
+                font-size: 1.35rem;
+            }
+
+            .logo-text {
+                text-align: left;
+            }
+
+            .logo-section .brand-title {
+                font-size: 1.45rem;
+                margin-bottom: 0.1rem;
+                line-height: 1.15;
+            }
+
+            .logo-section .brand-subtitle {
+                font-size: 0.85rem;
+                margin: 0;
+                line-height: 1.2;
+            }
+
+            .welcome-text {
+                display: none;
+            }
+
             .login-section {
-                flex: 2;
-                padding: 1.5rem;
+                flex: 1 1 auto;
+                padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+                align-items: flex-start;
+                justify-content: flex-start;
             }
-            
+
             .login-form-container {
                 margin-top: 0;
+                max-width: 100%;
             }
-            
-            .brand-title {
-                font-size: 2rem;
+
+            .signin-header {
+                margin-bottom: 1.5rem;
+                text-align: left;
             }
-            
-            .brand-subtitle {
+
+            .signin-title {
+                font-size: 1.4rem;
+            }
+
+            .signin-subtitle {
+                font-size: 0.9rem;
+            }
+
+            .form-group {
+                margin-bottom: 1.15rem;
+            }
+
+            /* 16px evita zoom automático no iOS */
+            .form-input {
+                font-size: 16px;
+                padding: 0.95rem 1rem;
+                border-radius: 10px;
+            }
+
+            .login-button {
+                padding: 1rem;
                 font-size: 1rem;
+                border-radius: 10px;
+                min-height: 48px;
+            }
+
+            .login-footer {
+                margin-top: 1.5rem;
+                padding-top: 1.15rem;
+                font-size: 0.8rem;
+            }
+
+            .user-info-card,
+            .user-loading-card {
+                border-radius: 10px;
+            }
+
+            .user-info-content {
+                align-items: flex-start;
+                padding-right: 1.25rem;
+            }
+
+            .user-details h4 {
+                font-size: 0.9rem;
+                word-break: break-word;
+            }
+
+            .user-details p {
+                font-size: 0.78rem;
+                word-break: break-word;
             }
         }
-        
+
         @media (max-width: 480px) {
             .image-section {
-                min-height: 30vh;
+                padding: 1rem 1rem 1.15rem;
             }
-            
-            .brand-title {
-                font-size: 1.5rem;
-            }
-            
+
             .logo-icon {
-                width: 60px;
-                height: 60px;
+                width: 42px;
+                height: 42px;
+                border-radius: 10px;
             }
-            
+
             .logo-icon i {
-                font-size: 1.8rem;
+                font-size: 1.15rem;
+            }
+
+            .logo-section .brand-title {
+                font-size: 1.3rem;
+            }
+
+            .logo-section .brand-subtitle {
+                font-size: 0.8rem;
+            }
+
+            .login-section {
+                padding: 1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            .signin-title {
+                font-size: 1.25rem;
+            }
+
+            .signin-subtitle {
+                font-size: 0.85rem;
+            }
+
+            .form-label {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Telas bem baixas (landscape / teclado aberto) */
+        @media (max-width: 991px) and (max-height: 560px) {
+            .image-section {
+                padding: 0.75rem 1rem;
+            }
+
+            .logo-icon {
+                display: none;
+            }
+
+            .logo-section .brand-title {
+                font-size: 1.15rem;
+            }
+
+            .login-section {
+                padding-top: 1rem;
+            }
+
+            .signin-header {
+                margin-bottom: 1rem;
             }
         }
     </style>
@@ -425,8 +584,10 @@
                     <div class="logo-icon">
                         <i class="fas fa-eye"></i>
                     </div>
-                    <h1 class="brand-title">VisaoSis</h1>
-                    <p class="brand-subtitle">Sistema de Gestão</p>
+                    <div class="logo-text">
+                        <h1 class="brand-title">VisaoSis</h1>
+                        <p class="brand-subtitle">Sistema de Gestão</p>
+                    </div>
                 </div>
                 <div class="welcome-text">
                     <p>Bem-vindo ao sistema de gestão mais completo.</p>

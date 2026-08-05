@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Paciente')
+@section('title', 'Editar Cliente')
 
 @section('content')
     <div class="d-xl-flex justify-content-between align-items-start mb-4">
         <div>
             <h2 class="text-dark font-weight-bold mb-2">
                 <i class="mdi mdi-account-edit-outline me-2"></i>
-                Editar Paciente
+                Editar Cliente
             </h2>
-            <p class="text-muted mb-0">Atualizar dados do paciente</p>
+            <p class="text-muted mb-0">Atualizar dados do cliente</p>
         </div>
 
         <div class="d-flex gap-2">
@@ -265,11 +265,11 @@
                                     <input class="form-check-input" type="checkbox" value="1" id="ativo"
                                         name="ativo" {{ old('ativo', $pessoa->ativo) ? 'checked' : '' }}>
                                     <label class="form-check-label" for="ativo">
-                                        Paciente ativo
+                                        Cliente ativo
                                     </label>
                                 </div>
                                 <small class="form-text text-muted">
-                                    Desmarque para desativar o paciente sem excluí-lo do sistema.
+                                    Desmarque para desativar o cliente sem excluí-lo do sistema.
                                 </small>
                             </div>
                         </div>
@@ -292,7 +292,7 @@
                             </a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="mdi mdi-check me-2"></i>
-                                Atualizar Paciente
+                                Atualizar Cliente
                             </button>
                         </div>
                     </form>
