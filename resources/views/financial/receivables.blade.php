@@ -20,7 +20,7 @@
 
     <!-- Resumo Rápido -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
                     <div class="clearfix">
@@ -40,7 +40,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
                     <div class="clearfix">
@@ -60,7 +60,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
                     <div class="clearfix">
@@ -80,7 +80,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
                     <div class="clearfix">
@@ -106,59 +106,78 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">
                         <i class="mdi mdi-filter me-2"></i>
                         Filtros
                     </h6>
                 </div>
                 <div class="card-body">
-                    <form class="row g-3" id="filtersForm" method="GET" action="{{ route('financial.receivables') }}">
-                        <div class="col-md-2">
+                    <form class="row g-3 align-items-end form-aligned-sm js-list-filter-form" id="filtersForm"
+                        method="GET" action="{{ route('financial.receivables') }}">
+                        <div class="col-md-3 col-sm-6">
                             <label for="searchInput" class="form-label">Buscar</label>
-                            <input type="text" class="form-control" placeholder="cliente, venda..." id="searchInput"
-                                name="q" value="{{ $filters['q'] ?? '' }}">
+                            <input type="text" class="form-control form-control-sm" placeholder="cliente, venda..."
+                                id="searchInput" name="q" value="{{ $filters['q'] ?? '' }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-sm-6">
                             <label for="statusFilter" class="form-label">Status</label>
-                            <select class="form-select" id="statusFilter" name="status">
+                            <select class="form-select form-select-sm" id="statusFilter" name="status"
+                                onchange="applyFilters()">
                                 <option value="">Todos</option>
-                                <option value="vencida">Vencidas</option>
-                                <option value="vence_hoje">Vence Hoje</option>
-                                <option value="vence_semana">Vence na Semana</option>
-                                <option value="em_dia">Em Dia</option>
-                                <option value="paga">Pagas</option>
+                                <option value="vencida" {{ request('status') === 'vencida' ? 'selected' : '' }}>Vencidas
+                                </option>
+                                <option value="vence_hoje" {{ request('status') === 'vence_hoje' ? 'selected' : '' }}>
+                                    Vence Hoje</option>
+                                <option value="vence_semana" {{ request('status') === 'vence_semana' ? 'selected' : '' }}>
+                                    Vence na Semana</option>
+                                <option value="em_dia" {{ request('status') === 'em_dia' ? 'selected' : '' }}>Em Dia
+                                </option>
+                                <option value="paga" {{ request('status') === 'paga' ? 'selected' : '' }}>Pagas
+                                </option>
+                                <option value="pagamento_parcial"
+                                    {{ request('status') === 'pagamento_parcial' ? 'selected' : '' }}>Pagamento
+                                    Parcial</option>
+                                <option value="saldo_remanescente"
+                                    {{ request('status') === 'saldo_remanescente' ? 'selected' : '' }}>Saldo
+                                    Remanescente</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-sm-6">
                             <label for="startDate" class="form-label">Data Inicial</label>
-                            <input type="date" class="form-control" id="startDate" name="start_date"
-                                placeholder="Data Inicial" value="{{ $filters['start_date'] ?? '' }}">
+                            <input type="date" class="form-control form-control-sm" id="startDate" name="start_date"
+                                value="{{ $filters['start_date'] ?? '' }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-sm-6">
                             <label for="endDate" class="form-label">Data Final</label>
-                            <input type="date" class="form-control" id="endDate" name="end_date"
-                                placeholder="Data Final" value="{{ $filters['end_date'] ?? '' }}">
+                            <input type="date" class="form-control form-control-sm" id="endDate" name="end_date"
+                                value="{{ $filters['end_date'] ?? '' }}">
                         </div>
-
-                        <div class="col-md-2">
+                        <div class="col-md-2 col-sm-6">
                             <label for="orderBy" class="form-label">Ordenar Por</label>
-                            <select class="form-select" id="orderBy" name="order_by">
-                                <option value="vencimento">Vencimento</option>
-                                <option value="valor">Valor</option>
-                                <option value="cliente">Cliente</option>
-                                <option value="atraso">Dias Atraso</option>
+                            <select class="form-select form-select-sm" id="orderBy" name="order_by"
+                                onchange="applyFilters()">
+                                <option value="vencimento"
+                                    {{ request('order_by', 'vencimento') === 'vencimento' ? 'selected' : '' }}>
+                                    Vencimento</option>
+                                <option value="valor" {{ request('order_by') === 'valor' ? 'selected' : '' }}>Valor
+                                </option>
+                                <option value="cliente" {{ request('order_by') === 'cliente' ? 'selected' : '' }}>
+                                    Cliente</option>
+                                <option value="atraso" {{ request('order_by') === 'atraso' ? 'selected' : '' }}>Dias
+                                    Atraso</option>
                             </select>
                         </div>
-                        <div class="col-md-1">
+                        <div class="col-md-1 col-sm-6 d-sm-none d-md-block">
                             <label class="form-label d-block">&nbsp;</label>
-                            <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
+                            <button type="button" class="btn btn-primary btn-sm w-100" onclick="applyFilters()">
                                 <i class="mdi mdi-magnify"></i>
                             </button>
                         </div>
-                        <div class="col-md-1">
+                        <div class="col-md-1 col-sm-6">
                             <label for="perPage" class="form-label">Por página</label>
-                            <select class="form-select" id="perPage" name="per_page" onchange="applyFilters()">
+                            <select class="form-select form-select-sm" id="perPage" name="per_page"
+                                onchange="applyFilters()">
                                 <option value="10"
                                     {{ (int) ($filters['per_page'] ?? ($perPage ?? 10)) === 10 ? 'selected' : '' }}>10
                                 </option>
@@ -172,6 +191,11 @@
                                     {{ (int) ($filters['per_page'] ?? ($perPage ?? 10)) === 100 ? 'selected' : '' }}>100
                                 </option>
                             </select>
+                        </div>
+                        <div class="col-12 d-md-none d-sm-block">
+                            <button type="button" class="btn btn-primary btn-sm w-100" onclick="applyFilters()">
+                                <i class="mdi mdi-magnify me-1"></i>Aplicar Filtros
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -203,11 +227,10 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive list-actions-table-wrap">
-                        <table class="table table-hover mb-0 list-actions-table">
+                        <table class="table table-hover mb-0 list-actions-table align-middle">
                             <thead class="table-light">
                                 <tr>
-
-                                    <th>Cliente</th>
+                                    <th class="list-actions-col-descricao">Cliente</th>
                                     <th class="d-none d-md-table-cell">Venda</th>
                                     <th class="d-none d-md-table-cell">Parcela</th>
                                     <th>Vencimento</th>
@@ -221,28 +244,45 @@
                                     @php
                                         $statusPagamentoParcial = $receivable['status'] === 'pagamento_parcial';
                                         $statusSaldoRemanescente = $receivable['status'] === 'saldo_remanescente';
+                                        $showUrl = $receivable['venda_id']
+                                            ? route('sales.show', [
+                                                'sale' => $receivable['venda_id'],
+                                                'from_history' => 1,
+                                                'return_url' => url()->full(),
+                                            ])
+                                            : null;
                                     @endphp
-                                    <tr
+                                    <tr @if ($showUrl) onclick="window.location='{{ $showUrl }}'" style="cursor: pointer;" @endif
                                         class="@if ($receivable['status'] == 'vencida') table-danger @elseif($receivable['status'] == 'vence_hoje') table-warning @elseif($receivable['status'] == 'vence_semana') table-info @elseif($receivable['status'] == 'paga') table-success @elseif($statusPagamentoParcial || $statusSaldoRemanescente) table-light @endif">
 
-                                        <td>
+                                        <td class="list-actions-col-descricao">
                                             <div class="d-flex align-items-center">
                                                 <div
-                                                    class="avatar-sm @if ($receivable['status'] == 'vencida') bg-danger @elseif($receivable['status'] == 'vence_hoje') bg-warning @elseif($receivable['status'] == 'vence_semana') bg-info @elseif($receivable['status'] == 'paga') bg-success @elseif($statusPagamentoParcial) bg-warning @elseif($statusSaldoRemanescente) bg-secondary @else bg-success @endif text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                                    class="avatar-circle @if ($receivable['status'] == 'vencida') bg-danger @elseif($receivable['status'] == 'vence_hoje') bg-warning @elseif($receivable['status'] == 'vence_semana') bg-info @elseif($receivable['status'] == 'paga') bg-success @elseif($statusPagamentoParcial) bg-warning @elseif($statusSaldoRemanescente) bg-secondary @else bg-success @endif text-white me-3 d-none d-sm-flex">
                                                     {{ mb_substr($receivable['cliente'], 0, 2) }}
                                                 </div>
-                                                <div>
-                                                    <strong>{{ $receivable['cliente'] }}</strong>
-                                                    <br><small class="text-muted">{{ $receivable['telefone'] }}</small>
+                                                <div class="list-actions-desc-text">
+                                                    <h6 class="mb-0">{{ $receivable['cliente'] }}</h6>
+                                                    <small class="text-muted">{{ $receivable['telefone'] }}</small>
+                                                    <small class="text-muted d-sm-none d-block">
+                                                        Venda: <strong>{{ $receivable['venda_id'] }}</strong>
+                                                        ·
+                                                        Parcela: <span
+                                                            class="badge bg-secondary">{{ $receivable['parcela'] }}</span>
+                                                    </small>
+                                                    <small class="text-muted d-sm-none d-block">
+                                                        Total: R$
+                                                        {{ number_format($receivable['valor_total'], 2, ',', '.') }}
+                                                    </small>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="d-none d-md-table-cell">
+                                        <td class="d-none d-md-table-cell" data-label="Venda">
                                             <strong>{{ $receivable['venda_id'] }}</strong>
                                             <br><small class="text-muted">Total: R$
                                                 {{ number_format($receivable['valor_total'], 2, ',', '.') }}</small>
                                         </td>
-                                        <td class="d-none d-md-table-cell">
+                                        <td class="d-none d-md-table-cell" data-label="Parcela">
                                             <span class="badge bg-secondary">{{ $receivable['parcela'] }}</span>
                                             <br><small class="text-muted">R$
                                                 {{ number_format($receivable['valor_parcela'], 2, ',', '.') }}</small>
@@ -251,9 +291,9 @@
                                                     {{ number_format($receivable['valor_recebido'], 2, ',', '.') }}</small>
                                             @endif
                                         </td>
-                                        <td>
+                                        <td data-label="Vencimento">
                                             <span
-                                                class="@if ($receivable['status'] == 'vencida') text-danger @elseif($receivable['status'] == 'vence_hoje') text-warning @elseif($receivable['status'] == 'vence_semana') text-info @elseif($statusPagamentoParcial || $statusSaldoRemanescente) text-muted @else text-success @endif">
+                                                class="@if ($receivable['status'] == 'vencida') text-danger @elseif($receivable['status'] == 'vence_hoje') text-warning @elseif($receivable['status'] == 'vence_semana') text-info @elseif($statusPagamentoParcial || $statusSaldoRemanescente) text-muted @else text-success @endif fw-bold">
                                                 {{ \Carbon\Carbon::parse($receivable['vencimento'])->format('d/m/Y') }}
                                             </span>
                                             @if ($receivable['dias_atraso'] > 0)
@@ -261,7 +301,7 @@
                                                     atraso</small>
                                             @endif
                                         </td>
-                                        <td>
+                                        <td data-label="Valor">
                                             @if ($receivable['juros'] > 0)
                                                 <span class="text-decoration-line-through text-muted">R$
                                                     {{ number_format($receivable['valor_parcela'], 2, ',', '.') }}</span>
@@ -270,7 +310,7 @@
                                                 <br><small class="text-danger">+R$
                                                     {{ number_format($receivable['juros'], 2, ',', '.') }} juros</small>
                                             @else
-                                                <strong>R$
+                                                <strong class="text-success">R$
                                                     {{ number_format($receivable['valor_atualizado'], 2, ',', '.') }}</strong>
                                             @endif
                                             @if ($statusPagamentoParcial)
@@ -280,7 +320,7 @@
                                                 </small>
                                             @endif
                                         </td>
-                                        <td>
+                                        <td data-label="Status">
                                             @if ($receivable['status'] == 'vencida')
                                                 <span class="badge bg-danger">
                                                     <i class="mdi mdi-alert-circle me-1"></i>Vencida
@@ -312,7 +352,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm">
+                                            <div class="btn-group btn-group-sm" onclick="event.stopPropagation();">
                                                 <button class="btn btn-outline-secondary dropdown-toggle"
                                                     data-bs-toggle="dropdown" aria-expanded="false">
                                                     <i class="mdi mdi-dots-vertical"></i>
@@ -324,6 +364,14 @@
                                                                 disabled>
                                                                 <i class="mdi mdi-check me-2"></i>Pagamento confirmado
                                                             </button>
+                                                        </li>
+                                                    @endif
+
+                                                    @if ($showUrl)
+                                                        <li>
+                                                            <a class="dropdown-item" href="{{ $showUrl }}">
+                                                                <i class="mdi mdi-eye me-2"></i>Ver Venda
+                                                            </a>
                                                         </li>
                                                     @endif
 
@@ -392,13 +440,13 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">
+                    <div class="d-flex justify-content-between align-items-center flex-column flex-sm-row gap-2">
+                        <small class="text-muted text-center text-sm-start w-100">
                             Mostrando {{ $receivablesPaginator->firstItem() ?? 0 }} a
                             {{ $receivablesPaginator->lastItem() ?? 0 }}
                             de {{ $receivablesPaginator->total() }} parcelas
                         </small>
-                        <small class="text-muted">
+                        <small class="text-muted text-center text-sm-end w-100">
                             Total da página: <span class="fw-bold text-success">R$
                                 {{ number_format(collect($receivables->items())->sum('valor_atualizado'), 2, ',', '.') }}</span>
                         </small>
@@ -560,8 +608,182 @@
                 font-weight: bold;
             }
 
+            .avatar-circle {
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+                font-weight: bold;
+                border-radius: 50%;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
             .table-hover tbody tr:hover {
                 background-color: rgba(0, 123, 255, 0.05);
+            }
+
+            @media (max-width: 767.98px) {
+                .page-title-wrapper h2 {
+                    font-size: 1.25rem;
+                }
+
+                .page-title-wrapper p {
+                    font-size: 0.875rem;
+                }
+
+                .card-statistics .card-body {
+                    padding: 0.75rem;
+                }
+
+                .card-statistics p.mb-0.text-right {
+                    font-size: 0.75rem;
+                }
+
+                .card-statistics h3 {
+                    font-size: 1.1rem;
+                }
+
+                .card-statistics small {
+                    font-size: 0.7rem;
+                }
+
+                .list-actions-table-wrap {
+                    border: 0;
+                    background: transparent;
+                }
+
+                .list-actions-table {
+                    border: 0;
+                }
+
+                .list-actions-table thead {
+                    display: none;
+                }
+
+                .list-actions-table tbody {
+                    display: block;
+                }
+
+                .list-actions-table tbody tr {
+                    display: block;
+                    background: #ffffff;
+                    border: 1px solid #e9ecef;
+                    border-radius: 0.5rem;
+                    padding: 0.85rem;
+                    margin-bottom: 0.75rem;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+                    position: relative;
+                }
+
+                .list-actions-table tbody tr.table-danger {
+                    background-color: #fff5f5 !important;
+                    border-color: #fecaca;
+                }
+
+                .list-actions-table tbody tr.table-warning {
+                    background-color: #fffbeb !important;
+                    border-color: #fde68a;
+                }
+
+                .list-actions-table tbody tr.table-info {
+                    background-color: #eff6ff !important;
+                    border-color: #bfdbfe;
+                }
+
+                .list-actions-table tbody tr.table-success {
+                    background-color: #f0fdf4 !important;
+                    border-color: #bbf7d0;
+                }
+
+                .list-actions-table tbody tr.table-light {
+                    background-color: #f8fafc !important;
+                    border-color: #e2e8f0;
+                }
+
+                .list-actions-table tbody td {
+                    display: block;
+                    border: 0 !important;
+                    padding: 0.25rem 0 !important;
+                    background: transparent !important;
+                    text-align: left !important;
+                }
+
+                .list-actions-table tbody td::before {
+                    content: attr(data-label);
+                    font-weight: 600;
+                    color: #475569;
+                    font-size: 0.75rem;
+                    margin-right: 0.4rem;
+                }
+
+                .list-actions-table tbody td.list-actions-col-descricao::before,
+                .list-actions-table tbody td.list-actions-col-acoes::before {
+                    content: none;
+                }
+
+                .list-actions-table tbody td.list-actions-col-descricao {
+                    padding-bottom: 0.5rem !important;
+                    border-bottom: 1px dashed #e5e7eb !important;
+                    margin-bottom: 0.4rem;
+                }
+
+                .list-actions-desc-text h6 {
+                    font-size: 0.95rem;
+                    margin-bottom: 0.1rem !important;
+                }
+
+                .list-actions-desc-text small {
+                    font-size: 0.75rem;
+                    display: block;
+                }
+
+                .list-actions-table tbody td.list-actions-col-acoes {
+                    padding-top: 0.5rem !important;
+                    border-top: 1px dashed #e5e7eb !important;
+                    margin-top: 0.35rem;
+                    text-align: right !important;
+                }
+
+                .list-actions-col-acoes .btn-group-sm>.btn,
+                .list-actions-col-acoes .btn-sm {
+                    padding: 0.35rem 0.55rem;
+                    font-size: 0.85rem;
+                }
+
+                .pagination {
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                .pagination .page-link {
+                    padding: 0.4rem 0.6rem;
+                    font-size: 0.85rem;
+                }
+            }
+
+            @media (max-width: 575.98px) {
+                .card-header h6 {
+                    font-size: 0.95rem;
+                }
+
+                .badge {
+                    font-size: 0.7rem;
+                    padding: 0.25em 0.55em;
+                }
+
+                .list-actions-table tbody tr {
+                    padding: 0.7rem;
+                }
+
+                .list-actions-desc-text h6 {
+                    font-size: 0.9rem;
+                }
+
+                .list-actions-table tbody td {
+                    font-size: 0.85rem;
+                }
             }
         </style>
     @endpush

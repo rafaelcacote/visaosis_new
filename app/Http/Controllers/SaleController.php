@@ -1199,23 +1199,630 @@ class SaleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
 
-        $pedidoVenda = PedidoVenda::where('ativo', true);
+        $locationIds = [];
         if ($tenantId) {
-            $pedidoVenda->where('tenant_id', $tenantId);
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
         }
-        $pedidoVenda = $pedidoVenda->findOrFail($id);
 
-        // Cancelar a venda (soft delete ou mudança de status)
-        $pedidoVenda->update([
-            'status' => 'cancelado',
-            'ativo' => false
+        if (! $tenantId) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tenant não informado na sessão.',
+                ], 403);
+            }
+
+            return redirect()->route('sales.index')->with('error', 'Tenant não informado.');
+        }
+
+        $validated = $request->validate([
+            'motivo' => 'nullable|string|max:1000',
+            'return_url' => 'nullable|url|max:500',
+        ], [
+            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
+            'max.url' => 'A URL de retorno não pode ter mais que :max caracteres.',
+        ], [
+            'motivo' => 'Motivo',
         ]);
 
-        return redirect()->route('sales.index')->with('success', 'Venda cancelada com sucesso!');
+        $pedidoVenda = PedidoVenda::query()
+            ->with(['parcelas'])
+            ->where('ativo', true)
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $pedidoVenda) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Venda não encontrada.',
+                ], 404);
+            }
+
+            return redirect()->route('sales.index')->with('error', 'Venda não encontrada.');
+        }
+
+        $statusPedidoRaw = strtolower((string) ($pedidoVenda->status ?? ''));
+        $statusPedidoMap = [
+            'aberto'   => 'pendente',
+            'faturado' => 'finalizada',
+            'cancelado' => 'cancelada',
+        ];
+        $statusPedido = $statusPedidoMap[$statusPedidoRaw] ?? $statusPedidoRaw;
+
+        if ($statusPedido === 'cancelada') {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Esta venda já está cancelada.',
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', 'Esta venda já está cancelada.');
+        }
+
+        $tz = 'America/Manaus';
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        try {
+            DB::beginTransaction();
+
+            $parcelas = $pedidoVenda->parcelas ? $pedidoVenda->parcelas : collect([]);
+            $temParcelaPaga = false;
+            $parcelasPagasInfo = [];
+
+            foreach ($parcelas as $parcela) {
+                $rawStatusParcela = strtolower((string) ($parcela->status ?? ''));
+                $parcelaIsPaga = ! empty($parcela->pago_em)
+                    || in_array($rawStatusParcela, $paidStatuses, true);
+
+                if ($parcelaIsPaga && ! in_array($rawStatusParcela, ['cancelado', 'cancelada'], true)) {
+                    $temParcelaPaga = true;
+                    $parcelasPagasInfo[] = $parcela;
+                }
+            }
+
+            if ($temParcelaPaga) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Não é possível cancelar a venda: existem parcelas já pagas. Reabra as parcelas primeiro.',
+                    ], 422);
+                }
+
+                DB::rollBack();
+                return redirect()->back()
+                    ->with('error', 'Não é possível cancelar a venda: existem parcelas já pagas. Reabra as parcelas primeiro.');
+            }
+
+            $historicoVenda = "Venda cancelada em " . Carbon::now($tz)->format('d/m/Y H:i') . ".";
+            $historicoVenda .= " Status anterior: '{$statusPedido}'.";
+            if (! empty($validated['motivo'])) {
+                $historicoVenda .= " Motivo: " . trim($validated['motivo']) . ".";
+            }
+
+            $pedidoVenda->status = 'cancelado';
+            $pedidoVenda->ativo = false;
+
+            if (! empty($pedidoVenda->observacoes)) {
+                $pedidoVenda->observacoes = rtrim($pedidoVenda->observacoes) . "\n\n" . $historicoVenda;
+            } else {
+                $pedidoVenda->observacoes = $historicoVenda;
+            }
+
+            $pedidoVenda->save();
+
+            foreach ($parcelas as $parcela) {
+                $rawStatusParcela = strtolower((string) ($parcela->status ?? ''));
+                $parcelaIsPaga = ! empty($parcela->pago_em)
+                    || in_array($rawStatusParcela, $paidStatuses, true);
+
+                if ($parcelaIsPaga) {
+                    continue;
+                }
+
+                $obsParcela = "Parcela cancelada automaticamente em " . Carbon::now($tz)->format('d/m/Y H:i') . " em razão do cancelamento da venda #{$pedidoVenda->id}.";
+                if (! empty($validated['motivo'])) {
+                    $obsParcela .= " Motivo do cancelamento da venda: " . trim($validated['motivo']) . ".";
+                }
+
+                if (! empty($parcela->observacoes)) {
+                    $parcela->observacoes = rtrim($parcela->observacoes) . "\n\n" . $obsParcela;
+                } else {
+                    $parcela->observacoes = $obsParcela;
+                }
+
+                $parcela->status = 'cancelada';
+                $parcela->save();
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao cancelar venda: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Erro ao cancelar venda: ' . $e->getMessage());
+        }
+
+        $returnUrl = ! empty($validated['return_url'])
+            ? $validated['return_url']
+            : route('sales.index');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Venda cancelada com sucesso.',
+                'return_url' => $returnUrl,
+                'venda' => [
+                    'id' => $pedidoVenda->id,
+                    'status' => (string) $pedidoVenda->status,
+                    'ativo' => (bool) $pedidoVenda->ativo,
+                ],
+            ]);
+        }
+
+        return redirect()->to($returnUrl)
+            ->with('success', 'Venda cancelada com sucesso.');
+    }
+
+    public function parcelaDetails(string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        $locationIds = [];
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
+        }
+
+        if (! $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tenant não informado na sessão.',
+            ], 403);
+        }
+
+        $parcela = PedidoVendaParcela::query()
+            ->with(['pedido.cliente'])
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $parcela) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parcela não encontrada.',
+            ], 404);
+        }
+
+        $tz = 'America/Manaus';
+        $pedido = $parcela->pedido;
+        $cliente = $pedido?->cliente;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'parcela' => [
+                    'id' => $parcela->id,
+                    'pedido_venda_id' => $parcela->pedido_venda_id,
+                    'numero_parcela' => (int) $parcela->numero_parcela,
+                    'total_parcelas' => (int) $parcela->total_parcelas,
+                    'valor' => (float) ($parcela->valor ?? 0),
+                    'vencimento_em' => $parcela->vencimento_em
+                        ? Carbon::parse($parcela->vencimento_em, $tz)->toDateString()
+                        : null,
+                    'status' => (string) ($parcela->status ?? ''),
+                    'forma_pagamento' => (string) ($parcela->forma_pagamento ?? ''),
+                    'pago_em' => $parcela->pago_em
+                        ? Carbon::parse($parcela->pago_em, $tz)->format('Y-m-d H:i:s')
+                        : null,
+                    'valor_recebido' => (float) ($parcela->valor_recebido ?? 0),
+                    'valor_desconto' => (float) ($parcela->valor_desconto ?? 0),
+                    'observacoes' => (string) ($parcela->observacoes ?? ''),
+                ],
+                'pedido' => $pedido ? [
+                    'id' => $pedido->id,
+                    'valor_total' => (float) ($pedido->valor_total ?? 0),
+                    'status' => (string) ($pedido->status ?? ''),
+                ] : null,
+                'cliente' => $cliente ? [
+                    'id' => $cliente->id,
+                    'nome' => (string) $cliente->nome,
+                    'cpf' => (string) ($cliente->cpf ?? ''),
+                ] : null,
+            ],
+        ]);
+    }
+
+    public function updateParcela(Request $request, string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        $locationIds = [];
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
+        }
+
+        if (! $tenantId) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tenant não informado na sessão.',
+                ], 403);
+            }
+
+            return redirect()->route('sales.index')->with('error', 'Tenant não informado.');
+        }
+
+        $validated = $request->validate([
+            'vencimento_em' => 'required|date_format:Y-m-d',
+            'valor' => 'required|numeric|min:0',
+            'forma_pagamento' => 'nullable|string|max:60',
+            'observacoes' => 'nullable|string|max:1000',
+        ], [
+            'required' => 'O campo :attribute é obrigatório.',
+            'date_format' => 'O campo :attribute deve estar no formato YYYY-MM-DD.',
+            'numeric' => 'O campo :attribute deve ser numérico.',
+            'min.numeric' => 'O campo :attribute deve ser maior ou igual a zero.',
+            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
+        ], [
+            'vencimento_em' => 'Novo vencimento',
+            'valor' => 'Novo valor',
+        ]);
+
+        $parcela = PedidoVendaParcela::query()
+            ->with(['pedido'])
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $parcela) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Parcela não encontrada.',
+                ], 404);
+            }
+
+            return redirect()->route('sales.index')->with('error', 'Parcela não encontrada.');
+        }
+
+        $tz = 'America/Manaus';
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+        $isPaid = ! empty($parcela->pago_em)
+            || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+
+        if ($isPaid) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Não é possível editar uma parcela já paga ou cancelada.',
+                ], 422);
+            }
+
+            return redirect()->back()->withInput()
+                ->with('error', 'Não é possível editar uma parcela já paga ou cancelada.');
+        }
+
+        try {
+            $parcela->vencimento_em = Carbon::createFromFormat('Y-m-d', $validated['vencimento_em'], $tz)->startOfDay();
+            $parcela->valor = (float) $validated['valor'];
+
+            if (! empty($validated['forma_pagamento'])) {
+                $parcela->forma_pagamento = (string) $validated['forma_pagamento'];
+            }
+
+            if (! empty($validated['observacoes'])) {
+                $parcela->observacoes = (string) $validated['observacoes'];
+            }
+
+            $rawStatus = strtolower((string) ($parcela->status ?? ''));
+            $isPartialOrRemaining = in_array($rawStatus, ['pagamento_parcial', 'saldo_remanescente'], true);
+
+            if (! $isPartialOrRemaining && empty($parcela->status)) {
+                $parcela->status = 'renegociado';
+            } elseif (! $isPartialOrRemaining && ! in_array($rawStatus, $paidStatuses, true)) {
+                $parcela->status = 'renegociado';
+            }
+
+            $parcela->save();
+        } catch (\Throwable $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao salvar alterações: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()->withInput()
+                ->with('error', 'Erro ao salvar alterações: ' . $e->getMessage());
+        }
+
+        $pedidoId = $parcela->pedido_venda_id;
+        $returnUrl = route('sales.show', ['id' => $pedidoId]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Parcela atualizada com sucesso.',
+                'return_url' => $returnUrl,
+                'parcela' => [
+                    'id' => $parcela->id,
+                    'vencimento_em' => $parcela->vencimento_em
+                        ? Carbon::parse($parcela->vencimento_em, $tz)->toDateString()
+                        : null,
+                    'valor' => (float) $parcela->valor,
+                    'status' => (string) $parcela->status,
+                ],
+            ]);
+        }
+
+        return redirect()->to($returnUrl)
+            ->with('success', 'Parcela atualizada com sucesso.');
+    }
+
+    public function reopenParcela(Request $request, string $id)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        $locationIds = [];
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
+        }
+
+        if (! $tenantId) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tenant não informado na sessão.',
+                ], 403);
+            }
+
+            return redirect()->route('sales.index')->with('error', 'Tenant não informado.');
+        }
+
+        $validated = $request->validate([
+            'motivo' => 'nullable|string|max:1000',
+            'return_url' => 'nullable|url|max:500',
+        ], [
+            'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
+            'max.url' => 'A URL de retorno não pode ter mais que :max caracteres.',
+        ], [
+            'motivo' => 'Motivo',
+        ]);
+
+        $parcela = PedidoVendaParcela::query()
+            ->with(['pedido'])
+            ->whereNull('deleted_at')
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $id)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $parcela) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Parcela não encontrada.',
+                ], 404);
+            }
+
+            return redirect()->route('sales.index')->with('error', 'Parcela não encontrada.');
+        }
+
+        $tz = 'America/Manaus';
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+        $rawStatus = strtolower((string) ($parcela->status ?? ''));
+        $isPaidOrCanceled = ! empty($parcela->pago_em)
+            || in_array($rawStatus, $paidStatuses, true);
+
+        if (! $isPaidOrCanceled) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Esta parcela não está paga ou cancelada, não há necessidade de reabrir.',
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', 'Esta parcela não está paga ou cancelada.');
+        }
+
+        $valorRecebidoAnterior = (float) ($parcela->valor_recebido ?? 0);
+        $valorDescontoAnterior = (float) ($parcela->valor_desconto ?? 0);
+        $formaPagamentoAnterior = (string) ($parcela->forma_pagamento ?? '');
+        $pagoEmAnterior = $parcela->pago_em
+            ? Carbon::parse($parcela->pago_em, $tz)->format('d/m/Y H:i')
+            : null;
+        $statusAnterior = (string) ($parcela->status ?? '');
+
+        try {
+            DB::beginTransaction();
+
+            $parcela->pago_em = null;
+            $parcela->valor_recebido = 0;
+            $parcela->valor_desconto = 0;
+
+            $hoje = Carbon::now($tz)->startOfDay();
+            $vencimento = $parcela->vencimento_em
+                ? Carbon::parse($parcela->vencimento_em, $tz)->startOfDay()
+                : null;
+
+            $novoStatus = 'pendente';
+            if ($vencimento) {
+                if ($vencimento->lt($hoje)) {
+                    $novoStatus = 'vencida';
+                } elseif ($vencimento->eq($hoje)) {
+                    $novoStatus = 'vence_hoje';
+                } elseif ($vencimento->diffInDays($hoje, false) <= 7) {
+                    $novoStatus = 'vence_semana';
+                }
+            }
+
+            $parcela->status = $novoStatus;
+
+            $historico = "Parcela reaberta em " . Carbon::now($tz)->format('d/m/Y H:i') . ".";
+            $historico .= " Status anterior: '{$statusAnterior}'.";
+            if ($pagoEmAnterior) {
+                $historico .= " Pago em: {$pagoEmAnterior}.";
+            }
+            if ($valorRecebidoAnterior > 0) {
+                $historico .= " Valor recebido anterior: R$ " . number_format($valorRecebidoAnterior, 2, ',', '.') . ".";
+            }
+            if ($valorDescontoAnterior > 0) {
+                $historico .= " Desconto anterior: R$ " . number_format($valorDescontoAnterior, 2, ',', '.') . ".";
+            }
+            if (! empty($formaPagamentoAnterior)) {
+                $historico .= " Forma de pagamento anterior: {$formaPagamentoAnterior}.";
+            }
+            if (! empty($validated['motivo'])) {
+                $historico .= " Motivo: " . trim($validated['motivo']) . ".";
+            }
+
+            if (! empty($parcela->observacoes)) {
+                $parcela->observacoes = rtrim($parcela->observacoes) . "\n\n" . $historico;
+            } else {
+                $parcela->observacoes = $historico;
+            }
+
+            $parcela->save();
+
+            $parcelaRemanescenteVinculada = PedidoVendaParcela::query()
+                ->whereNull('deleted_at')
+                ->where('tenant_id', $tenantId)
+                ->where('pedido_venda_id', (int) $parcela->pedido_venda_id)
+                ->where('numero_parcela', (int) $parcela->numero_parcela)
+                ->where('id', '!=', (int) $parcela->id)
+                ->where('status', 'saldo_remanescente')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($parcelaRemanescenteVinculada) {
+                $parcelaRemanescenteVinculada->pago_em = null;
+                $parcelaRemanescenteVinculada->valor_recebido = 0;
+                $parcelaRemanescenteVinculada->valor_desconto = 0;
+                $statusRem = 'pendente';
+                $vencRem = $parcelaRemanescenteVinculada->vencimento_em
+                    ? Carbon::parse($parcelaRemanescenteVinculada->vencimento_em, $tz)->startOfDay()
+                    : null;
+                if ($vencRem) {
+                    if ($vencRem->lt($hoje)) {
+                        $statusRem = 'vencida';
+                    } elseif ($vencRem->eq($hoje)) {
+                        $statusRem = 'vence_hoje';
+                    } elseif ($vencRem->diffInDays($hoje, false) <= 7) {
+                        $statusRem = 'vence_semana';
+                    }
+                }
+                $parcelaRemanescenteVinculada->status = $statusRem;
+
+                $obsRem = "Parcela reaberta automaticamente em " . Carbon::now($tz)->format('d/m/Y H:i') . " em conjunto com a parcela pai #{$parcela->id}.";
+                if (! empty($parcelaRemanescenteVinculada->observacoes)) {
+                    $parcelaRemanescenteVinculada->observacoes = rtrim($parcelaRemanescenteVinculada->observacoes) . "\n\n" . $obsRem;
+                } else {
+                    $parcelaRemanescenteVinculada->observacoes = $obsRem;
+                }
+
+                $parcelaRemanescenteVinculada->save();
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao reabrir parcela: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Erro ao reabrir parcela: ' . $e->getMessage());
+        }
+
+        $pedidoId = $parcela->pedido_venda_id;
+        $returnUrl = ! empty($validated['return_url'])
+            ? $validated['return_url']
+            : route('sales.show', ['id' => $pedidoId]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Parcela reaberta com sucesso.',
+                'return_url' => $returnUrl,
+                'parcela' => [
+                    'id' => $parcela->id,
+                    'vencimento_em' => $parcela->vencimento_em
+                        ? Carbon::parse($parcela->vencimento_em, $tz)->toDateString()
+                        : null,
+                    'valor' => (float) $parcela->valor,
+                    'status' => (string) $parcela->status,
+                ],
+            ]);
+        }
+
+        return redirect()->to($returnUrl)
+            ->with('success', 'Parcela reaberta com sucesso.');
     }
 
     private function discountAuthorizationCacheKey(string $token): string

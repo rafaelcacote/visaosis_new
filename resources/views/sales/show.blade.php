@@ -249,12 +249,21 @@
                                             <th>Valor Recebido</th>
                                             <th>Status</th>
                                             <th>Pago em</th>
+                                            <th width="100" class="text-center">Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($sale['parcelas_detalhes'] as $parcela)
+                                            @php
+                                                $statusRaw = strtolower((string) ($parcela['status'] ?? ''));
+                                                $isPaga = $parcela['status'] === 'paga' || !empty($parcela['pago_em']);
+                                                $isPagamentoParcial = $statusRaw === 'pagamento_parcial';
+                                                $isSaldoRemanescente = $statusRaw === 'saldo_remanescente';
+                                                $isCancelada = in_array($statusRaw, ['cancelada', 'cancelado'], true);
+                                                $podeEditar = !$isPaga && !$isCancelada;
+                                            @endphp
                                             <tr
-                                                class="@if ($parcela['status'] === 'vencida') table-danger @elseif($parcela['status'] === 'vence_hoje') table-warning @elseif($parcela['status'] === 'vence_semana') table-info @elseif($parcela['status'] === 'paga') table-success @endif">
+                                                class="@if ($parcela['status'] === 'vencida') table-danger @elseif($parcela['status'] === 'vence_hoje') table-warning @elseif($parcela['status'] === 'vence_semana') table-info @elseif($isPaga) table-success @elseif($isPagamentoParcial || $isSaldoRemanescente) table-light @endif">
                                                 <td>
                                                     <span class="badge bg-secondary">{{ $parcela['parcela'] }}</span>
                                                     @if (!empty($parcela['forma_pagamento']))
@@ -309,7 +318,15 @@
                                                     </strong>
                                                 </td>
                                                 <td>
-                                                    @if ($parcela['status'] === 'vencida')
+                                                    @if ($isPagamentoParcial)
+                                                        <span class="badge bg-warning text-dark">
+                                                            <i class="mdi mdi-cash-multiple me-1"></i>Pagamento Parcial
+                                                        </span>
+                                                    @elseif($isSaldoRemanescente)
+                                                        <span class="badge bg-secondary">
+                                                            <i class="mdi mdi-receipt-text me-1"></i>Saldo Remanescente
+                                                        </span>
+                                                    @elseif ($parcela['status'] === 'vencida')
                                                         <span class="badge bg-danger">
                                                             <i class="mdi mdi-alert-circle me-1"></i>Vencida
                                                         </span>
@@ -321,7 +338,7 @@
                                                         <span class="badge bg-info">
                                                             <i class="mdi mdi-calendar-week me-1"></i>Vence na Semana
                                                         </span>
-                                                    @elseif($parcela['status'] === 'paga')
+                                                    @elseif($isPaga)
                                                         <span class="badge bg-success">
                                                             <i class="mdi mdi-check-circle me-1"></i>Paga
                                                         </span>
@@ -340,10 +357,149 @@
                                                         <span class="text-muted">Pendente</span>
                                                     @endif
                                                 </td>
+                                                <td class="text-center">
+                                                    @if ($podeEditar)
+                                                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                                            title="Editar parcela"
+                                                            onclick="openEditParcelaModal({{ $parcela['id'] }})">
+                                                            <i class="mdi mdi-pencil"></i>
+                                                        </button>
+                                                    @elseif($isPaga || $isCancelada)
+                                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                            title="Reabrir parcela (estornar pagamento ou cancelamento)"
+                                                            onclick="openReopenParcelaModal({{ $parcela['id'] }}, '{{ $parcela['parcela'] }}')">
+                                                            <i class="mdi mdi-lock-open-outline"></i>
+                                                        </button>
+                                                    @else
+                                                        <span class="text-muted" title="Ação indisponível">
+                                                            <i class="mdi mdi-lock-outline"></i>
+                                                        </span>
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @endforeach
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="editParcelaModal" tabindex="-1" aria-labelledby="editParcelaModalLabel"
+                        aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <form id="editParcelaForm">
+                                    <div class="modal-header bg-warning text-white py-2 px-3">
+                                        <h6 class="modal-title" id="editParcelaModalLabel">
+                                            <i class="mdi mdi-pencil me-1"></i>
+                                            Editar Parcela
+                                            <span id="editParcelaLabel" class="ms-1"></span>
+                                        </h6>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                            aria-label="Fechar"></button>
+                                    </div>
+                                    <div class="modal-body p-3">
+                                        <input type="hidden" id="edit_parcela_id" name="edit_parcela_id"
+                                            value="">
+
+                                        <div class="mb-3">
+                                            <label for="edit_vencimento" class="form-label small fw-bold">Novo Vencimento
+                                                <span class="text-danger">*</span></label>
+                                            <input type="date" id="edit_vencimento" name="vencimento_em"
+                                                class="form-control" required>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="edit_valor" class="form-label small fw-bold">Novo Valor (R$) <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="number" id="edit_valor" name="valor" step="0.01"
+                                                min="0" class="form-control" required>
+                                            <small class="text-muted">Valor principal da parcela (sem juros/multa).</small>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="edit_forma_pagamento" class="form-label small fw-bold">Forma de
+                                                Pagamento</label>
+                                            <input type="text" id="edit_forma_pagamento" name="forma_pagamento"
+                                                class="form-control" placeholder="Ex: Dinheiro, Cartão, Pix..."
+                                                maxlength="60">
+                                        </div>
+
+                                        <div class="mb-0">
+                                            <label for="edit_observacoes"
+                                                class="form-label small fw-bold">Observações</label>
+                                            <textarea id="edit_observacoes" name="observacoes" class="form-control" rows="3" maxlength="1000"
+                                                placeholder="Motivo da alteração, observações internas..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer py-2 px-3">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            data-bs-dismiss="modal">
+                                            <i class="mdi mdi-close me-1"></i>Cancelar
+                                        </button>
+                                        <button type="submit" id="btnSaveEditParcela"
+                                            class="btn btn-warning text-dark btn-sm">
+                                            <i class="mdi mdi-content-save me-1"></i>Salvar Alterações
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="reopenParcelaModal" tabindex="-1"
+                        aria-labelledby="reopenParcelaModalLabel" aria-hidden="true" data-bs-backdrop="static"
+                        data-bs-keyboard="false">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <form id="reopenParcelaForm">
+                                    <div class="modal-header bg-danger text-white py-2 px-3">
+                                        <h6 class="modal-title" id="reopenParcelaModalLabel">
+                                            <i class="mdi mdi-lock-open-outline me-1"></i>
+                                            Reabrir Parcela
+                                        </h6>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                            aria-label="Fechar"></button>
+                                    </div>
+                                    <div class="modal-body p-3">
+                                        <input type="hidden" id="reopen_parcela_id" name="reopen_parcela_id"
+                                            value="">
+
+                                        <div class="alert alert-danger py-2 px-3 mb-3 small">
+                                            <i class="mdi mdi-alert-outline me-1"></i>
+                                            <strong>Atenção:</strong> esta ação irá
+                                            <strong>zerar os dados de pagamento</strong> (data, valor recebido, desconto)
+                                            e redefinir o status da parcela com base no vencimento atual.
+                                            <br>
+                                            Se houver parcela de <em>saldo remanescente</em> vinculada ao mesmo número
+                                            desta,
+                                            ela também será reaberta automaticamente.
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="reopenParcelaInfo"
+                                                class="form-label small fw-bold">Parcela</label>
+                                            <input type="text" id="reopenParcelaInfo"
+                                                class="form-control-plaintext fw-bold" readonly value="">
+                                        </div>
+
+                                        <div class="mb-0">
+                                            <label for="reopen_motivo" class="form-label small fw-bold">Motivo
+                                                (opcional)</label>
+                                            <textarea id="reopen_motivo" name="motivo" rows="3" maxlength="1000" class="form-control"
+                                                placeholder="Ex.: Pagamento registrado na parcela errada, cancelamento realizado indevidamente..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer py-2 px-3">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            data-bs-dismiss="modal">
+                                            <i class="mdi mdi-close me-1"></i>Cancelar
+                                        </button>
+                                        <button type="submit" id="btnConfirmReopen" class="btn btn-danger btn-sm">
+                                            <i class="mdi mdi-lock-open-outline me-1"></i>Confirmar Reabertura
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -403,4 +559,445 @@
             z-index: 1020;
         }
     </style>
+@endpush
+
+@push('scripts')
+    <script>
+        (function() {
+            'use strict';
+
+            const DETAILS_URL_TEMPLATE = "{{ route('sales.parcela.details', '__ID__') }}";
+            const UPDATE_URL_TEMPLATE = "{{ route('sales.parcela.update', '__ID__') }}";
+            const REOPEN_URL_TEMPLATE = "{{ route('sales.parcela.reopen', '__ID__') }}";
+            const CSRF_TOKEN = "{{ csrf_token() }}";
+
+            let editParcelaModalInstance = null;
+            let reopenParcelaModalInstance = null;
+
+            function getEditModalEl() {
+                return document.getElementById('editParcelaModal');
+            }
+
+            function ensureModalInstance() {
+                if (!editParcelaModalInstance) {
+                    var modalEl = getEditModalEl();
+                    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                        editParcelaModalInstance = new window.bootstrap.Modal(modalEl, {
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                    }
+                }
+                return editParcelaModalInstance;
+            }
+
+            function showError(message) {
+                if (window.showAppModalMessage && typeof window.showAppModalMessage === 'function') {
+                    window.showAppModalMessage('Atenção', message || 'Erro inesperado.', {
+                        type: 'danger'
+                    });
+                } else {
+                    alert(message || 'Erro inesperado.');
+                }
+            }
+
+            function showSuccess(message) {
+                if (window.showAppModalMessage && typeof window.showAppModalMessage === 'function') {
+                    window.showAppModalMessage('Sucesso', message || 'Operação concluída com sucesso.', {
+                        type: 'success',
+                        autoClose: 2000
+                    });
+                } else {
+                    alert(message || 'Operação concluída com sucesso.');
+                }
+            }
+
+            function getReopenModalEl() {
+                return document.getElementById('reopenParcelaModal');
+            }
+
+            function ensureReopenModalInstance() {
+                if (!reopenParcelaModalInstance) {
+                    var modalEl = getReopenModalEl();
+                    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                        reopenParcelaModalInstance = new window.bootstrap.Modal(modalEl, {
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                    }
+                }
+                return reopenParcelaModalInstance;
+            }
+
+            function resetReopenForm() {
+                const form = document.getElementById('reopenParcelaForm');
+                if (!form) return;
+                form.reset();
+                document.getElementById('reopen_parcela_id').value = '';
+                document.getElementById('reopenParcelaInfo').value = '';
+            }
+
+            function hideReopenModal() {
+                var modalInstance = ensureReopenModalInstance();
+                if (modalInstance) {
+                    modalInstance.hide();
+                } else if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                    window.jQuery('#reopenParcelaModal').modal('hide');
+                } else {
+                    var fallback = getReopenModalEl();
+                    if (fallback) {
+                        fallback.classList.remove('show');
+                        fallback.style.display = 'none';
+                    }
+                }
+            }
+
+            function resetEditForm() {
+                const form = document.getElementById('editParcelaForm');
+                if (!form) return;
+                form.reset();
+                document.getElementById('edit_parcela_id').value = '';
+                document.getElementById('editParcelaLabel').textContent = '';
+            }
+
+            window.openEditParcelaModal = function(parcelaId) {
+                if (!parcelaId) {
+                    showError('Parcela inválida.');
+                    return;
+                }
+
+                resetEditForm();
+                document.getElementById('edit_parcela_id').value = String(parcelaId);
+                document.getElementById('editParcelaLabel').textContent = '#' + parcelaId;
+
+                const url = DETAILS_URL_TEMPLATE.replace('__ID__', encodeURIComponent(parcelaId));
+
+                fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(function(res) {
+                        if (!res.ok) {
+                            return res.text().then(function(txt) {
+                                throw new Error('Erro ao carregar parcela (' + res.status + ').');
+                            });
+                        }
+                        return res.json();
+                    })
+                    .then(function(payload) {
+                        if (!payload || !payload.success || !payload.data || !payload.data.parcela) {
+                            showError((payload && payload.message) ||
+                                'Não foi possível carregar os dados da parcela.');
+                            return;
+                        }
+
+                        const parcela = payload.data.parcela;
+
+                        const vencimentoInput = document.getElementById('edit_vencimento');
+                        if (parcela.vencimento_em && /^\d{4}-\d{2}-\d{2}$/.test(String(parcela
+                                .vencimento_em))) {
+                            vencimentoInput.value = parcela.vencimento_em;
+                        } else if (parcela.vencimento_em) {
+                            try {
+                                const d = new Date(parcela.vencimento_em);
+                                if (!isNaN(d.getTime())) {
+                                    vencimentoInput.value = d.toISOString().slice(0, 10);
+                                }
+                            } catch (e) {}
+                        }
+
+                        const valorInput = document.getElementById('edit_valor');
+                        const valor = parseFloat(parcela.valor);
+                        valorInput.value = isNaN(valor) ? '0.00' : valor.toFixed(2);
+
+                        const formaInput = document.getElementById('edit_forma_pagamento');
+                        formaInput.value = parcela.forma_pagamento ? String(parcela.forma_pagamento) : '';
+
+                        const obsInput = document.getElementById('edit_observacoes');
+                        obsInput.value = parcela.observacoes ? String(parcela.observacoes) : '';
+
+                        if (payload.data.parcela && (payload.data.parcela.numero_parcela || payload.data
+                                .pedido)) {
+                            var textoParcela = '';
+                            if (payload.data.parcela.total_parcelas) {
+                                textoParcela = ' (Parcela ' + payload.data.parcela.numero_parcela + '/' +
+                                    payload.data.parcela.total_parcelas + ')';
+                            } else if (payload.data.parcela.numero_parcela) {
+                                textoParcela = ' (Parcela ' + payload.data.parcela.numero_parcela + ')';
+                            }
+                            document.getElementById('editParcelaLabel').textContent = '#' + parcelaId +
+                                textoParcela;
+                        }
+
+                        var modalInstance = ensureModalInstance();
+                        if (modalInstance) {
+                            modalInstance.show();
+                        } else if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                            window.jQuery('#editParcelaModal').modal({
+                                backdrop: 'static',
+                                keyboard: false
+                            });
+                            window.jQuery('#editParcelaModal').modal('show');
+                        } else {
+                            var fallback = getEditModalEl();
+                            if (fallback) {
+                                fallback.classList.add('show');
+                                fallback.style.display = 'block';
+                            }
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('[editar-parcela] erro ao carregar:', err);
+                        showError(err.message || 'Erro ao carregar dados da parcela.');
+                    });
+            };
+
+            window.openReopenParcelaModal = function(parcelaId, parcelaLabel) {
+                if (!parcelaId) {
+                    showError('Parcela inválida.');
+                    return;
+                }
+
+                resetReopenForm();
+                document.getElementById('reopen_parcela_id').value = String(parcelaId);
+                document.getElementById('reopenParcelaInfo').value =
+                    '#' + parcelaId + (parcelaLabel ? ' - ' + String(parcelaLabel) : '');
+
+                var modalInstance = ensureReopenModalInstance();
+                if (modalInstance) {
+                    modalInstance.show();
+                } else if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                    window.jQuery('#reopenParcelaModal').modal({
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                    window.jQuery('#reopenParcelaModal').modal('show');
+                } else {
+                    var fallback = getReopenModalEl();
+                    if (fallback) {
+                        fallback.classList.add('show');
+                        fallback.style.display = 'block';
+                    }
+                }
+            };
+
+            function submitReopenParcela(event) {
+                event.preventDefault();
+
+                const parcelaId = document.getElementById('reopen_parcela_id').value;
+                if (!parcelaId) {
+                    showError('Parcela não identificada.');
+                    return;
+                }
+
+                const btnConfirm = document.getElementById('btnConfirmReopen');
+                if (btnConfirm) {
+                    btnConfirm.disabled = true;
+                    btnConfirm.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Processando...';
+                }
+
+                const motivo = (document.getElementById('reopen_motivo').value || '').trim();
+                const payload = {
+                    motivo: motivo || null,
+                    return_url: window.location.href
+                };
+
+                const url = REOPEN_URL_TEMPLATE.replace('__ID__', encodeURIComponent(parcelaId));
+
+                fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': CSRF_TOKEN
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(function(res) {
+                        if (res.status === 422) {
+                            return res.json().then(function(errPayload) {
+                                var erros = errPayload.errors || {};
+                                var msgs = [];
+                                Object.keys(erros).forEach(function(k) {
+                                    var arr = Array.isArray(erros[k]) ? erros[k] : [erros[k]];
+                                    arr.forEach(function(m) {
+                                        msgs.push(m);
+                                    });
+                                });
+                                throw new Error(msgs.length ? msgs.join('\n') :
+                                    'Verifique os campos informados.');
+                            });
+                        }
+                        if (!res.ok) {
+                            return res.text().then(function(txt) {
+                                throw new Error('Erro ao reabrir parcela (' + res.status + ').');
+                            });
+                        }
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        if (data && data.success) {
+                            showSuccess(data.message || 'Parcela reaberta com sucesso.');
+                            setTimeout(function() {
+                                if (data.return_url) {
+                                    window.location.href = data.return_url;
+                                } else {
+                                    window.location.reload();
+                                }
+                            }, 800);
+                        } else {
+                            showError((data && data.message) || 'Não foi possível reabrir a parcela.');
+                            if (btnConfirm) {
+                                btnConfirm.disabled = false;
+                                btnConfirm.innerHTML =
+                                    '<i class="mdi mdi-lock-open-outline me-1"></i>Confirmar Reabertura';
+                            }
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('[reabrir-parcela] erro:', err);
+                        showError(err.message || 'Erro ao reabrir parcela.');
+                        if (btnConfirm) {
+                            btnConfirm.disabled = false;
+                            btnConfirm.innerHTML =
+                                '<i class="mdi mdi-lock-open-outline me-1"></i>Confirmar Reabertura';
+                        }
+                    });
+            }
+
+            function hideEditModal() {
+                var modalInstance = ensureModalInstance();
+                if (modalInstance) {
+                    modalInstance.hide();
+                } else if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                    window.jQuery('#editParcelaModal').modal('hide');
+                } else {
+                    var fallback = getEditModalEl();
+                    if (fallback) {
+                        fallback.classList.remove('show');
+                        fallback.style.display = 'none';
+                    }
+                }
+            }
+
+            function saveEditParcela(event) {
+                event.preventDefault();
+
+                const parcelaId = document.getElementById('edit_parcela_id').value;
+                if (!parcelaId) {
+                    showError('Parcela não identificada.');
+                    return;
+                }
+
+                const vencimento = document.getElementById('edit_vencimento').value;
+                const valor = document.getElementById('edit_valor').value;
+
+                if (!vencimento) {
+                    showError('Informe o novo vencimento.');
+                    document.getElementById('edit_vencimento').focus();
+                    return;
+                }
+
+                if (valor === '' || isNaN(parseFloat(valor))) {
+                    showError('Informe o novo valor da parcela.');
+                    document.getElementById('edit_valor').focus();
+                    return;
+                }
+
+                const btnSave = document.getElementById('btnSaveEditParcela');
+                if (btnSave) {
+                    btnSave.disabled = true;
+                    btnSave.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Salvando...';
+                }
+
+                const payload = {
+                    vencimento_em: vencimento,
+                    valor: parseFloat(valor),
+                    forma_pagamento: (document.getElementById('edit_forma_pagamento').value || '').trim() || null,
+                    observacoes: (document.getElementById('edit_observacoes').value || '').trim() || null,
+                    return_url: window.location.href
+                };
+
+                const url = UPDATE_URL_TEMPLATE.replace('__ID__', encodeURIComponent(parcelaId));
+
+                fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': CSRF_TOKEN
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(function(res) {
+                        if (res.status === 422) {
+                            return res.json().then(function(errPayload) {
+                                var erros = errPayload.errors || {};
+                                var msgs = [];
+                                Object.keys(erros).forEach(function(k) {
+                                    var arr = Array.isArray(erros[k]) ? erros[k] : [erros[k]];
+                                    arr.forEach(function(m) {
+                                        msgs.push(m);
+                                    });
+                                });
+                                throw new Error(msgs.length ? msgs.join('\n') :
+                                    'Verifique os campos informados.');
+                            });
+                        }
+                        if (!res.ok) {
+                            return res.text().then(function(txt) {
+                                throw new Error('Erro ao salvar parcela (' + res.status + ').');
+                            });
+                        }
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        if (data && data.success) {
+                            showSuccess(data.message || 'Parcela atualizada com sucesso.');
+                            setTimeout(function() {
+                                if (data.return_url) {
+                                    window.location.href = data.return_url;
+                                } else {
+                                    window.location.reload();
+                                }
+                            }, 800);
+                        } else {
+                            showError((data && data.message) || 'Não foi possível salvar a parcela.');
+                            if (btnSave) {
+                                btnSave.disabled = false;
+                                btnSave.innerHTML = '<i class="mdi mdi-content-save me-1"></i>Salvar Alterações';
+                            }
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('[editar-parcela] erro ao salvar:', err);
+                        showError(err.message || 'Erro ao salvar alterações.');
+                        if (btnSave) {
+                            btnSave.disabled = false;
+                            btnSave.innerHTML = '<i class="mdi mdi-content-save me-1"></i>Salvar Alterações';
+                        }
+                    });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                ensureModalInstance();
+                ensureReopenModalInstance();
+
+                const form = document.getElementById('editParcelaForm');
+                if (form) {
+                    form.addEventListener('submit', saveEditParcela);
+                }
+
+                const reopenForm = document.getElementById('reopenParcelaForm');
+                if (reopenForm) {
+                    reopenForm.addEventListener('submit', submitReopenParcela);
+                }
+            });
+        })();
+    </script>
 @endpush

@@ -197,6 +197,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sales/products/search', [SaleController::class, 'searchProducts'])->name('sales.products.search');
     Route::resource('sales', SaleController::class);
     Route::get('/sales/{id}/print', [SaleController::class, 'print'])->name('sales.print');
+    Route::get('/sales/parcelas/{id}/details', [SaleController::class, 'parcelaDetails'])->name('sales.parcela.details');
+    Route::put('/sales/parcelas/{id}', [SaleController::class, 'updateParcela'])->name('sales.parcela.update');
+    Route::post('/sales/parcelas/{id}/reopen', [SaleController::class, 'reopenParcela'])->name('sales.parcela.reopen');
 
     // Módulo de Ordens de Serviço
     Route::resource('ordens-servico', OrdemServicoController::class)->parameters([

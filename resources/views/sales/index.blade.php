@@ -304,10 +304,18 @@
                                                     onclick="event.stopPropagation()" target="_blank">
                                                     <i class="mdi mdi-printer"></i>
                                                 </a>
-                                                @if ($sale['status'] == 'pendente')
+                                                @if ($sale['status_pagamento'] === 'pendente' && $sale['status'] !== 'cancelada')
+                                                    @php
+                                                        $cancelLabel =
+                                                            trim($sale['cliente']) .
+                                                            ' - R$ ' .
+                                                            number_format($sale['total'], 2, ',', '.') .
+                                                            ' em ' .
+                                                            \Carbon\Carbon::parse($sale['data'])->format('d/m/Y');
+                                                    @endphp
                                                     <button type="button" class="btn btn-sm btn-outline-danger"
-                                                        title="Cancelar"
-                                                        onclick="event.stopPropagation(); confirmCancel({{ $sale['id'] }})">
+                                                        title="Cancelar venda pendente (sem pagamentos)"
+                                                        onclick="event.stopPropagation(); openCancelVendaModal({{ $sale['id'] }}, {{ \Illuminate\Support\Js::from($cancelLabel) }})">
                                                         <i class="mdi mdi-close"></i>
                                                     </button>
                                                 @endif
@@ -351,25 +359,53 @@
         </div>
 
         <!-- Modal de Confirmação de Cancelamento -->
-        <div class="modal fade" id="cancelModal" tabindex="-1">
-            <div class="modal-dialog">
+        <div class="modal fade" id="cancelVendaModal" tabindex="-1" aria-labelledby="cancelVendaModalLabel"
+            aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Confirmar Cancelamento</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Tem certeza que deseja cancelar esta venda?</p>
-                        <p class="text-muted">Esta ação não pode ser desfeita.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <form id="cancelForm" method="POST" style="display: inline;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger">Cancelar Venda</button>
-                        </form>
-                    </div>
+                    <form id="cancelVendaForm">
+                        <div class="modal-header bg-danger text-white py-2 px-3">
+                            <h6 class="modal-title" id="cancelVendaModalLabel">
+                                <i class="mdi mdi-close-circle-outline me-1"></i>
+                                Cancelar Venda
+                            </h6>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body p-3">
+                            <input type="hidden" id="cancel_venda_id" name="cancel_venda_id" value="">
+
+                            <div class="alert alert-danger py-2 px-3 mb-3 small">
+                                <i class="mdi mdi-alert-outline me-1"></i>
+                                <strong>Atenção:</strong> esta ação irá
+                                <strong>cancelar a venda e todas as parcelas pendentes</strong> vinculadas a ela.
+                                Não será possível desfazer.
+                                <br>
+                                Se a venda possuir parcelas já pagas, o cancelamento será bloqueado — reabra as
+                                parcelas primeiro.
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Venda</label>
+                                <input type="text" id="cancel_venda_info" class="form-control-plaintext fw-bold" readonly
+                                    value="">
+                            </div>
+
+                            <div class="mb-0">
+                                <label for="cancel_venda_motivo" class="form-label small fw-bold">Motivo (opcional)</label>
+                                <textarea id="cancel_venda_motivo" name="motivo" rows="3" maxlength="1000" class="form-control"
+                                    placeholder="Ex.: Cliente desistiu, duplicidade de cadastro, erro no preenchimento..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer py-2 px-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                                <i class="mdi mdi-close me-1"></i>Cancelar
+                            </button>
+                            <button type="submit" id="btnConfirmCancelVenda" class="btn btn-danger btn-sm">
+                                <i class="mdi mdi-check me-1"></i>Confirmar Cancelamento
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -411,41 +447,210 @@
 
     @push('scripts')
         <script>
-            function confirmCancel(saleId) {
-                const form = document.getElementById('cancelForm');
-                form.action = `/sales/${saleId}`;
+            (function() {
+                'use strict';
 
-                const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
-                modal.show();
-            }
+                const DESTROY_URL_TEMPLATE = "{{ route('sales.destroy', '__ID__') }}";
+                const CSRF_TOKEN = "{{ csrf_token() }}";
 
-            function exportSales() {
-                alert('Funcionalidade de exportação será implementada!');
-            }
+                let cancelVendaModalInstance = null;
 
-            // Filtro em tempo real
-            document.getElementById('search').addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const rows = document.querySelectorAll('#salesTable tr');
+                function getModalEl() {
+                    return document.getElementById('cancelVendaModal');
+                }
 
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(searchTerm) ? '' : 'none';
-                });
-            });
-
-            // Filtro por status
-            document.getElementById('status').addEventListener('change', function() {
-                const status = this.value;
-                const rows = document.querySelectorAll('#salesTable tr');
-
-                rows.forEach(row => {
-                    if (!status || row.dataset.status === status) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
+                function ensureModalInstance() {
+                    if (!cancelVendaModalInstance) {
+                        var modalEl = getModalEl();
+                        if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                            cancelVendaModalInstance = new window.bootstrap.Modal(modalEl, {
+                                backdrop: 'static',
+                                keyboard: false
+                            });
+                        }
                     }
+                    return cancelVendaModalInstance;
+                }
+
+                function showError(message) {
+                    alert(message || 'Erro inesperado.');
+                }
+
+                function showSuccess(message) {
+                    alert(message || 'Operação concluída com sucesso.');
+                }
+
+                function resetCancelForm() {
+                    const form = document.getElementById('cancelVendaForm');
+                    if (!form) return;
+                    form.reset();
+                    document.getElementById('cancel_venda_id').value = '';
+                    document.getElementById('cancel_venda_info').value = '';
+                }
+
+                function hideCancelModal() {
+                    var modalInstance = ensureModalInstance();
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    } else if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                        window.jQuery('#cancelVendaModal').modal('hide');
+                    } else {
+                        var fallback = getModalEl();
+                        if (fallback) {
+                            fallback.classList.remove('show');
+                            fallback.style.display = 'none';
+                        }
+                    }
+                }
+
+                window.openCancelVendaModal = function(vendaId, vendaLabel) {
+                    if (!vendaId) {
+                        showError('Venda inválida.');
+                        return;
+                    }
+
+                    resetCancelForm();
+                    document.getElementById('cancel_venda_id').value = String(vendaId);
+                    document.getElementById('cancel_venda_info').value =
+                        '#' + vendaId + (vendaLabel ? ' - ' + String(vendaLabel) : '');
+
+                    var modalInstance = ensureModalInstance();
+                    if (modalInstance) {
+                        modalInstance.show();
+                    } else if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                        window.jQuery('#cancelVendaModal').modal({
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                        window.jQuery('#cancelVendaModal').modal('show');
+                    } else {
+                        var fallback = getModalEl();
+                        if (fallback) {
+                            fallback.classList.add('show');
+                            fallback.style.display = 'block';
+                        }
+                    }
+                };
+
+                function submitCancelVenda(event) {
+                    event.preventDefault();
+
+                    const vendaId = document.getElementById('cancel_venda_id').value;
+                    if (!vendaId) {
+                        showError('Venda não identificada.');
+                        return;
+                    }
+
+                    const btnConfirm = document.getElementById('btnConfirmCancelVenda');
+                    if (btnConfirm) {
+                        btnConfirm.disabled = true;
+                        btnConfirm.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Processando...';
+                    }
+
+                    const motivo = (document.getElementById('cancel_venda_motivo').value || '').trim();
+                    const payload = {
+                        motivo: motivo || null,
+                        return_url: window.location.href
+                    };
+
+                    const url = DESTROY_URL_TEMPLATE.replace('__ID__', encodeURIComponent(vendaId));
+
+                    fetch(url, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': CSRF_TOKEN
+                            },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(function(res) {
+                            if (res.status === 422) {
+                                return res.json().then(function(errPayload) {
+                                    var erros = errPayload.errors || {};
+                                    var msgs = [];
+                                    Object.keys(erros).forEach(function(k) {
+                                        var arr = Array.isArray(erros[k]) ? erros[k] : [erros[k]];
+                                        arr.forEach(function(m) {
+                                            msgs.push(m);
+                                        });
+                                    });
+                                    throw new Error(msgs.length ? msgs.join('\n') : (errPayload.message ||
+                                        'Verifique os campos informados.'));
+                                });
+                            }
+                            if (!res.ok) {
+                                return res.text().then(function(txt) {
+                                    throw new Error('Erro ao cancelar venda (' + res.status + ').');
+                                });
+                            }
+                            return res.json();
+                        })
+                        .then(function(data) {
+                            if (data && data.success) {
+                                showSuccess(data.message || 'Venda cancelada com sucesso.');
+                                setTimeout(function() {
+                                    if (data.return_url) {
+                                        window.location.href = data.return_url;
+                                    } else {
+                                        window.location.reload();
+                                    }
+                                }, 800);
+                            } else {
+                                showError((data && data.message) || 'Não foi possível cancelar a venda.');
+                                if (btnConfirm) {
+                                    btnConfirm.disabled = false;
+                                    btnConfirm.innerHTML = '<i class="mdi mdi-check me-1"></i>Confirmar Cancelamento';
+                                }
+                            }
+                        })
+                        .catch(function(err) {
+                            console.error('[cancelar-venda] erro:', err);
+                            showError(err.message || 'Erro ao cancelar venda.');
+                            if (btnConfirm) {
+                                btnConfirm.disabled = false;
+                                btnConfirm.innerHTML = '<i class="mdi mdi-check me-1"></i>Confirmar Cancelamento';
+                            }
+                        });
+                }
+
+                function exportSales() {
+                    alert('Funcionalidade de exportação será implementada!');
+                }
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    ensureModalInstance();
+                    const form = document.getElementById('cancelVendaForm');
+                    if (form) {
+                        form.addEventListener('submit', submitCancelVenda);
+                    }
+
+                    // Filtro em tempo real
+                    document.getElementById('search').addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const rows = document.querySelectorAll('#salesTable tr');
+
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    });
+
+                    // Filtro por status
+                    document.getElementById('status').addEventListener('change', function() {
+                        const status = this.value;
+                        const rows = document.querySelectorAll('#salesTable tr');
+
+                        rows.forEach(row => {
+                            if (!status || row.dataset.status === status) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+                    });
                 });
-            });
+            })();
         </script>
     @endpush
