@@ -60,8 +60,33 @@ class Prescricao extends Model
         'location_id',
         'tipo_lente',
         'acuidade_od',
-        'acuidade_oe'
+        'acuidade_oe',
+        'receita_foto_caminho',
     ];
+
+    protected $appends = [
+        'receita_foto_url',
+    ];
+
+    public function getReceitaFotoUrlAttribute(): ?string
+    {
+        $path = (string) ($this->attributes['receita_foto_caminho'] ?? '');
+        if ($path === '') {
+            return null;
+        }
+
+        $storagePath = ltrim($path, '/');
+
+        try {
+            if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($storagePath)) {
+                return null;
+            }
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return asset('storage/' . $storagePath);
+    }
 
     protected $casts = [
         'ativo' => 'boolean',

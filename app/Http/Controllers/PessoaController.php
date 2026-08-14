@@ -12,6 +12,8 @@ use App\Rules\ValidCpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class PessoaController extends Controller
@@ -624,7 +626,15 @@ class PessoaController extends Controller
                 'tenant_id' => AuthHelper::tenantId(),
                 'location_id' => AuthHelper::locationId(),
                 'ativo' => true,
+                'receita_foto_caminho' => null,
             ]);
+
+            if ($request->hasFile('receita_foto') && $request->file('receita_foto')->isValid()) {
+                $storedPath = $this->storeReceitaFotoFile($request->file('receita_foto'), $pessoa, $prescricao);
+                if ($storedPath) {
+                    $prescricao->update(['receita_foto_caminho' => $storedPath]);
+                }
+            }
 
             DB::commit();
 
@@ -680,6 +690,22 @@ class PessoaController extends Controller
         try {
             DB::beginTransaction();
 
+            $removerFoto = !empty($validatedData['remover_receita_foto']);
+            $recebeuNovaFoto = $request->hasFile('receita_foto') && $request->file('receita_foto')->isValid();
+            $fotoCaminho = $prescricao->receita_foto_caminho ?? null;
+
+            if ($removerFoto && $fotoCaminho) {
+                $this->deleteReceitaFotoIfExists($fotoCaminho);
+                $fotoCaminho = null;
+            }
+
+            if ($recebeuNovaFoto) {
+                if ($fotoCaminho) {
+                    $this->deleteReceitaFotoIfExists($fotoCaminho);
+                }
+                $fotoCaminho = $this->storeReceitaFotoFile($request->file('receita_foto'), $pessoa, $prescricao) ?: null;
+            }
+
             $prescricao->update([
                 'especialista_externo' => $validatedData['especialista_externo'],
                 'data_receita' => $validatedData['data_receita'] ?? $prescricao->data_receita ?? now()->toDateString(),
@@ -716,6 +742,7 @@ class PessoaController extends Controller
                 'diagnostico' => $validatedData['diagnostico'],
                 'recomendacoes' => $validatedData['recomendacoes'],
                 'observacoes' => $validatedData['observacoes_receita'],
+                'receita_foto_caminho' => $fotoCaminho,
             ]);
 
             DB::commit();
@@ -743,6 +770,57 @@ class PessoaController extends Controller
         $locationId = session('location_id');
         if ($locationId && $prescricao->location_id !== null && (int) $prescricao->location_id !== (int) $locationId) {
             abort(403, 'Acesso negado. Esta receita não pertence à sua localização.');
+        }
+    }
+
+    private function storeReceitaFotoFile($file, Pessoa $pessoa, Prescricao $prescricao): ?string
+    {
+        if (! $file) {
+            return null;
+        }
+
+        $tenantId = (int) (session('tenant_id') ?: ($prescricao->tenant_id ?? 0));
+        $directory = $tenantId > 0
+            ? "tenants/{$tenantId}/pessoas/{$pessoa->id}/receitas/{$prescricao->id}"
+            : "pessoas/{$pessoa->id}/receitas/{$prescricao->id}";
+
+        $originalName = $file->getClientOriginalName() ?: 'receita';
+        $extension = strtolower((string) ($file->getClientOriginalExtension() ?: ''));
+        if ($extension === '') {
+            $mime = strtolower((string) ($file->getMimeType() ?? ''));
+            $extensionMap = [
+                'image/jpeg' => 'jpg',
+                'image/jpg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+            ];
+            $extension = $extensionMap[$mime] ?? 'img';
+        }
+
+        $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+        $safeBase = Str::slug($baseName) ?: 'foto-receita';
+        $fileName = $safeBase . '-' . (string) Str::uuid() . '.' . $extension;
+
+        try {
+            return (string) $file->storeAs($directory, $fileName, 'public');
+        } catch (\Throwable $e) {
+            report($e);
+            return null;
+        }
+    }
+
+    private function deleteReceitaFotoIfExists($caminho): void
+    {
+        $path = ltrim((string) $caminho, '/');
+        if ($path === '') {
+            return;
+        }
+
+        try {
+            Storage::disk('public')->delete($path);
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 }
