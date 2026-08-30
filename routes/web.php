@@ -3,10 +3,12 @@
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\DadosPixController;
 use App\Http\Controllers\EspecialidadeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialController;
 use App\Http\Controllers\LaboratorioController;
+use App\Http\Controllers\MeuPlanoController;
 use App\Http\Controllers\OrdemServicoController;
 use App\Http\Controllers\PessoaController;
 use App\Http\Controllers\ProfileController;
@@ -101,6 +103,18 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('users', UserController::class);
     Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
     Route::post('users/{user}/change-password', [UserController::class, 'changePassword'])->name('users.change-password');
+
+    // Administração — Dados PIX e Meu Plano (dados no Cerberus)
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::middleware('cerberus.permission:/admin/dados-pix')->group(function () {
+            Route::get('/dados-pix', [DadosPixController::class, 'edit'])->name('dados-pix.edit');
+            Route::put('/dados-pix', [DadosPixController::class, 'update'])->name('dados-pix.update');
+        });
+
+        Route::middleware('cerberus.permission:/admin/meu-plano')->group(function () {
+            Route::get('/meu-plano', [MeuPlanoController::class, 'index'])->name('meu-plano.index');
+        });
+    });
 
     // Rotas de profissionais
     Route::resource('profissionais', ProfissionalController::class)->parameters([
