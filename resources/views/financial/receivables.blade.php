@@ -244,13 +244,16 @@
                                     @php
                                         $statusPagamentoParcial = $receivable['status'] === 'pagamento_parcial';
                                         $statusSaldoRemanescente = $receivable['status'] === 'saldo_remanescente';
-                                        $showUrl = $receivable['venda_id']
-                                            ? route('sales.show', [
-                                                'sale' => $receivable['venda_id'],
-                                                'from_history' => 1,
-                                                'return_url' => url()->full(),
-                                            ])
-                                            : null;
+                                        $vendaIdPk =
+                                            (int) ($receivable['venda_id_numero'] ?? ($receivable['pedido_id'] ?? 0));
+                                        $showUrl =
+                                            $vendaIdPk > 0
+                                                ? route('sales.show', [
+                                                    'sale' => $vendaIdPk,
+                                                    'from_history' => 1,
+                                                    'return_url' => url()->full(),
+                                                ])
+                                                : null;
                                     @endphp
                                     <tr @if ($showUrl) onclick="window.location='{{ $showUrl }}'" style="cursor: pointer;" @endif
                                         class="@if ($receivable['status'] == 'vencida') table-danger @elseif($receivable['status'] == 'vence_hoje') table-warning @elseif($receivable['status'] == 'vence_semana') table-info @elseif($receivable['status'] == 'paga') table-success @elseif($statusPagamentoParcial || $statusSaldoRemanescente) table-light @endif">

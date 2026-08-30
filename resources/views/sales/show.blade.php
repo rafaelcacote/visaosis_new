@@ -12,7 +12,18 @@
                 </h2>
                 <p class="text-muted mb-0">Detalhes da venda #{{ $sale['id'] }}</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap">
+                @php
+                    $waPhone = $sale['cliente']['telefone'] ?? null;
+                    $waDigits = preg_replace('/\D+/', '', (string) $waPhone);
+                    $waEnabled = !empty($waDigits);
+                @endphp
+                <button type="button" class="btn btn-outline-success"
+                    @if (!$waEnabled) disabled title="Cliente sem telefone cadastrado" @endif
+                    onclick="sendVendaWhatsapp()">
+                    <i class="mdi mdi-whatsapp me-2"></i>
+                    Enviar Whatsapp
+                </button>
                 <a href="{{ route('sales.print', $sale['id']) }}" class="btn btn-outline-primary" target="_blank">
                     <i class="mdi mdi-printer me-2"></i>
                     Imprimir PDF
@@ -573,6 +584,182 @@
 
             let editParcelaModalInstance = null;
             let reopenParcelaModalInstance = null;
+
+            @php
+                $waParcelas = [];
+                $rawParcelas = $sale['parcelas_detalhes'] ?? [];
+                $totalParcelas = count($rawParcelas);
+                $ordensUsadas = [];
+                foreach ($rawParcelas as $idx => $parcela) {
+                    $statusRaw = strtolower((string) ($parcela['status'] ?? ''));
+                    $isPagamentoParcial = $statusRaw === 'pagamento_parcial';
+                    $isSaldoRemanescente = $statusRaw === 'saldo_remanescente';
+                    $isPaga = !empty($parcela['pago_em']) || in_array($statusRaw, ['pago', 'paga'], true);
+                    $isVencida = $statusRaw === 'vencida' || ($parcela['dias_atraso'] ?? 0) > 0;
+
+                    $numeroParcela = isset($parcela['numero_parcela']) ? (int) $parcela['numero_parcela'] : $idx + 1;
+                    $totalParcelaRaw = isset($parcela['total_parcelas']) ? (int) $parcela['total_parcelas'] : $totalParcelas;
+
+                    $labelBadge = (string) ($parcela['parcela'] ?? '');
+                    $isEntrada = false;
+                    if (stripos($labelBadge, 'entrada') !== false) {
+                        $isEntrada = true;
+                    }
+
+                    $ordinalLabel = '';
+                    if ($isEntrada || $isSaldoRemanescente) {
+                        if ($isSaldoRemanescente) {
+                            $ordinalLabel = 'Saldo Remanescente';
+                        } else {
+                            $ordinalLabel = 'Entrada';
+                        }
+                    } else {
+                        $num = $numeroParcela > 0 ? $numeroParcela : $idx + 1;
+                        $ordinalLabel = $num . 'ª Parcela';
+                    }
+
+                    $vencBr = '';
+                    if (!empty($parcela['vencimento'])) {
+                        try {
+                            $vencBr = \Carbon\Carbon::parse($parcela['vencimento'])->format('d/m/y');
+                        } catch (\Throwable $e) {
+                            $vencBr = '';
+                        }
+                    }
+
+                    $valorBr = 'R$ ' . number_format((float) ($parcela['valor_parcela'] ?? ($parcela['valor_atualizado'] ?? 0)), 2, ',', '.');
+
+                    $statusLinha = '';
+                    if ($isPaga) {
+                        $pagoEmBr = '';
+                        if (!empty($parcela['pago_em'])) {
+                            try {
+                                $dt = $parcela['pago_em'] instanceof \Carbon\Carbon ? $parcela['pago_em'] : \Carbon\Carbon::parse($parcela['pago_em']);
+                                $pagoEmBr = 'Pago em ' . $dt->format('d/m/y');
+                            } catch (\Throwable $e) {
+                                $pagoEmBr = '';
+                            }
+                        }
+                        $forma = trim((string) ($parcela['forma_pagamento'] ?? ''));
+                        $statusLinha = $pagoEmBr;
+                        if ($forma) {
+                            $statusLinha .= ($statusLinha ? ' ' : '') . $forma;
+                        }
+                        $statusLinha .= ($statusLinha ? ' ' : '') . '🆗✅ obrigado 🙏';
+                    } elseif ($isPagamentoParcial) {
+                        $recebido = (float) ($parcela['valor_recebido'] ?? 0);
+                        if ($recebido > 0) {
+                            $pParcial = 'Recebido R$ ' . number_format($recebido, 2, ',', '.');
+                            $pagoEmBr = '';
+                            if (!empty($parcela['pago_em'])) {
+                                try {
+                                    $dt = $parcela['pago_em'] instanceof \Carbon\Carbon ? $parcela['pago_em'] : \Carbon\Carbon::parse($parcela['pago_em']);
+                                    $pagoEmBr = ' em ' . $dt->format('d/m/y');
+                                } catch (\Throwable $e) {
+                                    $pagoEmBr = '';
+                                }
+                            }
+                            $statusLinha = $pParcial . $pagoEmBr . ' (pagamento parcial)';
+                        } else {
+                            $statusLinha = 'Pagamento Parcial';
+                        }
+                    } elseif ($isVencida) {
+                        $d = (int) ($parcela['dias_atraso'] ?? 0);
+                        $statusLinha = 'atrasado' . ($d > 0 ? ' ' . $d . ' dias' : '');
+                    } else {
+                        // em dia / vence hoje / semana
+                        $statusLinha = 'pendente';
+                    }
+
+                    $waParcelas[] = [
+                        'ordinal' => $ordinalLabel,
+                        'vencimento' => $vencBr,
+                        'valor' => $valorBr,
+                        'status' => $statusLinha,
+                    ];
+                }
+
+                $waVenda = [
+                    'numero' => (string) ($sale['numero'] ?? ($sale['id'] ?? '')),
+                    'data' => (string) ($sale['data_formatada'] ?? ''),
+                    'cliente_nome' => (string) ($sale['cliente']['nome'] ?? ''),
+                    'total' => 'R$ ' . number_format((float) ($sale['total'] ?? 0), 2, ',', '.'),
+                    'telefone' => (string) ($sale['cliente']['telefone'] ?? ''),
+                    'parcelas' => $waParcelas,
+                ];
+            @endphp
+            const VENDA_WHATSAPP_DATA = @json($waVenda);
+
+            function normalizeWhatsappPhone(raw) {
+                const digits = (raw || '').toString().replace(/\D+/g, '');
+                if (!digits) return null;
+                if (digits.startsWith('55')) return digits;
+                if (digits.length === 10 || digits.length === 11) return '55' + digits;
+                return digits;
+            }
+
+            function buildWhatsappMessage() {
+                const d = VENDA_WHATSAPP_DATA || {};
+                const linhas = [];
+
+                linhas.push('*Histórico da compra*');
+                if (d.numero || d.data) {
+                    const parte = [];
+                    if (d.numero) parte.push('Compra nº ' + d.numero);
+                    if (d.data) parte.push('em ' + d.data);
+                    linhas.push(parte.join(' '));
+                }
+                if (d.cliente_nome) linhas.push('Cliente: ' + d.cliente_nome);
+                if (d.total) linhas.push('*Valor Total:* ' + d.total);
+                linhas.push('');
+                linhas.push('*-- Parcelas --*');
+
+                const parcelas = Array.isArray(d.parcelas) ? d.parcelas : [];
+                parcelas.forEach(function(p, i) {
+                    if (i > 0) linhas.push('');
+                    const ordinal = p.ordinal || ('Parcela ' + (i + 1));
+                    const ehEntrada = /entrada/i.test(String(ordinal));
+                    if (ehEntrada) {
+                        let linha = ordinal + ' ' + (p.vencimento || '') + ' ' + (p.valor || '');
+                        if (p.status) linha += ' ' + p.status;
+                        linhas.push(linha.trim());
+                    } else {
+                        let linha = ordinal + '  venc. ' + (p.vencimento || '') + ' ' + (p.valor || '');
+                        if (p.status) linha += ' ' + p.status;
+                        linhas.push(linha.trim());
+                    }
+                });
+
+                linhas.push('');
+                linhas.push('Sempre que transferir favor enviar o comprovante para darmos baixa.✅');
+                linhas.push('');
+                linhas.push('Pix. 92981650580');
+                linhas.push('Jaime Martins');
+                linhas.push('Caixa econômica');
+                linhas.push('');
+                linhas.push('Ótica Asafe agradece 🤝');
+
+                return linhas.join('\n');
+            }
+
+            window.sendVendaWhatsapp = function() {
+                const d = VENDA_WHATSAPP_DATA || {};
+                const waPhone = normalizeWhatsappPhone(d.telefone);
+                if (!waPhone) {
+                    showError('Cliente sem telefone cadastrado para envio via WhatsApp.');
+                    return false;
+                }
+
+                const mensagem = buildWhatsappMessage();
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator
+                    .userAgent);
+                const waUrl = isMobile ?
+                    ('https://wa.me/' + waPhone + '?text=' + encodeURIComponent(mensagem)) :
+                    ('https://web.whatsapp.com/send?phone=' + waPhone + '&text=' + encodeURIComponent(mensagem));
+
+                window.open(waUrl, 'whatsapp_venda');
+                return true;
+            };
 
             function getEditModalEl() {
                 return document.getElementById('editParcelaModal');

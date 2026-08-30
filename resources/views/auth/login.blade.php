@@ -664,7 +664,6 @@
                             <h4 id="user-name">Nome do Usuário</h4>
                             <p id="user-email">email@exemplo.com</p>
                             <p id="user-role">Cargo/Função</p>
-                            <p id="user-cpf">CPF não informado</p>
                             <div style="display: flex; gap: 1rem; margin-top: 0.25rem;">
                                 <span style="font-size: 0.75rem; color: #6b7280;">
                                     <i class="fas fa-building" style="margin-right: 0.25rem;"></i>
@@ -750,7 +749,6 @@
             const userLoadingDiv = document.getElementById('user-loading');
             const userName = document.getElementById('user-name');
             const userEmail = document.getElementById('user-email');
-            const userCpf = document.getElementById('user-cpf');
             const userRole = document.getElementById('user-role');
             const tenantName = document.getElementById('tenant-name');
             const locationName = document.getElementById('location-name');
@@ -865,7 +863,6 @@
                 console.log('Mostrando usuário:', user); // Debug
                 userName.textContent = user.name || 'Nome não informado';
                 userEmail.textContent = user.email || '';
-                userCpf.textContent = user.cpf_cnpj || 'CPF não informado';
                 userRole.textContent = user.role || user.position || 'Cargo não informado';
                 
                 if (user.tenant) {

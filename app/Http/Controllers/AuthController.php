@@ -209,7 +209,6 @@ class AuthController extends Controller
                             $tenantInfo = [
                                 'name' => $userLocation['tenant']['name'] ?? null,
                                 'trade_name' => $userLocation['tenant']['trade_name'] ?? null,
-                                'cpf_cnpj' => $userLocation['tenant']['cpf_cnpj'] ?? null
                             ];
                         }
 
@@ -224,7 +223,6 @@ class AuthController extends Controller
                     $userData = [
                         'name' => $user['name'] ?? 'Nome não informado',
                         'email' => $user['email'] ?? $request->email,
-                        'cpf_cnpj' => $user['cpf_cnpj'] ?? 'CPF não informado',
                         'role' => 'Administrador',
                         'position' => 'Administrador',
                         'tenant_id' => $tenantInfo ? ($user['user_locations'][0]['tenant_id'] ?? null) : null,

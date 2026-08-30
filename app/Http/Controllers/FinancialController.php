@@ -529,6 +529,7 @@ class FinancialController extends Controller
                 'telefone' => $telefone,
                 'cpf' => $cpf,
                 'venda_id' => $vendaId,
+                'venda_id_numero' => (int) $row->pedido_id,
                 'parcela' => (int) $row->numero_parcela . '/' . (int) $row->total_parcelas,
                 'valor_parcela' => $valorParcela,
                 'valor_total' => (float) ($row->valor_total ?? 0),
