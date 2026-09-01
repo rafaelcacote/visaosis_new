@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
 
@@ -73,7 +74,7 @@ class AuthHelper
     public static function hasPermission($permission)
     {
         $items = self::permissions();
-        
+
         if (empty($items)) {
             return false;
         }
@@ -91,7 +92,7 @@ class AuthHelper
             if (isset($item['url']) && self::matchesPermission($item['url'], $permission)) {
                 return true;
             }
-            
+
             if (isset($item['item_key']) && $item['item_key'] === $permission) {
                 return true;
             }
@@ -135,14 +136,14 @@ class AuthHelper
 
     /**
      * Obtém os menus do usuário
-     * 
+     *
      * @param string|null $tipo Tipo de menu: 'left_sidebar', 'topnav', etc. Se null, retorna todos
      * @return array
      */
     public static function menus($tipo = null)
     {
         $items = self::permissions();
-        
+
         if (empty($items)) {
             return [];
         }
@@ -298,21 +299,21 @@ class AuthHelper
     public static function tenantLogoUrl()
     {
         $logoPath = self::tenantLogo();
-        
+
         if (empty($logoPath)) {
             return null;
         }
-        
+
         // Se já é uma URL completa, retorna como está
         if (filter_var($logoPath, FILTER_VALIDATE_URL)) {
             return $logoPath;
         }
-        
+
         // Se é um caminho relativo, constrói a URL completa
         // Assumindo que o logo está no storage público do Cerberus
         $cerberusUrl = config('cerberus.url');
         $fullUrl = rtrim($cerberusUrl, '/') . '/storage/' . ltrim($logoPath, '/');
-        
+
         return $fullUrl;
     }
 
@@ -397,11 +398,11 @@ class AuthHelper
             'gerenciar_recepcao' => '/recepcao',
             'gerenciar_profissionais' => '/professional',
         ];
-        
+
         if (!isset($permissoes[$funcionalidade])) {
             return false;
         }
-        
+
         return self::hasPermission($permissoes[$funcionalidade]);
     }
 
@@ -457,5 +458,52 @@ class AuthHelper
             'total_locations' => count(self::userLocations()),
             'needs_location' => self::needsLocationSelection(),
         ];
+    }
+
+    /**
+     * Obtém os dados PIX do tenant a partir da conexão Cerberus (seguranca.dados_pix).
+     * Retorna null se tenant não identificado ou registro não existir.
+     *
+     * @param int|null $tenantId
+     * @return object{tipo_chave:string,chave:string,nome_titular:string,banco:string,updated_at:string|null,created_at:string|null}|null
+     */
+    public static function tenantPixData(?int $tenantId = null): ?object
+    {
+        $tenantId = $tenantId ?: (int) self::tenantId();
+        if ($tenantId <= 0) {
+            return null;
+        }
+
+        try {
+            return DB::connection('cerberus')
+                ->table('seguranca.dados_pix')
+                ->where('tenant_id', $tenantId)
+                ->first() ?: null;
+        } catch (\Throwable $e) {
+            report($e);
+            return null;
+        }
+    }
+
+    /**
+     * Obtém o nome comercial/razão social do tenant vindo da sessão (API Cerberus).
+     * Prioridade: trade_name > name. Fallback null.
+     */
+    public static function tenantCompanyName(): ?string
+    {
+        $tenant = Session::get('tenant');
+        if (is_object($tenant)) {
+            $name = trim((string) ($tenant->trade_name ?? ($tenant->name ?? '')));
+            if ($name !== '') {
+                return $name;
+            }
+        }
+        if (is_array($tenant)) {
+            $name = trim((string) ($tenant['trade_name'] ?? ($tenant['name'] ?? '')));
+            if ($name !== '') {
+                return $name;
+            }
+        }
+        return null;
     }
 }

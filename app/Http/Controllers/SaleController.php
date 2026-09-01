@@ -921,6 +921,24 @@ class SaleController extends Controller
                 ];
             });
 
+        // Informações do tenant/empresa para detalhe da venda / WhatsApp
+        $tenant = AuthHelper::tenant();
+        $nomeEmpresa = null;
+        if (is_object($tenant) && property_exists($tenant, 'trade_name')) {
+            $nomeEmpresa = trim((string) ($tenant->trade_name ?? ($tenant->name ?? '')));
+        } elseif (is_array($tenant)) {
+            $nomeEmpresa = trim((string) ($tenant['trade_name'] ?? ($tenant['name'] ?? '')));
+        }
+        $nomeEmpresa = $nomeEmpresa !== '' ? $nomeEmpresa : AuthHelper::tenantCompanyName();
+
+        $pixDados = AuthHelper::tenantPixData();
+        $pixFooter = [
+            'chave' => $pixDados ? trim((string) ($pixDados->chave ?? '')) : '',
+            'nome_titular' => $pixDados ? trim((string) ($pixDados->nome_titular ?? '')) : '',
+            'banco' => $pixDados ? trim((string) ($pixDados->banco ?? '')) : '',
+            'tipo_chave' => $pixDados ? trim((string) ($pixDados->tipo_chave ?? '')) : '',
+        ];
+
         $sale = [
             'id' => $pedidoVenda->id,
             'numero' => $numero,
@@ -935,13 +953,15 @@ class SaleController extends Controller
             'pagamentos' => $pagamentosDetalhados,
             'parcelas' => $parcelas->count() > 0 ? $parcelas->count() : 1,
             'valor_parcela' => $parcelas->count() > 0 ? (float) $parcelas->first()['valor_parcela'] : $total,
-            'valor_recebido' => $parcelas->count() > 0 ? (float) $parcelas->first()['valor_recebido'] : $totalRecebido,
+            'valor_recebido' => $parcelas->count() > 0 ? (float) $parcelas->first()['valor_recebido'] : ($totalRecebido ?? 0),
             'parcelas_detalhes' => $parcelas,
             'status' => $status,
             'status_original' => $pedidoVenda->status,
             'observacoes' => $pedidoVenda->observacoes,
             'created_at' => $pedidoVenda->created_at,
-            'updated_at' => $pedidoVenda->updated_at
+            'updated_at' => $pedidoVenda->updated_at,
+            'nome_empresa' => $nomeEmpresa,
+            'pix_footer' => $pixFooter,
         ];
 
         return view('sales.show', compact('sale'));

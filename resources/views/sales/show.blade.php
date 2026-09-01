@@ -686,6 +686,11 @@
                     'total' => 'R$ ' . number_format((float) ($sale['total'] ?? 0), 2, ',', '.'),
                     'telefone' => (string) ($sale['cliente']['telefone'] ?? ''),
                     'parcelas' => $waParcelas,
+                    'pix_chave' => (string) ($sale['pix_footer']['chave'] ?? ''),
+                    'pix_nome_titular' => (string) ($sale['pix_footer']['nome_titular'] ?? ''),
+                    'pix_banco' => (string) ($sale['pix_footer']['banco'] ?? ''),
+                    'pix_tipo_chave' => (string) ($sale['pix_footer']['tipo_chave'] ?? ''),
+                    'empresa_nome' => (string) ($sale['nome_empresa'] ?? ''),
                 ];
             @endphp
             const VENDA_WHATSAPP_DATA = @json($waVenda);
@@ -733,11 +738,33 @@
                 linhas.push('');
                 linhas.push('Sempre que transferir favor enviar o comprovante para darmos baixa.✅');
                 linhas.push('');
-                linhas.push('Pix. 92981650580');
-                linhas.push('Jaime Martins');
-                linhas.push('Caixa econômica');
+
+                const pixChave = (d.pix_chave || '').trim();
+                const pixTitular = (d.pix_nome_titular || '').trim();
+                const pixBanco = (d.pix_banco || '').trim();
+                const empresaNome = (d.empresa_nome || '').trim();
+
+                if (pixChave) {
+                    linhas.push('Pix. ' + pixChave);
+                } else {
+                    linhas.push('Pix. 92981650580');
+                }
+                if (pixTitular) {
+                    linhas.push(pixTitular);
+                } else {
+                    linhas.push('Jaime Martins');
+                }
+                if (pixBanco) {
+                    linhas.push(pixBanco);
+                } else {
+                    linhas.push('Caixa econômica');
+                }
                 linhas.push('');
-                linhas.push('Ótica Asafe agradece 🤝');
+                if (empresaNome) {
+                    linhas.push(empresaNome + ' agradece 🤝');
+                } else {
+                    linhas.push('Ótica Asafe agradece 🤝');
+                }
 
                 return linhas.join('\n');
             }
