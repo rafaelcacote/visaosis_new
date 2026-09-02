@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuthHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +12,7 @@ class DadosPixController extends Controller
     public function edit()
     {
         $tenantId = $this->tenantIdOrAbort();
-        $dadosPix = $this->findDadosPix($tenantId);
+        $dadosPix = AuthHelper::tenantPixData($tenantId);
 
         return view('admin.dados-pix.edit', compact('dadosPix', 'tenantId'));
     }
@@ -34,7 +35,7 @@ class DadosPixController extends Controller
         ]);
 
         try {
-            $existing = $this->findDadosPix($tenantId);
+            $existing = AuthHelper::tenantPixData($tenantId);
             $payload = array_merge($validated, ['updated_at' => now()]);
 
             if ($existing) {
@@ -72,13 +73,5 @@ class DadosPixController extends Controller
         }
 
         return (int) $tenantId;
-    }
-
-    private function findDadosPix(int $tenantId): ?object
-    {
-        return DB::connection('cerberus')
-            ->table('seguranca.dados_pix')
-            ->where('tenant_id', $tenantId)
-            ->first();
     }
 }
