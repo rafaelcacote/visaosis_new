@@ -881,10 +881,14 @@ class SaleController extends Controller
             ->get()
             ->map(function ($parcela) use ($today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
                 $venc = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em, $tz)->startOfDay() : null;
-                $isPaid = !empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+                $statusRaw = strtolower((string) ($parcela->status ?? ''));
+                $isCanceled = in_array($statusRaw, ['cancelado', 'cancelada'], true);
+                $isPaid = !empty($parcela->pago_em) || in_array($statusRaw, $paidStatuses, true);
 
                 $status = 'em_dia';
-                if ($isPaid) {
+                if ($isCanceled) {
+                    $status = 'cancelada';
+                } elseif ($isPaid) {
                     $status = 'paga';
                 } elseif ($venc && $venc->lt($today)) {
                     $status = 'vencida';
@@ -1117,10 +1121,14 @@ class SaleController extends Controller
             ->get()
             ->map(function ($parcela) use ($today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
                 $venc = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em, $tz)->startOfDay() : null;
-                $isPaid = !empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+                $statusRaw = strtolower((string) ($parcela->status ?? ''));
+                $isCanceled = in_array($statusRaw, ['cancelado', 'cancelada'], true);
+                $isPaid = !empty($parcela->pago_em) || in_array($statusRaw, $paidStatuses, true);
 
                 $status = 'em_dia';
-                if ($isPaid) {
+                if ($isCanceled) {
+                    $status = 'cancelada';
+                } elseif ($isPaid) {
                     $status = 'paga';
                 } elseif ($venc && $venc->lt($today)) {
                     $status = 'vencida';
@@ -1608,7 +1616,7 @@ class SaleController extends Controller
         }
 
         $pedidoId = $parcela->pedido_venda_id;
-        $returnUrl = route('sales.show', ['id' => $pedidoId]);
+        $returnUrl = route('sales.show', ['sale' => $pedidoId]);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1823,7 +1831,7 @@ class SaleController extends Controller
         $pedidoId = $parcela->pedido_venda_id;
         $returnUrl = ! empty($validated['return_url'])
             ? $validated['return_url']
-            : route('sales.show', ['id' => $pedidoId]);
+            : route('sales.show', ['sale' => $pedidoId]);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1843,6 +1851,315 @@ class SaleController extends Controller
 
         return redirect()->to($returnUrl)
             ->with('success', 'Parcela reaberta com sucesso.');
+    }
+
+    public function refazerPagamentoParcelas(Request $request, string $saleId)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        $locationIds = [];
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
+        }
+
+        if (! $tenantId) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tenant não informado na sessão.',
+                ], 403);
+            }
+
+            return redirect()->route('sales.index')->with('error', 'Tenant não informado.');
+        }
+
+        try {
+            $validated = $request->validate([
+                'pagamentos' => 'required|array|min:1',
+                'pagamentos.*.forma_pagamento' => 'required|string|in:dinheiro,cartao_debito,cartao_credito,crediario,pix',
+                'pagamentos.*.valor' => 'required|numeric|gt:0',
+                'pagamentos.*.parcelas' => 'required|integer|min:1|max:12',
+                'pagamentos.*.primeiro_vencimento' => 'nullable|date',
+                'observacoes' => 'nullable|string|max:1000',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => $e->getMessage() ?: 'Dados inválidos',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        }
+
+        $pedidoVenda = PedidoVenda::query()
+            ->with(['parcelas'])
+            ->where('ativo', true)
+            ->where('tenant_id', $tenantId)
+            ->where('id', (int) $saleId)
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
+                });
+            })
+            ->first();
+
+        if (! $pedidoVenda) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Venda não encontrada.',
+                ], 404);
+            }
+
+            return redirect()->route('sales.index')->with('error', 'Venda não encontrada.');
+        }
+
+        $tz = 'America/Manaus';
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $parcelasNaoPagas = $pedidoVenda->parcelas
+            ->filter(function ($parcela) use ($paidStatuses) {
+                $rawStatus = strtolower((string) ($parcela->status ?? ''));
+                $isPaga = ! empty($parcela->pago_em)
+                    || in_array($rawStatus, $paidStatuses, true);
+                return ! $isPaga;
+            });
+
+        if ($parcelasNaoPagas->isEmpty()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Não existem parcelas em aberto para refazer a forma de pagamento.',
+                ], 422);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Não existem parcelas em aberto para refazer a forma de pagamento.');
+        }
+
+        $valorTotalRefazer = (float) $parcelasNaoPagas->sum(function ($parcela) {
+            return (float) ($parcela->valor ?? 0);
+        });
+        $valorTotalRefazer = round($valorTotalRefazer, 2);
+
+        $totalPagamentos = round(collect($validated['pagamentos'])->sum(function ($p) {
+            return (float) ($p['valor'] ?? 0);
+        }), 2);
+
+        if (abs($totalPagamentos - $valorTotalRefazer) > 0.02) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A soma das formas de pagamento (R$ ' . number_format($totalPagamentos, 2, ',', '.') . ') deve ser igual ao valor das parcelas em aberto (R$ ' . number_format($valorTotalRefazer, 2, ',', '.') . ').',
+                ], 422);
+            }
+
+            return redirect()->back()
+                ->with('error', 'A soma das formas de pagamento (R$ ' . number_format($totalPagamentos, 2, ',', '.') . ') deve ser igual ao valor das parcelas em aberto (R$ ' . number_format($valorTotalRefazer, 2, ',', '.') . ').');
+        }
+
+        foreach ($validated['pagamentos'] as $pagamento) {
+            if (($pagamento['forma_pagamento'] ?? null) === 'crediario' && empty($pagamento['primeiro_vencimento'])) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Informe o primeiro vencimento para pagamentos no crediário.',
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->with('error', 'Informe o primeiro vencimento para pagamentos no crediário.');
+            }
+        }
+
+        $parcelaTenantId   = ! empty($pedidoVenda->tenant_id)   ? $pedidoVenda->tenant_id   : $tenantId;
+        $parcelaLocationId = ! empty($pedidoVenda->location_id) ? $pedidoVenda->location_id : (! empty($locationId) ? $locationId : null);
+
+        try {
+            DB::beginTransaction();
+
+            $agora = Carbon::now($tz);
+            $agoraStr = $agora->toDateTimeString();
+            $agoraDateStr = $agora->toDateString();
+            $paymentMethods = [
+                'dinheiro' => 'Dinheiro',
+                'cartao_debito' => 'Cartão de Débito',
+                'cartao_credito' => 'Cartão de Crédito',
+                'crediario' => 'Crediário',
+                'pix' => 'PIX'
+            ];
+
+            $historicoCabecalho = "Forma de pagamento refeita em " . $agora->format('d/m/Y H:i') . ".";
+            $historicoCabecalho .= " Valor total: R$ " . number_format($valorTotalRefazer, 2, ',', '.') . ".";
+            if (! empty($validated['observacoes'])) {
+                $historicoCabecalho .= " Observações: " . trim($validated['observacoes']) . ".";
+            }
+
+            $parcelasMantidas = $pedidoVenda->parcelas
+                ->reject(fn($parcela) => $parcelasNaoPagas->contains('id', $parcela->id))
+                ->values();
+
+            $maxNumeroParcela = (int) $parcelasMantidas->max('numero_parcela');
+            if ($maxNumeroParcela < 0) {
+                $maxNumeroParcela = 0;
+            }
+
+            foreach ($parcelasNaoPagas as $parcelaAntiga) {
+                $obsAntiga = "Parcela cancelada e excluída (soft-delete) automaticamente em razão da redefinição de forma de pagamento da venda #{$pedidoVenda->id}.";
+                $obsExistente = (string) ($parcelaAntiga->observacoes ?? '');
+                if ($obsExistente !== '') {
+                    $parcelaAntiga->observacoes = rtrim($obsExistente) . "\n\n" . $historicoCabecalho . "\n" . $obsAntiga;
+                } else {
+                    $parcelaAntiga->observacoes = $historicoCabecalho . "\n" . $obsAntiga;
+                }
+                $parcelaAntiga->status = 'cancelada';
+                $parcelaAntiga->save();
+
+                // SoftDelete: remove a parcela da listagem ativa, mas preserva auditoria
+                // e libera (na maioria dos bancos) o numero_parcela de unique constraints
+                // combinadas com deleted_at.
+                $parcelaAntiga->delete();
+            }
+
+            $novasParcelasCount = (int) collect($validated['pagamentos'])->sum(function ($p) {
+                return ($p['forma_pagamento'] ?? '') === 'crediario' ? (int) ($p['parcelas'] ?? 1) : 1;
+            });
+            if ($novasParcelasCount < 1) {
+                $novasParcelasCount = 1;
+            }
+
+            $totalParcelasGlobal = $maxNumeroParcela + $novasParcelasCount;
+
+            foreach ($parcelasMantidas as $parcelaMantida) {
+                $parcelaMantida->total_parcelas = $totalParcelasGlobal;
+                $parcelaMantida->save();
+            }
+
+            $parcelaNumeroGlobal = $maxNumeroParcela;
+
+            foreach ($validated['pagamentos'] as $pagamento) {
+                $metodoPagamento = (string) ($pagamento['forma_pagamento'] ?? '');
+                $valorPagamento  = (float) ($pagamento['valor'] ?? 0);
+                $nParcelasPag    = (int) ($pagamento['parcelas'] ?? 1);
+                if ($nParcelasPag < 1) $nParcelasPag = 1;
+                if ($nParcelasPag > 12) $nParcelasPag = 12;
+                $nomeMetodo      = $paymentMethods[$metodoPagamento] ?? $metodoPagamento;
+
+                if ($metodoPagamento === 'crediario') {
+                    $totalCents   = (int) round($valorPagamento * 100);
+                    if ($totalCents < 1) $totalCents = 1;
+                    if ($nParcelasPag < 1) $nParcelasPag = 1;
+                    $parcelaCents = (int) floor($totalCents / $nParcelasPag);
+                    $lastCents    = $totalCents - ($parcelaCents * ($nParcelasPag - 1));
+
+                    $primeiroVencimento = !empty($pagamento['primeiro_vencimento'])
+                        ? Carbon::parse($pagamento['primeiro_vencimento'], $tz)->startOfDay()
+                        : Carbon::today($tz)->addMonthNoOverflow();
+
+                    for ($n = 1; $n <= $nParcelasPag; $n++) {
+                        $parcelaNumeroGlobal++;
+                        $vencDate = $primeiroVencimento->copy()->addMonthsNoOverflow($n - 1);
+                        PedidoVendaParcela::create([
+                            'tenant_id'       => $parcelaTenantId,
+                            'location_id'     => $parcelaLocationId,
+                            'pedido_venda_id' => $pedidoVenda->id,
+                            'numero_parcela'  => $parcelaNumeroGlobal,
+                            'total_parcelas'  => $totalParcelasGlobal,
+                            'valor'           => (float)(($n === $nParcelasPag ? $lastCents : $parcelaCents) / 100),
+                            'vencimento_em'   => $vencDate->toDateString(),
+                            'status'          => 'aberta',
+                            'forma_pagamento' => $nomeMetodo,
+                            'valor_recebido'  => 0,
+                            'valor_desconto'  => 0,
+                            'observacoes'     => $historicoCabecalho,
+                        ]);
+                    }
+                } else {
+                    $parcelaNumeroGlobal++;
+                    PedidoVendaParcela::create([
+                        'tenant_id'       => $parcelaTenantId,
+                        'location_id'     => $parcelaLocationId,
+                        'pedido_venda_id' => $pedidoVenda->id,
+                        'numero_parcela'  => $parcelaNumeroGlobal,
+                        'total_parcelas'  => $totalParcelasGlobal,
+                        'valor'           => (float) $valorPagamento,
+                        'vencimento_em'   => $agoraDateStr,
+                        'pago_em'         => $agoraStr,
+                        'status'          => 'pago',
+                        'forma_pagamento' => $nomeMetodo,
+                        'valor_recebido'  => (float) $valorPagamento,
+                        'valor_desconto'  => 0,
+                        'observacoes'     => $historicoCabecalho,
+                    ]);
+                }
+            }
+
+            $formaPagamentoNome = collect($validated['pagamentos'])
+                ->map(fn($p) => $paymentMethods[$p['forma_pagamento'] ?? ''] ?? ($p['forma_pagamento'] ?? ''))
+                ->filter(fn($v) => !empty($v))
+                ->unique()
+                ->join(' + ');
+            if ($formaPagamentoNome === '') {
+                $formaPagamentoNome = $pedidoVenda->forma_pagamento ?? '';
+            }
+            $pedidoVenda->forma_pagamento = $formaPagamentoNome;
+
+            $obsVendaExistente = (string) ($pedidoVenda->observacoes ?? '');
+            if ($obsVendaExistente !== '') {
+                $pedidoVenda->observacoes = rtrim($obsVendaExistente) . "\n\n" . $historicoCabecalho;
+            } else {
+                $pedidoVenda->observacoes = $historicoCabecalho;
+            }
+            $pedidoVenda->save();
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            if (DB::transactionLevel() > 0) {
+                try {
+                    DB::rollBack();
+                } catch (\Throwable $_) {
+                }
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao refazer forma de pagamento: ' . $e->getMessage(),
+                    'debug' => app()->environment('local') ? [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => collect($e->getTrace())->take(10)->map(fn($t) => ($t['file'] ?? '?') . ':' . ($t['line'] ?? '?'))->values()->all(),
+                    ] : null,
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Erro ao refazer forma de pagamento: ' . $e->getMessage());
+        }
+
+        $returnUrl = route('sales.show', ['sale' => $pedidoVenda->id]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Forma de pagamento refeita com sucesso.',
+                'return_url' => $returnUrl,
+                'venda' => [
+                    'id' => $pedidoVenda->id,
+                ],
+            ]);
+        }
+
+        return redirect()->to($returnUrl)
+            ->with('success', 'Forma de pagamento refeita com sucesso.');
     }
 
     private function discountAuthorizationCacheKey(string $token): string

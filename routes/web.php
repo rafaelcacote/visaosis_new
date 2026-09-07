@@ -152,6 +152,8 @@ Route::middleware(['auth'])->group(function () {
     // Rotas de clientes (pessoas)
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
+    Route::get('pessoas/{pessoa}/receitas/{prescricao}/print', [PessoaController::class, 'printPrescription'])->name('pessoas.receitas.print');
+    Route::post('pessoas/{pessoa}/receitas/{prescricao}/save-pdf-whatsapp', [PessoaController::class, 'savePrescriptionPdfWhatsapp'])->name('pessoas.receitas.save-pdf-whatsapp');
     Route::get('pessoas/{pessoa}/vendas', [PessoaController::class, 'vendas'])->name('pessoas.vendas');
     Route::post('pessoas/{pessoa}/receitas', [PessoaController::class, 'storePrescription'])->name('pessoas.receitas.store');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/edit', [PessoaController::class, 'editPrescription'])->name('pessoas.receitas.edit');
@@ -214,6 +216,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sales/parcelas/{id}/details', [SaleController::class, 'parcelaDetails'])->name('sales.parcela.details');
     Route::put('/sales/parcelas/{id}', [SaleController::class, 'updateParcela'])->name('sales.parcela.update');
     Route::post('/sales/parcelas/{id}/reopen', [SaleController::class, 'reopenParcela'])->name('sales.parcela.reopen');
+    Route::post('/sales/{saleId}/parcelas/refazer-pagamento', [SaleController::class, 'refazerPagamentoParcelas'])->name('sales.parcelas.refazer-pagamento');
 
     // Módulo de Ordens de Serviço
     Route::resource('ordens-servico', OrdemServicoController::class)->parameters([

@@ -13,6 +13,7 @@ use App\Models\Prescricao;
 use App\Models\Profissional;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -131,44 +132,7 @@ class ProfissionalWorkflowController extends Controller
         $consulta = Consulta::with(['paciente', 'profissional.especialidade'])
             ->where('id', $id)
             ->firstOrFail();
-
-        $exameModel = \App\Models\Exame::where('consulta_id', $consulta->id)
-            ->where('tenant_id', $consulta->tenant_id)
-            ->whereNull('deleted_at')
-            ->first();
-
-        if (! $exameModel) {
-            return redirect()->back()->with('error', 'Exame não encontrado.');
-        }
-
-        $paciente = $consulta->paciente;
-        $profissional = $consulta->profissional;
-
-        $exame = $exameModel->toArray();
-        $exame['data'] = $exameModel->created_at;
-
-        $exame['dados'] = [
-            'av_od' => $exameModel->acuidade_od,
-            'av_oe' => $exameModel->acuidade_oe,
-            'pio_od' => $exameModel->pressao_od,
-            'pio_oe' => $exameModel->pressao_oe,
-            'fundoscopia' => $exameModel->fundoscopia,
-            'anamnese' => $exameModel->anamnese,
-            'observacoes' => $exameModel->observacoes,
-        ];
-
-        $exame['paciente'] = [
-            'nome' => $paciente->nome ?? '',
-            'idade' => $paciente->idade ?? null,
-            'cpf' => $paciente->cpf_formatado ?? '',
-            'telefone' => $paciente->telefone_formatado ?? '',
-        ];
-
-        $exame['profissional'] = [
-            'nome' => $profissional->nome ?? '',
-            'registro_conselho' => $profissional->registro_conselho ?? null,
-            'especialidade' => $profissional->especialidade->descricao ?? null,
-        ];
+        $exame = $this->buildExamPdfData($consulta);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.exame-pdf', compact('exame'));
 
@@ -180,44 +144,7 @@ class ProfissionalWorkflowController extends Controller
         $consulta = Consulta::with(['paciente', 'profissional.especialidade'])
             ->where('id', $id)
             ->firstOrFail();
-
-        $encaminhamentoModel = \App\Models\Encaminhamento::with('especialidade')
-            ->where('consulta_id', $consulta->id)
-            ->where('tenant_id', $consulta->tenant_id)
-            ->whereNull('deleted_at')
-            ->first();
-
-        if (! $encaminhamentoModel) {
-            return redirect()->back()->with('error', 'Encaminhamento não encontrado.');
-        }
-
-        $paciente = $consulta->paciente;
-        $profissional = $consulta->profissional;
-
-        $referral = $encaminhamentoModel->toArray();
-        $referral['data'] = $encaminhamentoModel->created_at;
-
-        $referral['dados'] = [
-            'especialidade_destino' => $encaminhamentoModel->especialidade->descricao ?? 'Não informada',
-            'usuario_oculos' => $encaminhamentoModel->usuario_oculos,
-            'ultima_avaliacao' => $encaminhamentoModel->ultima_avaliacao_em ? \Carbon\Carbon::parse($encaminhamentoModel->ultima_avaliacao_em)->format('d/m/Y') : 'Não informada',
-            'hipotese' => $encaminhamentoModel->hipotese,
-            'urgencia' => $encaminhamentoModel->urgencia === 'emergencia' ? 'Emergência' : ucfirst($encaminhamentoModel->urgencia),
-            'observacoes' => $encaminhamentoModel->observacoes,
-        ];
-
-        $referral['paciente'] = [
-            'nome' => $paciente->nome ?? '',
-            'idade' => $paciente->idade ?? null,
-            'cpf' => $paciente->cpf_formatado ?? '',
-            'telefone' => $paciente->telefone_formatado ?? '',
-        ];
-
-        $referral['profissional'] = [
-            'nome' => $profissional->nome ?? '',
-            'registro_conselho' => $profissional->registro_conselho ?? null,
-            'especialidade' => $profissional->especialidade->descricao ?? null,
-        ];
+        $referral = $this->buildReferralPdfData($consulta);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.referral-pdf', compact('referral'));
 
@@ -493,29 +420,53 @@ class ProfissionalWorkflowController extends Controller
             return response()->json(['success' => false, 'message' => 'Dados incompletos'], 400);
         }
 
-        // Gerar token criptografado
         try {
-            $token = encrypt($consultaId);
-            // Gerar link para o PDF usando a rota pública com token
-            $pdfUrl = route('public.prescription.view', ['token' => $token]);
+            $consulta = Consulta::with(['paciente', 'profissional.especialidade'])
+                ->where('id', $consultaId)
+                ->firstOrFail();
+
+            $prescription = $this->buildPrescriptionPdfData($consulta, $request);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
+
+            $patientName = trim((string) ($prescription['paciente']['nome'] ?? 'cliente'));
+            $patientName = $patientName !== '' ? $patientName : 'cliente';
+            $safePatientName = preg_replace('/[\\\\\\/:"*?<>|]+/u', '', $patientName);
+            $safePatientName = preg_replace('/\s+/u', ' ', trim((string) $safePatientName));
+            $safePatientName = $safePatientName !== '' ? $safePatientName : 'cliente';
+
+            $datePart = !empty($prescription['data'])
+                ? Carbon::parse($prescription['data'])->format('Y-m-d')
+                : now('America/Manaus')->format('Y-m-d');
+
+            $baseDirectory = 'C:\\visaosis\\receitas_pdf';
+            File::ensureDirectoryExists($baseDirectory);
+
+            $fileName = $safePatientName . ' ' . $datePart . '.pdf';
+            $absolutePath = $baseDirectory . DIRECTORY_SEPARATOR . $fileName;
+            $pdf->save($absolutePath);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Erro ao gerar link seguro'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar a receita em PDF: ' . $e->getMessage(),
+            ], 500);
         }
 
-        // Limpar telefone (apenas números)
         $phoneClean = preg_replace('/\D/', '', $phone);
-        // Adicionar código do país se não tiver (assumindo BR +55)
         if (strlen($phoneClean) <= 11) {
             $phoneClean = '55' . $phoneClean;
         }
 
-        $message = "Olá! Segue o link da sua receita médica: {$pdfUrl}";
+        $message = 'Olá segue a receita de "' . $patientName . '"';
         $whatsappUrl = "https://web.whatsapp.com/send?phone={$phoneClean}&text=" . urlencode($message);
 
         return response()->json([
             'success' => true,
-            'message' => 'WhatsApp Web será aberto com a mensagem pronta.',
+            'message' => 'PDF salvo com sucesso. O WhatsApp será aberto para envio.',
             'whatsapp_url' => $whatsappUrl,
+            'file_name' => $fileName,
+            'file_uri' => 'file:///' . str_replace('\\', '/', $absolutePath),
+            'local_path' => $absolutePath,
+            'folder_path' => $baseDirectory,
         ]);
     }
 
@@ -531,29 +482,53 @@ class ProfissionalWorkflowController extends Controller
             return response()->json(['success' => false, 'message' => 'Dados incompletos'], 400);
         }
 
-        // Gerar token criptografado
         try {
-            $token = encrypt($consultaId);
-            // Gerar link para o PDF usando a rota pública com token
-            $pdfUrl = route('public.exam.view', ['token' => $token]);
+            $consulta = Consulta::with(['paciente', 'profissional.especialidade'])
+                ->where('id', $consultaId)
+                ->firstOrFail();
+
+            $exame = $this->buildExamPdfData($consulta, $request);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.exame-pdf', compact('exame'));
+
+            $patientName = trim((string) ($exame['paciente']['nome'] ?? 'cliente'));
+            $patientName = $patientName !== '' ? $patientName : 'cliente';
+            $safePatientName = preg_replace('/[\\\\\\/:"*?<>|]+/u', '', $patientName);
+            $safePatientName = preg_replace('/\s+/u', ' ', trim((string) $safePatientName));
+            $safePatientName = $safePatientName !== '' ? $safePatientName : 'cliente';
+
+            $datePart = !empty($exame['data'])
+                ? Carbon::parse($exame['data'])->format('Y-m-d')
+                : now('America/Manaus')->format('Y-m-d');
+
+            $baseDirectory = 'C:\\visaosis\\exames_pdf';
+            File::ensureDirectoryExists($baseDirectory);
+
+            $fileName = $safePatientName . ' ' . $datePart . '.pdf';
+            $absolutePath = $baseDirectory . DIRECTORY_SEPARATOR . $fileName;
+            $pdf->save($absolutePath);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Erro ao gerar link seguro'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar o exame em PDF: ' . $e->getMessage(),
+            ], 500);
         }
 
-        // Limpar telefone (apenas números)
         $phoneClean = preg_replace('/\D/', '', $phone);
-        // Adicionar código do país se não tiver (assumindo BR +55)
         if (strlen($phoneClean) <= 11) {
             $phoneClean = '55' . $phoneClean;
         }
 
-        $message = "Olá! Segue o link do seu exame de vista: {$pdfUrl}";
+        $message = 'Olá segue o exame de "' . $patientName . '"';
         $whatsappUrl = "https://web.whatsapp.com/send?phone={$phoneClean}&text=" . urlencode($message);
 
         return response()->json([
             'success' => true,
-            'message' => 'WhatsApp Web será aberto com a mensagem pronta.',
+            'message' => 'PDF salvo com sucesso. O WhatsApp será aberto para envio.',
             'whatsapp_url' => $whatsappUrl,
+            'file_name' => $fileName,
+            'file_uri' => 'file:///' . str_replace('\\', '/', $absolutePath),
+            'local_path' => $absolutePath,
+            'folder_path' => $baseDirectory,
         ]);
     }
 
@@ -569,29 +544,53 @@ class ProfissionalWorkflowController extends Controller
             return response()->json(['success' => false, 'message' => 'Dados incompletos'], 400);
         }
 
-        // Gerar token criptografado
         try {
-            $token = encrypt($consultaId);
-            // Gerar link para o PDF usando a rota pública com token
-            $pdfUrl = route('public.referral.view', ['token' => $token]);
+            $consulta = Consulta::with(['paciente', 'profissional.especialidade'])
+                ->where('id', $consultaId)
+                ->firstOrFail();
+
+            $referral = $this->buildReferralPdfData($consulta, $request);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.referral-pdf', compact('referral'));
+
+            $patientName = trim((string) ($referral['paciente']['nome'] ?? 'cliente'));
+            $patientName = $patientName !== '' ? $patientName : 'cliente';
+            $safePatientName = preg_replace('/[\\\\\\/:"*?<>|]+/u', '', $patientName);
+            $safePatientName = preg_replace('/\s+/u', ' ', trim((string) $safePatientName));
+            $safePatientName = $safePatientName !== '' ? $safePatientName : 'cliente';
+
+            $datePart = !empty($referral['data'])
+                ? Carbon::parse($referral['data'])->format('Y-m-d')
+                : now('America/Manaus')->format('Y-m-d');
+
+            $baseDirectory = 'C:\\visaosis\\encaminhamentos_pdf';
+            File::ensureDirectoryExists($baseDirectory);
+
+            $fileName = $safePatientName . ' ' . $datePart . '.pdf';
+            $absolutePath = $baseDirectory . DIRECTORY_SEPARATOR . $fileName;
+            $pdf->save($absolutePath);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Erro ao gerar link seguro'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar o encaminhamento em PDF: ' . $e->getMessage(),
+            ], 500);
         }
 
-        // Limpar telefone (apenas números)
         $phoneClean = preg_replace('/\D/', '', $phone);
-        // Adicionar código do país se não tiver (assumindo BR +55)
         if (strlen($phoneClean) <= 11) {
             $phoneClean = '55' . $phoneClean;
         }
 
-        $message = "Olá! Segue o link do seu termo de encaminhamento: {$pdfUrl}";
+        $message = 'Olá segue o encaminhamento de "' . $patientName . '"';
         $whatsappUrl = "https://web.whatsapp.com/send?phone={$phoneClean}&text=" . urlencode($message);
 
         return response()->json([
             'success' => true,
-            'message' => 'WhatsApp Web será aberto com a mensagem pronta.',
+            'message' => 'PDF salvo com sucesso. O WhatsApp será aberto para envio.',
             'whatsapp_url' => $whatsappUrl,
+            'file_name' => $fileName,
+            'file_uri' => 'file:///' . str_replace('\\', '/', $absolutePath),
+            'local_path' => $absolutePath,
+            'folder_path' => $baseDirectory,
         ]);
     }
 
@@ -1087,57 +1086,7 @@ class ProfissionalWorkflowController extends Controller
         $consulta = Consulta::with(['paciente', 'profissional'])
             ->where('id', $id)
             ->firstOrFail();
-
-        $prescricao = \App\Models\Prescricao::where('consulta_id', $consulta->id)
-            ->where('tenant_id', $consulta->tenant_id)
-            ->whereNull('deleted_at')
-            ->first();
-
-        $paciente = $consulta->paciente;
-        $profissional = $consulta->profissional;
-
-        $dataReceita = $consulta->atendido_em
-            ? \Carbon\Carbon::parse($consulta->atendido_em)->format('Y-m-d')
-            : \Carbon\Carbon::now('America/Manaus')->format('Y-m-d');
-
-        $prescription = [
-            'numero' => 'RX-' . date('Y') . '-' . str_pad($consulta->id, 4, '0', STR_PAD_LEFT),
-            'data' => $dataReceita,
-            'paciente' => [
-                'nome' => $paciente->nome ?? '',
-                'idade' => $paciente->idade ?? null,
-                'cpf' => $paciente->cpf_formatado ?? '',
-                'telefone' => $paciente->telefone_formatado ?? '',
-            ],
-            'profissional' => [
-                'nome' => $profissional->nome ?? '',
-                'registro_conselho' => $profissional->registro_conselho ?? null,
-                'especialidade' => $profissional->especialidade->descricao ?? null,
-            ],
-            'prescricao' => [
-                'od_esferico' => optional($prescricao)->esfera_od,
-                'od_cilindrico' => optional($prescricao)->cilindro_od,
-                'od_eixo' => optional($prescricao)->eixo_od,
-                'od_acuidade' => optional($prescricao)->acuidade_od,
-                'od_dnp' => optional($prescricao)->dnp_od,
-                'od_altura' => optional($prescricao)->altura_od,
-                'od_adicao' => optional($prescricao)->adicao_od,
-
-                'oe_esferico' => optional($prescricao)->esfera_oe,
-                'oe_cilindrico' => optional($prescricao)->cilindro_oe,
-                'oe_eixo' => optional($prescricao)->eixo_oe,
-                'oe_acuidade' => optional($prescricao)->acuidade_oe,
-                'oe_dnp' => optional($prescricao)->dnp_oe,
-                'oe_altura' => optional($prescricao)->altura_oe,
-                'oe_adicao' => optional($prescricao)->adicao_oe,
-
-                'tipo_lente' => optional($prescricao)->tipo_lente,
-                'validade_dias' => optional($prescricao)->validade_dias,
-            ],
-            'diagnostico' => optional($prescricao)->diagnostico,
-            'recomendacoes' => optional($prescricao)->recomendacoes,
-            'observacoes' => optional($prescricao)->observacoes,
-        ];
+        $prescription = $this->buildPrescriptionPdfData($consulta);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
 
@@ -1149,8 +1098,16 @@ class ProfissionalWorkflowController extends Controller
         $consulta = Consulta::with(['paciente', 'profissional'])
             ->where('id', $id)
             ->firstOrFail();
+        $prescription = $this->buildPrescriptionPdfData($consulta, $request);
 
-        $prescricao = \App\Models\Prescricao::where('consulta_id', $consulta->id)
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
+
+        return $pdf->stream('receita-' . $consulta->id . '.pdf');
+    }
+
+    private function buildPrescriptionPdfData(Consulta $consulta, ?Request $request = null): array
+    {
+        $prescricao = Prescricao::where('consulta_id', $consulta->id)
             ->where('tenant_id', $consulta->tenant_id)
             ->whereNull('deleted_at')
             ->first();
@@ -1158,11 +1115,12 @@ class ProfissionalWorkflowController extends Controller
         $paciente = $consulta->paciente;
         $profissional = $consulta->profissional;
 
-        $dataReceita = $consulta->atendido_em
-            ? \Carbon\Carbon::parse($consulta->atendido_em)->format('Y-m-d')
-            : \Carbon\Carbon::now('America/Manaus')->format('Y-m-d');
+        $dataReceita = $request?->input('data_receita')
+            ?: ($consulta->atendido_em
+                ? Carbon::parse($consulta->atendido_em)->format('Y-m-d')
+                : Carbon::now('America/Manaus')->format('Y-m-d'));
 
-        $prescription = [
+        return [
             'numero' => 'RX-' . date('Y') . '-' . str_pad($consulta->id, 4, '0', STR_PAD_LEFT),
             'data' => $dataReceita,
             'paciente' => [
@@ -1177,49 +1135,147 @@ class ProfissionalWorkflowController extends Controller
                 'especialidade' => $profissional->especialidade->descricao ?? null,
             ],
             'prescricao' => [
-                'od_esferico' => $request->input('od_esferico', optional($prescricao)->esfera_od),
-                'od_cilindrico' => $request->input('od_cilindrico', optional($prescricao)->cilindro_od),
-                'od_eixo' => $request->input('od_eixo', optional($prescricao)->eixo_od),
-                'od_acuidade' => $request->input('od_acuidade', optional($prescricao)->acuidade_od),
-                'od_dnp' => $request->input('od_dnp', optional($prescricao)->dnp_od),
-                'od_altura' => $request->input('od_altura', optional($prescricao)->altura_od),
-                'od_adicao' => $request->input('od_adicao', optional($prescricao)->adicao_od),
+                'od_esferico' => $request?->input('od_esferico', optional($prescricao)->esfera_od) ?? optional($prescricao)->esfera_od,
+                'od_cilindrico' => $request?->input('od_cilindrico', optional($prescricao)->cilindro_od) ?? optional($prescricao)->cilindro_od,
+                'od_eixo' => $request?->input('od_eixo', optional($prescricao)->eixo_od) ?? optional($prescricao)->eixo_od,
+                'od_acuidade' => $request?->input('od_acuidade', optional($prescricao)->acuidade_od) ?? optional($prescricao)->acuidade_od,
+                'od_dnp' => $request?->input('od_dnp', optional($prescricao)->dnp_od) ?? optional($prescricao)->dnp_od,
+                'od_altura' => $request?->input('od_altura', optional($prescricao)->altura_od) ?? optional($prescricao)->altura_od,
+                'od_adicao' => $request?->input('od_adicao', optional($prescricao)->adicao_od) ?? optional($prescricao)->adicao_od,
 
-                'oe_esferico' => $request->input('oe_esferico', optional($prescricao)->esfera_oe),
-                'oe_cilindrico' => $request->input('oe_cilindrico', optional($prescricao)->cilindro_oe),
-                'oe_eixo' => $request->input('oe_eixo', optional($prescricao)->eixo_oe),
-                'oe_acuidade' => $request->input('oe_acuidade', optional($prescricao)->acuidade_oe),
-                'oe_dnp' => $request->input('oe_dnp', optional($prescricao)->dnp_oe),
-                'oe_altura' => $request->input('oe_altura', optional($prescricao)->altura_oe),
-                'oe_adicao' => $request->input('oe_adicao', optional($prescricao)->adicao_oe),
+                'oe_esferico' => $request?->input('oe_esferico', optional($prescricao)->esfera_oe) ?? optional($prescricao)->esfera_oe,
+                'oe_cilindrico' => $request?->input('oe_cilindrico', optional($prescricao)->cilindro_oe) ?? optional($prescricao)->cilindro_oe,
+                'oe_eixo' => $request?->input('oe_eixo', optional($prescricao)->eixo_oe) ?? optional($prescricao)->eixo_oe,
+                'oe_acuidade' => $request?->input('oe_acuidade', optional($prescricao)->acuidade_oe) ?? optional($prescricao)->acuidade_oe,
+                'oe_dnp' => $request?->input('oe_dnp', optional($prescricao)->dnp_oe) ?? optional($prescricao)->dnp_oe,
+                'oe_altura' => $request?->input('oe_altura', optional($prescricao)->altura_oe) ?? optional($prescricao)->altura_oe,
+                'oe_adicao' => $request?->input('oe_adicao', optional($prescricao)->adicao_oe) ?? optional($prescricao)->adicao_oe,
 
-                'od_esferico_perto' => $request->input('od_esferico_perto', optional($prescricao)->esfera_od_perto),
-                'od_cilindrico_perto' => $request->input('od_cilindrico_perto', optional($prescricao)->cilindro_od_perto),
-                'od_eixo_perto' => $request->input('od_eixo_perto', optional($prescricao)->eixo_od_perto),
-                'od_acuidade_perto' => $request->input('od_acuidade_perto', optional($prescricao)->acuidade_od_perto),
-                'od_dnp_perto' => $request->input('od_dnp_perto', optional($prescricao)->dnp_od_perto),
-                'od_altura_perto' => $request->input('od_altura_perto', optional($prescricao)->altura_od_perto),
-                'od_adicao_perto' => $request->input('od_adicao_perto', optional($prescricao)->adicao_od_perto),
+                'od_esferico_perto' => $request?->input('od_esferico_perto', optional($prescricao)->esfera_od_perto) ?? optional($prescricao)->esfera_od_perto,
+                'od_cilindrico_perto' => $request?->input('od_cilindrico_perto', optional($prescricao)->cilindro_od_perto) ?? optional($prescricao)->cilindro_od_perto,
+                'od_eixo_perto' => $request?->input('od_eixo_perto', optional($prescricao)->eixo_od_perto) ?? optional($prescricao)->eixo_od_perto,
+                'od_acuidade_perto' => $request?->input('od_acuidade_perto', optional($prescricao)->acuidade_od_perto) ?? optional($prescricao)->acuidade_od_perto,
+                'od_dnp_perto' => $request?->input('od_dnp_perto', optional($prescricao)->dnp_od_perto) ?? optional($prescricao)->dnp_od_perto,
+                'od_altura_perto' => $request?->input('od_altura_perto', optional($prescricao)->altura_od_perto) ?? optional($prescricao)->altura_od_perto,
+                'od_adicao_perto' => $request?->input('od_adicao_perto', optional($prescricao)->adicao_od_perto) ?? optional($prescricao)->adicao_od_perto,
 
-                'oe_esferico_perto' => $request->input('oe_esferico_perto', optional($prescricao)->esfera_oe_perto),
-                'oe_cilindrico_perto' => $request->input('oe_cilindrico_perto', optional($prescricao)->cilindro_oe_perto),
-                'oe_eixo_perto' => $request->input('oe_eixo_perto', optional($prescricao)->eixo_oe_perto),
-                'oe_acuidade_perto' => $request->input('oe_acuidade_perto', optional($prescricao)->acuidade_oe_perto),
-                'oe_dnp_perto' => $request->input('oe_dnp_perto', optional($prescricao)->dnp_oe_perto),
-                'oe_altura_perto' => $request->input('oe_altura_perto', optional($prescricao)->altura_oe_perto),
-                'oe_adicao_perto' => $request->input('oe_adicao_perto', optional($prescricao)->adicao_oe_perto),
+                'oe_esferico_perto' => $request?->input('oe_esferico_perto', optional($prescricao)->esfera_oe_perto) ?? optional($prescricao)->esfera_oe_perto,
+                'oe_cilindrico_perto' => $request?->input('oe_cilindrico_perto', optional($prescricao)->cilindro_oe_perto) ?? optional($prescricao)->cilindro_oe_perto,
+                'oe_eixo_perto' => $request?->input('oe_eixo_perto', optional($prescricao)->eixo_oe_perto) ?? optional($prescricao)->eixo_oe_perto,
+                'oe_acuidade_perto' => $request?->input('oe_acuidade_perto', optional($prescricao)->acuidade_oe_perto) ?? optional($prescricao)->acuidade_oe_perto,
+                'oe_dnp_perto' => $request?->input('oe_dnp_perto', optional($prescricao)->dnp_oe_perto) ?? optional($prescricao)->dnp_oe_perto,
+                'oe_altura_perto' => $request?->input('oe_altura_perto', optional($prescricao)->altura_oe_perto) ?? optional($prescricao)->altura_oe_perto,
+                'oe_adicao_perto' => $request?->input('oe_adicao_perto', optional($prescricao)->adicao_oe_perto) ?? optional($prescricao)->adicao_oe_perto,
 
-                'tipo_lente' => $request->input('tipo_lente', optional($prescricao)->tipo_lente),
-                'validade_dias' => $request->input('validade_dias', optional($prescricao)->validade_dias),
+                'tipo_lente' => $request?->input('tipo_lente', optional($prescricao)->tipo_lente) ?? optional($prescricao)->tipo_lente,
+                'validade_dias' => $request?->input('validade_dias', optional($prescricao)->validade_dias) ?? optional($prescricao)->validade_dias,
             ],
-            'diagnostico' => $request->input('diagnostico', optional($prescricao)->diagnostico),
-            'recomendacoes' => $request->input('recomendacoes', optional($prescricao)->recomendacoes),
-            'observacoes' => $request->input('observacoes_receita', optional($prescricao)->observacoes),
+            'diagnostico' => $request?->input('diagnostico', optional($prescricao)->diagnostico) ?? optional($prescricao)->diagnostico,
+            'recomendacoes' => $request?->input('recomendacoes', optional($prescricao)->recomendacoes) ?? optional($prescricao)->recomendacoes,
+            'observacoes' => $request?->input('observacoes_receita', optional($prescricao)->observacoes) ?? optional($prescricao)->observacoes,
         ];
+    }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
+    private function buildExamPdfData(Consulta $consulta, ?Request $request = null): array
+    {
+        $exameModel = \App\Models\Exame::where('consulta_id', $consulta->id)
+            ->where('tenant_id', $consulta->tenant_id)
+            ->whereNull('deleted_at')
+            ->first();
 
-        return $pdf->stream('receita-' . $consulta->id . '.pdf');
+        if (! $exameModel && ! $request) {
+            abort(404, 'Exame não encontrado.');
+        }
+
+        $paciente = $consulta->paciente;
+        $profissional = $consulta->profissional;
+
+        return [
+            'id' => $exameModel?->id ?? $consulta->id,
+            'data' => $request?->input('data_exame')
+                ?: optional($exameModel?->created_at)->copy()
+                ?: Carbon::now('America/Manaus'),
+            'dados' => [
+                'av_od' => $request?->input('av_od', $exameModel?->acuidade_od) ?? $exameModel?->acuidade_od,
+                'av_oe' => $request?->input('av_oe', $exameModel?->acuidade_oe) ?? $exameModel?->acuidade_oe,
+                'pio_od' => $request?->input('pio_od', $exameModel?->pressao_od) ?? $exameModel?->pressao_od,
+                'pio_oe' => $request?->input('pio_oe', $exameModel?->pressao_oe) ?? $exameModel?->pressao_oe,
+                'fundoscopia' => $request?->input('fundoscopia', $exameModel?->fundoscopia) ?? $exameModel?->fundoscopia,
+                'anamnese' => $request?->input('anamnese', $exameModel?->anamnese) ?? $exameModel?->anamnese,
+                'observacoes' => $request?->input('observacoes', $exameModel?->observacoes) ?? $exameModel?->observacoes,
+            ],
+            'paciente' => [
+                'nome' => $paciente->nome ?? '',
+                'idade' => $paciente->idade ?? null,
+                'cpf' => $paciente->cpf_formatado ?? '',
+                'telefone' => $paciente->telefone_formatado ?? '',
+            ],
+            'profissional' => [
+                'nome' => $profissional->nome ?? '',
+                'registro_conselho' => $profissional->registro_conselho ?? null,
+                'especialidade' => $profissional->especialidade->descricao ?? null,
+            ],
+        ];
+    }
+
+    private function buildReferralPdfData(Consulta $consulta, ?Request $request = null): array
+    {
+        $encaminhamentoModel = Encaminhamento::with('especialidade')
+            ->where('consulta_id', $consulta->id)
+            ->where('tenant_id', $consulta->tenant_id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $encaminhamentoModel && ! $request) {
+            abort(404, 'Encaminhamento não encontrado.');
+        }
+
+        $paciente = $consulta->paciente;
+        $profissional = $consulta->profissional;
+
+        $especialidadeId = $request?->input('especialidade');
+        $especialidadeDescricao = $request && $especialidadeId
+            ? Especialidade::query()->where('id', $especialidadeId)->value('descricao')
+            : null;
+
+        $usuarioOculosInput = $request?->input('usuario_ocular');
+        $usuarioOculos = $request
+            ? ($usuarioOculosInput === 'sim' ? 1 : 0)
+            : ($encaminhamentoModel?->usuario_oculos ?? 0);
+
+        $urgencia = $request?->input('urgencia', $encaminhamentoModel?->urgencia) ?? $encaminhamentoModel?->urgencia;
+
+        return [
+            'id' => $encaminhamentoModel?->id ?? $consulta->id,
+            'data' => $request
+                ? Carbon::now('America/Manaus')
+                : (optional($encaminhamentoModel?->created_at)->copy()
+                    ?: Carbon::now('America/Manaus')),
+            'dados' => [
+                'especialidade_destino' => $especialidadeDescricao
+                    ?: ($encaminhamentoModel?->especialidade->descricao ?? 'Não informada'),
+                'usuario_oculos' => $usuarioOculos,
+                'ultima_avaliacao' => $request?->input('data')
+                    ? Carbon::parse($request->input('data'))->format('d/m/Y')
+                    : ($encaminhamentoModel?->ultima_avaliacao_em
+                        ? Carbon::parse($encaminhamentoModel->ultima_avaliacao_em)->format('d/m/Y')
+                        : 'Não informada'),
+                'hipotese' => $request?->input('motivo', $encaminhamentoModel?->hipotese) ?? $encaminhamentoModel?->hipotese,
+                'urgencia' => $urgencia === 'emergencia' ? 'Emergência' : ucfirst((string) $urgencia),
+                'observacoes' => $request?->input('observacoes', $encaminhamentoModel?->observacoes) ?? $encaminhamentoModel?->observacoes,
+            ],
+            'paciente' => [
+                'nome' => $paciente->nome ?? '',
+                'idade' => $paciente->idade ?? null,
+                'cpf' => $paciente->cpf_formatado ?? '',
+                'telefone' => $paciente->telefone_formatado ?? '',
+            ],
+            'profissional' => [
+                'nome' => $profissional->nome ?? '',
+                'registro_conselho' => $profissional->registro_conselho ?? null,
+                'especialidade' => $profissional->especialidade->descricao ?? null,
+            ],
+        ];
     }
 
     public function newPrescription()

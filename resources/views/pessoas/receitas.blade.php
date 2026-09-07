@@ -295,6 +295,14 @@
                                 ],
                             ],
                             'can_edit' => (bool) $prescricao->especialista_externo,
+                            'print_url' => route('pessoas.receitas.print', [
+                                'pessoa' => $pessoa->id,
+                                'prescricao' => $prescricao->id,
+                            ]),
+                            'save_pdf_whatsapp_url' => route('pessoas.receitas.save-pdf-whatsapp', [
+                                'pessoa' => $pessoa->id,
+                                'prescricao' => $prescricao->id,
+                            ]),
                             'edit_url' => $prescricao->especialista_externo
                                 ? route('pessoas.receitas.edit', [
                                     'pessoa' => $pessoa->id,
@@ -514,6 +522,10 @@
                             <i class="mdi mdi-pencil me-2"></i>
                             Editar Receita
                         </a>
+                        <button type="button" class="btn btn-outline-success" id="rxSavePdfWhatsappBtn">
+                            <i class="mdi mdi-whatsapp me-2"></i>
+                            Salvar PDF e WhatsApp
+                        </button>
                         <button type="button" class="btn btn-outline-secondary" id="rxPrintBtn">
                             <i class="mdi mdi-printer me-2"></i>
                             Imprimir
@@ -555,6 +567,54 @@
         </div>
     </div>
 
+    <div class="modal fade" id="rxPdfResultModal" tabindex="-1" aria-labelledby="rxPdfResultModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header py-2 px-3">
+                    <h5 class="modal-title fs-6" id="rxPdfResultModalLabel">
+                        <i class="mdi mdi-file-pdf-box me-1 text-danger"></i>
+                        PDF da Receita
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-success py-2 px-3 mb-3" id="rxPdfResultMessage">
+                        PDF salvo com sucesso.
+                    </div>
+                    <div class="small text-muted mb-1">Arquivo</div>
+                    <div class="fw-semibold text-break mb-3" id="rxPdfResultFileName">-</div>
+
+                    <div class="small text-muted mb-1">Caminho local</div>
+                    <div class="border rounded bg-light p-2 small text-break mb-3" id="rxPdfResultPath">-</div>
+
+                    <div class="d-grid gap-2">
+                        <a href="#" target="_blank" rel="noopener" class="btn btn-outline-primary"
+                            id="rxPdfOpenFileBtn">
+                            <i class="mdi mdi-open-in-new me-2"></i>
+                            Abrir PDF
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary" id="rxPdfOpenFolderBtn">
+                            <i class="mdi mdi-folder-open me-2"></i>
+                            Abrir Pasta do Arquivo
+                        </button>
+                        <button type="button" class="btn btn-outline-dark" id="rxPdfCopyPathBtn">
+                            <i class="mdi mdi-content-copy me-2"></i>
+                            Copiar Caminho
+                        </button>
+                    </div>
+                    <div class="small text-muted mt-3 mb-0">
+                        Se a pasta não abrir automaticamente, copie o caminho e abra manualmente no Windows Explorer.
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                        data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
@@ -562,6 +622,7 @@
         (function() {
             const historyItems = @json($historyItems ?? []);
             const initialId = @json($initialHistoryId ?? null);
+            const csrfToken = @json(csrf_token());
 
             const totalEl = document.getElementById('rxTotal');
             const positionEl = document.getElementById('rxPosition');
@@ -581,8 +642,19 @@
 
             const editBtn = document.getElementById('rxEditBtn');
             const printBtn = document.getElementById('rxPrintBtn');
+            const savePdfWhatsappBtn = document.getElementById('rxSavePdfWhatsappBtn');
+            const pdfResultModalEl = document.getElementById('rxPdfResultModal');
+            const pdfResultMessageEl = document.getElementById('rxPdfResultMessage');
+            const pdfResultFileNameEl = document.getElementById('rxPdfResultFileName');
+            const pdfResultPathEl = document.getElementById('rxPdfResultPath');
+            const pdfOpenFileBtn = document.getElementById('rxPdfOpenFileBtn');
+            const pdfOpenFolderBtn = document.getElementById('rxPdfOpenFolderBtn');
+            const pdfCopyPathBtn = document.getElementById('rxPdfCopyPathBtn');
 
             const byId = (id) => document.getElementById(id);
+
+            let pdfResultModalInstance = null;
+            let currentPdfResult = null;
 
             const setText = (id, value) => {
                 const el = byId(id);
@@ -600,6 +672,117 @@
                     return;
                 }
                 el.classList.add('bg-' + (variant || 'primary'));
+            };
+
+            const showInlineMessage = (message, type) => {
+                if (window.bootstrap && window.bootstrap.Toast) {
+                    const map = {
+                        success: {
+                            className: 'text-bg-success',
+                            icon: 'mdi-check-circle'
+                        },
+                        error: {
+                            className: 'text-bg-danger',
+                            icon: 'mdi-alert-outline'
+                        },
+                        info: {
+                            className: 'text-bg-info',
+                            icon: 'mdi-information-outline'
+                        },
+                        warning: {
+                            className: 'text-bg-warning',
+                            icon: 'mdi-alert-circle'
+                        },
+                    };
+                    const options = map[type] || map.info;
+                    let container = document.getElementById('rxDynamicToastContainer');
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.id = 'rxDynamicToastContainer';
+                        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+                        container.style.zIndex = '1090';
+                        document.body.appendChild(container);
+                    }
+
+                    const toastEl = document.createElement('div');
+                    toastEl.className = 'toast align-items-center border-0 ' + options.className;
+                    toastEl.setAttribute('role', 'alert');
+                    toastEl.setAttribute('aria-live', 'assertive');
+                    toastEl.setAttribute('aria-atomic', 'true');
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'd-flex';
+
+                    const body = document.createElement('div');
+                    body.className = 'toast-body';
+
+                    const icon = document.createElement('i');
+                    icon.className = 'mdi ' + options.icon + ' me-2';
+                    body.appendChild(icon);
+                    body.appendChild(document.createTextNode(message));
+
+                    const closeBtn = document.createElement('button');
+                    closeBtn.type = 'button';
+                    closeBtn.className = 'btn-close btn-close-white me-2 m-auto';
+                    closeBtn.setAttribute('data-bs-dismiss', 'toast');
+                    closeBtn.setAttribute('aria-label', 'Fechar');
+
+                    wrapper.appendChild(body);
+                    wrapper.appendChild(closeBtn);
+                    toastEl.appendChild(wrapper);
+                    container.appendChild(toastEl);
+
+                    const toast = window.bootstrap.Toast.getOrCreateInstance(toastEl, {
+                        delay: 4500
+                    });
+                    toastEl.addEventListener('hidden.bs.toast', function() {
+                        toastEl.remove();
+                    }, {
+                        once: true
+                    });
+                    toast.show();
+                    return;
+                }
+                window.alert(message);
+            };
+
+            const getPdfResultModal = () => {
+                if (!pdfResultModalEl || !window.bootstrap || !window.bootstrap.Modal) return null;
+                if (!pdfResultModalInstance) {
+                    pdfResultModalInstance = new window.bootstrap.Modal(pdfResultModalEl);
+                }
+                return pdfResultModalInstance;
+            };
+
+            const toFileUri = (path) => {
+                if (!path) return null;
+                const normalized = String(path).replace(/\\/g, '/');
+                return 'file:///' + normalized.replace(/^\/+/, '');
+            };
+
+            const showPdfResultModal = (data) => {
+                currentPdfResult = data || null;
+                if (pdfResultMessageEl) {
+                    pdfResultMessageEl.textContent = (data && data.message) || 'PDF salvo com sucesso.';
+                }
+                if (pdfResultFileNameEl) {
+                    pdfResultFileNameEl.textContent = (data && data.file_name) || '-';
+                }
+                if (pdfResultPathEl) {
+                    pdfResultPathEl.textContent = (data && data.local_path) || '-';
+                }
+                if (pdfOpenFileBtn) {
+                    const openFileHref = (data && (data.file_url || data.file_uri)) || '#';
+                    pdfOpenFileBtn.href = openFileHref;
+                    pdfOpenFileBtn.classList.toggle('disabled', !data || (!data.file_url && !data.file_uri));
+                }
+
+                const modal = getPdfResultModal();
+                if (modal) {
+                    modal.show();
+                } else {
+                    showInlineMessage((data && data.message) || 'PDF salvo com sucesso.', 'success');
+                }
             };
 
             let index = 0;
@@ -690,6 +873,14 @@
                     }
                 }
 
+                if (printBtn) {
+                    printBtn.disabled = !item.print_url;
+                }
+
+                if (savePdfWhatsappBtn) {
+                    savePdfWhatsappBtn.disabled = !item.save_pdf_whatsapp_url;
+                }
+
                 if (prevBtn) prevBtn.disabled = index <= 0;
                 if (nextBtn) nextBtn.disabled = index >= total - 1;
             };
@@ -714,7 +905,102 @@
 
             if (printBtn) {
                 printBtn.addEventListener('click', function() {
-                    window.print();
+                    const item = historyItems[index];
+                    if (!item || !item.print_url) return;
+                    window.open(item.print_url, '_blank', 'noopener');
+                });
+            }
+
+            if (savePdfWhatsappBtn) {
+                savePdfWhatsappBtn.addEventListener('click', function() {
+                    const item = historyItems[index];
+                    if (!item || !item.save_pdf_whatsapp_url) return;
+
+                    const originalHtml = savePdfWhatsappBtn.innerHTML;
+                    const whatsappWindow = window.open('', 'rx_whatsapp_window');
+
+                    savePdfWhatsappBtn.disabled = true;
+                    savePdfWhatsappBtn.innerHTML =
+                        '<i class="mdi mdi-loading mdi-spin me-2"></i>Processando...';
+
+                    fetch(item.save_pdf_whatsapp_url, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': csrfToken,
+                            },
+                        })
+                        .then(function(res) {
+                            return res.json().then(function(data) {
+                                if (!res.ok || !data.success) {
+                                    throw new Error((data && data.message) ||
+                                        'Não foi possível salvar o PDF da receita.');
+                                }
+                                return data;
+                            });
+                        })
+                        .then(function(data) {
+                            if (data.wa_phone && data.wa_message) {
+                                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                                const waUrl = isMobile ?
+                                    ('https://wa.me/' + data.wa_phone + '?text=' + encodeURIComponent(data
+                                        .wa_message)) :
+                                    ('https://web.whatsapp.com/send?phone=' + data.wa_phone + '&text=' +
+                                        encodeURIComponent(data.wa_message));
+
+                                if (whatsappWindow) {
+                                    whatsappWindow.location.href = waUrl;
+                                } else {
+                                    window.open(waUrl, 'rx_whatsapp_window');
+                                }
+                            } else if (whatsappWindow) {
+                                whatsappWindow.close();
+                            }
+
+                            showPdfResultModal(data);
+                        })
+                        .catch(function(error) {
+                            if (whatsappWindow) {
+                                whatsappWindow.close();
+                            }
+                            showInlineMessage(error.message || 'Erro ao salvar o PDF da receita.', 'error');
+                        })
+                        .finally(function() {
+                            savePdfWhatsappBtn.disabled = false;
+                            savePdfWhatsappBtn.innerHTML = originalHtml;
+                        });
+                });
+            }
+
+            if (pdfCopyPathBtn) {
+                pdfCopyPathBtn.addEventListener('click', function() {
+                    if (!currentPdfResult || !currentPdfResult.local_path) return;
+                    const path = currentPdfResult.local_path;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(path).then(function() {
+                            showInlineMessage('Caminho copiado para a área de transferência.',
+                                'success');
+                        }).catch(function() {
+                            showInlineMessage('Não foi possível copiar o caminho automaticamente.',
+                                'error');
+                        });
+                    } else {
+                        showInlineMessage('Seu navegador não suporta cópia automática. Caminho: ' + path,
+                            'info');
+                    }
+                });
+            }
+
+            if (pdfOpenFolderBtn) {
+                pdfOpenFolderBtn.addEventListener('click', function() {
+                    if (!currentPdfResult || !currentPdfResult.folder_path) return;
+                    const fileUri = toFileUri(currentPdfResult.folder_path);
+                    if (fileUri) {
+                        window.open(fileUri, '_blank', 'noopener');
+                    } else {
+                        showInlineMessage('Não foi possível abrir a pasta automaticamente.', 'error');
+                    }
                 });
             }
 

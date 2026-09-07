@@ -318,7 +318,47 @@
                 if (window.hasErrors || window.hasOldData) {
                     showFormWithOldData();
                 }
+
+                setupNicknameAutoFill();
             });
+
+            function extractFirstName(fullName) {
+                return (fullName || '')
+                    .trim()
+                    .split(/\s+/)
+                    .filter(Boolean)[0] || '';
+            }
+
+            function fillNicknameFromName(force = false) {
+                const form = document.getElementById('triageForm');
+                if (!form) return;
+
+                const nomeInput = form.querySelector('[name="nome"]');
+                const apelidoInput = form.querySelector('[name="apelido"]');
+                if (!nomeInput || !apelidoInput) return;
+
+                const firstName = extractFirstName(nomeInput.value);
+                const currentNickname = (apelidoInput.value || '').trim();
+
+                if (force || !currentNickname) {
+                    apelidoInput.value = firstName;
+                }
+            }
+
+            function setupNicknameAutoFill() {
+                const form = document.getElementById('triageForm');
+                if (!form) return;
+
+                const nomeInput = form.querySelector('[name="nome"]');
+                const apelidoInput = form.querySelector('[name="apelido"]');
+                if (!nomeInput || !apelidoInput) return;
+
+                nomeInput.addEventListener('input', function() {
+                    fillNicknameFromName(false);
+                });
+
+                fillNicknameFromName(false);
+            }
 
             function searchPatient(event) {
                 if (event) {
@@ -491,6 +531,7 @@
                 // Preencher campos do formulário
                 form.querySelector('[name="nome"]').value = paciente.nome || '';
                 form.querySelector('[name="apelido"]').value = paciente.apelido || '';
+                fillNicknameFromName(!paciente.apelido);
 
                 // Usar CPF formatado se disponível, senão usar o valor bruto
                 const cpfValue = paciente.cpf_formatado || paciente.cpf || '';
