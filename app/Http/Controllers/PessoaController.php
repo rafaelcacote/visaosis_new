@@ -12,7 +12,6 @@ use App\Rules\ValidCpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -264,10 +263,7 @@ class PessoaController extends Controller
         $safePatientName = preg_replace('/\s+/u', ' ', trim((string) $safePatientName));
         $safePatientName = $safePatientName !== '' ? $safePatientName : 'cliente';
         $fileName = $safePatientName . ' ' . $datePart . '.pdf';
-        $baseDirectory = 'C:\\visaosis\\receitas_pdf';
-        File::ensureDirectoryExists($baseDirectory);
-        $absolutePath = $baseDirectory . DIRECTORY_SEPARATOR . $fileName;
-        $pdf->save($absolutePath);
+        $pdfContent = $pdf->output();
 
         $phone = preg_replace('/\D/', '', (string) ($paciente->telefone ?? ''));
         if ($phone !== '' && strlen($phone) <= 11) {
@@ -279,13 +275,14 @@ class PessoaController extends Controller
         return response()->json([
             'success' => true,
             'message' => $phone !== ''
-                ? 'PDF salvo com sucesso. O WhatsApp será aberto para envio.'
-                : 'PDF salvo com sucesso. O paciente não possui telefone cadastrado para abrir o WhatsApp automaticamente.',
+                ? 'Download do PDF iniciado. O WhatsApp será aberto para envio.'
+                : 'Download do PDF iniciado. O paciente não possui telefone cadastrado para abrir o WhatsApp automaticamente.',
             'file_name' => $fileName,
             'file_url' => null,
-            'file_uri' => 'file:///' . str_replace('\\', '/', $absolutePath),
-            'local_path' => $absolutePath,
-            'folder_path' => $baseDirectory,
+            'file_uri' => null,
+            'local_path' => null,
+            'folder_path' => null,
+            'pdf_base64' => base64_encode($pdfContent),
             'wa_phone' => $phone !== '' ? $phone : null,
             'wa_message' => $phone !== '' ? $message : null,
         ]);

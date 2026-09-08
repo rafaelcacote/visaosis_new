@@ -13,7 +13,6 @@ use App\Models\Prescricao;
 use App\Models\Profissional;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -437,13 +436,8 @@ class ProfissionalWorkflowController extends Controller
             $datePart = !empty($prescription['data'])
                 ? Carbon::parse($prescription['data'])->format('Y-m-d')
                 : now('America/Manaus')->format('Y-m-d');
-
-            $baseDirectory = 'C:\\visaosis\\receitas_pdf';
-            File::ensureDirectoryExists($baseDirectory);
-
             $fileName = $safePatientName . ' ' . $datePart . '.pdf';
-            $absolutePath = $baseDirectory . DIRECTORY_SEPARATOR . $fileName;
-            $pdf->save($absolutePath);
+            $pdfContent = $pdf->output();
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -461,12 +455,10 @@ class ProfissionalWorkflowController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'PDF salvo com sucesso. O WhatsApp será aberto para envio.',
+            'message' => 'Download do PDF iniciado. O WhatsApp será aberto para envio.',
             'whatsapp_url' => $whatsappUrl,
             'file_name' => $fileName,
-            'file_uri' => 'file:///' . str_replace('\\', '/', $absolutePath),
-            'local_path' => $absolutePath,
-            'folder_path' => $baseDirectory,
+            'pdf_base64' => base64_encode($pdfContent),
         ]);
     }
 
@@ -499,13 +491,8 @@ class ProfissionalWorkflowController extends Controller
             $datePart = !empty($exame['data'])
                 ? Carbon::parse($exame['data'])->format('Y-m-d')
                 : now('America/Manaus')->format('Y-m-d');
-
-            $baseDirectory = 'C:\\visaosis\\exames_pdf';
-            File::ensureDirectoryExists($baseDirectory);
-
             $fileName = $safePatientName . ' ' . $datePart . '.pdf';
-            $absolutePath = $baseDirectory . DIRECTORY_SEPARATOR . $fileName;
-            $pdf->save($absolutePath);
+            $pdfContent = $pdf->output();
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -523,12 +510,10 @@ class ProfissionalWorkflowController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'PDF salvo com sucesso. O WhatsApp será aberto para envio.',
+            'message' => 'Download do PDF iniciado. O WhatsApp será aberto para envio.',
             'whatsapp_url' => $whatsappUrl,
             'file_name' => $fileName,
-            'file_uri' => 'file:///' . str_replace('\\', '/', $absolutePath),
-            'local_path' => $absolutePath,
-            'folder_path' => $baseDirectory,
+            'pdf_base64' => base64_encode($pdfContent),
         ]);
     }
 
@@ -561,13 +546,8 @@ class ProfissionalWorkflowController extends Controller
             $datePart = !empty($referral['data'])
                 ? Carbon::parse($referral['data'])->format('Y-m-d')
                 : now('America/Manaus')->format('Y-m-d');
-
-            $baseDirectory = 'C:\\visaosis\\encaminhamentos_pdf';
-            File::ensureDirectoryExists($baseDirectory);
-
             $fileName = $safePatientName . ' ' . $datePart . '.pdf';
-            $absolutePath = $baseDirectory . DIRECTORY_SEPARATOR . $fileName;
-            $pdf->save($absolutePath);
+            $pdfContent = $pdf->output();
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -585,12 +565,10 @@ class ProfissionalWorkflowController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'PDF salvo com sucesso. O WhatsApp será aberto para envio.',
+            'message' => 'Download do PDF iniciado. O WhatsApp será aberto para envio.',
             'whatsapp_url' => $whatsappUrl,
             'file_name' => $fileName,
-            'file_uri' => 'file:///' . str_replace('\\', '/', $absolutePath),
-            'local_path' => $absolutePath,
-            'folder_path' => $baseDirectory,
+            'pdf_base64' => base64_encode($pdfContent),
         ]);
     }
 
