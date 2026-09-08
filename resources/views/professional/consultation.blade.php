@@ -981,7 +981,7 @@
                     </button>
                     <button type="button" class="btn btn-success" onclick="sendWhatsApp()">
                         <i class="mdi mdi-whatsapp me-2"></i>
-                        Enviar WhatsApp
+                        Salvar e Enviar WhatsApp
                     </button>
                 </div>
             </div>
@@ -1034,7 +1034,7 @@
                     </button>
                     <button type="button" class="btn btn-success" onclick="sendReferralWhatsApp()">
                         <i class="mdi mdi-whatsapp me-2"></i>
-                        Enviar WhatsApp
+                        Salvar e Enviar WhatsApp
                     </button>
                 </div>
             </div>
@@ -1107,7 +1107,7 @@
                     </button>
                     <button type="button" class="btn btn-success" onclick="sendExamWhatsApp()">
                         <i class="mdi mdi-whatsapp me-2"></i>
-                        Enviar WhatsApp
+                        Salvar e Enviar WhatsApp
                     </button>
                 </div>
             </div>
@@ -1582,39 +1582,50 @@
         function sendWhatsApp() {
             const phone = '{{ $patient['telefone'] }}';
             const consultaId = '{{ $consulta['id'] }}';
+            const form = document.getElementById('prescriptionForm');
+            const whatsappWindow = window.open('', 'whatsappWindow');
+
+            if (!form) {
+                alert('Formulário da receita não encontrado.');
+                if (whatsappWindow) {
+                    whatsappWindow.close();
+                }
+                return;
+            }
+
+            const formData = new FormData(form);
+            formData.append('phone', phone);
+            formData.append('consulta_id', consultaId);
 
             fetch('/professional/send-whatsapp', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({
-                        phone: phone,
-                        consulta_id: consultaId
-                    })
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Abrir WhatsApp Web (tenta reutilizar a aba 'whatsappWindow')
                         if (data.whatsapp_url) {
-                            const link = document.createElement('a');
-                            link.href = data.whatsapp_url;
-                            link.target = 'whatsappWindow';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            whatsappWindow.location.href = data.whatsapp_url;
+                        } else if (whatsappWindow) {
+                            whatsappWindow.close();
                         }
-                        //alert(data.message);
-                        // Fechar modal
+
                         bootstrap.Modal.getInstance(document.getElementById('prescriptionModal')).hide();
                     } else {
-                        alert('Erro ao gerar link do WhatsApp');
+                        if (whatsappWindow) {
+                            whatsappWindow.close();
+                        }
+                        alert(data.message || 'Erro ao gerar a receita para WhatsApp');
                     }
                 })
                 .catch(error => {
                     console.error('Erro:', error);
+                    if (whatsappWindow) {
+                        whatsappWindow.close();
+                    }
                     alert('Erro ao processar solicitação');
                 });
         }
@@ -1788,28 +1799,50 @@
 
         function sendReferralWhatsApp() {
             const phone = '{{ $patient['telefone'] }}';
+            const consultaId = '{{ $consulta->id }}';
+            const form = document.getElementById('referralForm');
+            const whatsappWindow = window.open('', 'whatsappWindow');
+
+            if (!form) {
+                alert('Formulário do encaminhamento não encontrado.');
+                if (whatsappWindow) {
+                    whatsappWindow.close();
+                }
+                return;
+            }
+
+            const formData = new FormData(form);
+            formData.append('phone', phone);
+            formData.append('consulta_id', consultaId);
 
             fetch('{{ route('professional.sendReferralWhatsApp') }}', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({
-                        phone: phone,
-                        consulta_id: '{{ $consulta->id }}'
-                    })
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        window.open(data.whatsapp_url, '_blank');
+                        if (data.whatsapp_url) {
+                            whatsappWindow.location.href = data.whatsapp_url;
+                        } else if (whatsappWindow) {
+                            whatsappWindow.close();
+                        }
+                        bootstrap.Modal.getInstance(document.getElementById('referralModal')).hide();
                     } else {
+                        if (whatsappWindow) {
+                            whatsappWindow.close();
+                        }
                         alert('Erro ao enviar WhatsApp: ' + (data.message || 'Erro desconhecido'));
                     }
                 })
                 .catch(error => {
                     console.error('Erro:', error);
+                    if (whatsappWindow) {
+                        whatsappWindow.close();
+                    }
                     alert('Erro ao enviar WhatsApp');
                 });
         }
@@ -1834,28 +1867,50 @@
 
         function sendExamWhatsApp() {
             const phone = '{{ $patient['telefone'] }}';
+            const consultaId = '{{ $consulta['id'] }}';
+            const form = document.getElementById('exameForm');
+            const whatsappWindow = window.open('', 'whatsappWindow');
+
+            if (!form) {
+                alert('Formulário do exame não encontrado.');
+                if (whatsappWindow) {
+                    whatsappWindow.close();
+                }
+                return;
+            }
+
+            const formData = new FormData(form);
+            formData.append('phone', phone);
+            formData.append('consulta_id', consultaId);
 
             fetch('{{ route('professional.sendExamWhatsApp') }}', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({
-                        phone: phone,
-                        consulta_id: '{{ $consulta->id }}'
-                    })
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        window.open(data.whatsapp_url, '_blank');
+                        if (data.whatsapp_url) {
+                            whatsappWindow.location.href = data.whatsapp_url;
+                        } else if (whatsappWindow) {
+                            whatsappWindow.close();
+                        }
+                        bootstrap.Modal.getInstance(document.getElementById('exameModal')).hide();
                     } else {
+                        if (whatsappWindow) {
+                            whatsappWindow.close();
+                        }
                         alert('Erro ao enviar WhatsApp: ' + (data.message || 'Erro desconhecido'));
                     }
                 })
                 .catch(error => {
                     console.error('Erro:', error);
+                    if (whatsappWindow) {
+                        whatsappWindow.close();
+                    }
                     alert('Erro ao enviar WhatsApp');
                 });
         }

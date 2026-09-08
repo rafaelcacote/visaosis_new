@@ -12,6 +12,7 @@ use App\Rules\ValidCpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -237,6 +238,143 @@ class PessoaController extends Controller
         $prescricoes = $query->orderByDesc('created_at')->get();
 
         return view('pessoas.receitas', compact('pessoa', 'prescricoes'));
+    }
+
+    public function printPrescription(Pessoa $pessoa, Prescricao $prescricao)
+    {
+        [$prescription, $paciente] = $this->buildPrescriptionPdfData($pessoa, $prescricao);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
+
+        return $pdf->stream('receita-' . $prescricao->id . '.pdf');
+    }
+
+    public function savePrescriptionPdfWhatsapp(Request $request, Pessoa $pessoa, Prescricao $prescricao)
+    {
+        [$prescription, $paciente] = $this->buildPrescriptionPdfData($pessoa, $prescricao);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
+
+        $datePart = !empty($prescription['data'])
+            ? \Carbon\Carbon::parse($prescription['data'])->format('Y-m-d')
+            : now('America/Manaus')->format('Y-m-d');
+        $patientName = trim((string) ($paciente->nome ?? 'cliente'));
+        $patientName = $patientName !== '' ? $patientName : 'cliente';
+        $safePatientName = preg_replace('/[\\\\\\/:"*?<>|]+/u', '', $patientName);
+        $safePatientName = preg_replace('/\s+/u', ' ', trim((string) $safePatientName));
+        $safePatientName = $safePatientName !== '' ? $safePatientName : 'cliente';
+        $fileName = $safePatientName . ' ' . $datePart . '.pdf';
+        $baseDirectory = 'C:\\visaosis\\receitas_pdf';
+        File::ensureDirectoryExists($baseDirectory);
+        $absolutePath = $baseDirectory . DIRECTORY_SEPARATOR . $fileName;
+        $pdf->save($absolutePath);
+
+        $phone = preg_replace('/\D/', '', (string) ($paciente->telefone ?? ''));
+        if ($phone !== '' && strlen($phone) <= 11) {
+            $phone = '55' . $phone;
+        }
+
+        $message = 'Olá segue a receita de "' . $patientName . '"';
+
+        return response()->json([
+            'success' => true,
+            'message' => $phone !== ''
+                ? 'PDF salvo com sucesso. O WhatsApp será aberto para envio.'
+                : 'PDF salvo com sucesso. O paciente não possui telefone cadastrado para abrir o WhatsApp automaticamente.',
+            'file_name' => $fileName,
+            'file_url' => null,
+            'file_uri' => 'file:///' . str_replace('\\', '/', $absolutePath),
+            'local_path' => $absolutePath,
+            'folder_path' => $baseDirectory,
+            'wa_phone' => $phone !== '' ? $phone : null,
+            'wa_message' => $phone !== '' ? $message : null,
+        ]);
+    }
+
+    private function buildPrescriptionPdfData(Pessoa $pessoa, Prescricao $prescricao): array
+    {
+        $this->checkTenantAccess($pessoa);
+
+        abort_unless((int) $prescricao->pessoa_paciente_id === (int) $pessoa->id, 404);
+
+        $tenantId = session('tenant_id');
+        if ($tenantId && (int) $prescricao->tenant_id !== (int) $tenantId) {
+            abort(404);
+        }
+
+        $locationId = session('location_id');
+        if ($locationId && !empty($prescricao->location_id) && (int) $prescricao->location_id !== (int) $locationId) {
+            abort(404);
+        }
+
+        $prescricao->loadMissing(['consulta.profissional.especialidade', 'paciente']);
+
+        $consulta = $prescricao->consulta;
+        $paciente = $prescricao->paciente ?: $pessoa;
+        $profissional = $consulta?->profissional;
+
+        $dataReceita = $prescricao->data_receita
+            ? \Carbon\Carbon::parse($prescricao->data_receita)->format('Y-m-d')
+            : ($prescricao->created_at
+                ? $prescricao->created_at->copy()->format('Y-m-d')
+                : \Carbon\Carbon::now('America/Manaus')->format('Y-m-d'));
+
+        $prescription = [
+            'numero' => 'RX-' . date('Y') . '-' . str_pad($prescricao->id, 4, '0', STR_PAD_LEFT),
+            'data' => $dataReceita,
+            'paciente' => [
+                'nome' => $paciente->nome ?? '',
+                'idade' => $paciente->idade ?? null,
+                'cpf' => $paciente->cpf_formatado ?? '',
+                'telefone' => $paciente->telefone_formatado ?? '',
+            ],
+            'profissional' => [
+                'nome' => $profissional->nome ?? ($prescricao->especialista_externo ?: 'Especialista Externo'),
+                'registro_conselho' => $profissional->registro_conselho ?? null,
+                'especialidade' => $profissional->especialidade->descricao ?? ($prescricao->especialista_externo ? 'Especialista Externo' : null),
+            ],
+            'prescricao' => [
+                'od_esferico' => $prescricao->esfera_od,
+                'od_cilindrico' => $prescricao->cilindro_od,
+                'od_eixo' => $prescricao->eixo_od,
+                'od_acuidade' => $prescricao->acuidade_od,
+                'od_dnp' => $prescricao->dnp_od,
+                'od_altura' => $prescricao->altura_od,
+                'od_adicao' => $prescricao->adicao_od,
+
+                'oe_esferico' => $prescricao->esfera_oe,
+                'oe_cilindrico' => $prescricao->cilindro_oe,
+                'oe_eixo' => $prescricao->eixo_oe,
+                'oe_acuidade' => $prescricao->acuidade_oe,
+                'oe_dnp' => $prescricao->dnp_oe,
+                'oe_altura' => $prescricao->altura_oe,
+                'oe_adicao' => $prescricao->adicao_oe,
+
+                'od_esferico_perto' => $prescricao->esfera_od_perto,
+                'od_cilindrico_perto' => $prescricao->cilindro_od_perto,
+                'od_eixo_perto' => $prescricao->eixo_od_perto,
+                'od_acuidade_perto' => $prescricao->acuidade_od_perto,
+                'od_dnp_perto' => $prescricao->dnp_od_perto,
+                'od_altura_perto' => $prescricao->altura_od_perto,
+                'od_adicao_perto' => $prescricao->adicao_od_perto,
+
+                'oe_esferico_perto' => $prescricao->esfera_oe_perto,
+                'oe_cilindrico_perto' => $prescricao->cilindro_oe_perto,
+                'oe_eixo_perto' => $prescricao->eixo_oe_perto,
+                'oe_acuidade_perto' => $prescricao->acuidade_oe_perto,
+                'oe_dnp_perto' => $prescricao->dnp_oe_perto,
+                'oe_altura_perto' => $prescricao->altura_oe_perto,
+                'oe_adicao_perto' => $prescricao->adicao_oe_perto,
+
+                'tipo_lente' => $prescricao->tipo_lente,
+                'validade_dias' => $prescricao->validade_dias,
+            ],
+            'diagnostico' => $prescricao->diagnostico,
+            'recomendacoes' => $prescricao->recomendacoes,
+            'observacoes' => $prescricao->observacoes,
+        ];
+
+        return [$prescription, $paciente];
     }
 
     public function vendas(Pessoa $pessoa)

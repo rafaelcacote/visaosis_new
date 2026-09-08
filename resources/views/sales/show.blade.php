@@ -3,6 +3,20 @@
 @section('title', 'Detalhes da Venda - VisaoSis')
 
 @section('content')
+    @php
+        $paidStatusesGlobal = ['pago', 'paga', 'cancelado', 'cancelada'];
+        $parcelasNaoPagasGlobal = collect($sale['parcelas_detalhes'] ?? [])->filter(function ($parcela) use (
+            $paidStatusesGlobal,
+        ) {
+            $statusRaw = strtolower((string) ($parcela['status'] ?? ''));
+            $isPaga = !empty($parcela['pago_em']) || in_array($statusRaw, $paidStatusesGlobal, true);
+            return !$isPaga;
+        });
+        $totalNaoPagasGlobal = (float) $parcelasNaoPagasGlobal->sum(function ($p) {
+            return (float) ($p['valor_parcela'] ?? ($p['valor_atualizado'] ?? 0));
+        });
+        $temParcelasAbertasGlobal = $parcelasNaoPagasGlobal->count() > 0;
+    @endphp
     <div class="page-show">
         <div class="d-xl-flex justify-content-between align-items-start mb-4">
             <div>
@@ -239,15 +253,41 @@
 
                 <!-- Parcelas da Venda -->
                 @if (collect($sale['parcelas_detalhes'] ?? [])->count() > 0)
+                    @php
+                        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+                        $parcelasNaoPagas = collect($sale['parcelas_detalhes'])->filter(function ($parcela) use (
+                            $paidStatuses,
+                        ) {
+                            $statusRaw = strtolower((string) ($parcela['status'] ?? ''));
+                            $isPaga = !empty($parcela['pago_em']) || in_array($statusRaw, $paidStatuses, true);
+                            return !$isPaga;
+                        });
+                        $totalNaoPagas = (float) $parcelasNaoPagas->sum(
+                            fn($p) => (float) ($p['valor_atualizado'] ?? 0),
+                        );
+                        $temParcelasAbertas = $parcelasNaoPagas->count() > 0;
+                    @endphp
                     <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">
-                                <i class="mdi mdi-calendar-multiple-check text-primary me-2"></i>
-                                Parcelas da Venda
-                            </h5>
-                            <span class="badge bg-secondary">
-                                {{ collect($sale['parcelas_detalhes'])->count() }} parcela(s)
-                            </span>
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h5 class="card-title mb-0">
+                                    <i class="mdi mdi-calendar-multiple-check text-primary me-2"></i>
+                                    Parcelas da Venda
+                                </h5>
+                            </div>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-secondary">
+                                    {{ collect($sale['parcelas_detalhes'])->count() }} parcela(s)
+                                </span>
+                                @if ($temParcelasAbertas)
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                        onclick="openRefazerPagamentoModal()"
+                                        title="Refazer forma de pagamento das parcelas em aberto">
+                                        <i class="mdi mdi-credit-card-refresh-outline me-1"></i>
+                                        Refazer Pagamento
+                                    </button>
+                                @endif
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -267,14 +307,16 @@
                                         @foreach ($sale['parcelas_detalhes'] as $parcela)
                                             @php
                                                 $statusRaw = strtolower((string) ($parcela['status'] ?? ''));
-                                                $isPaga = $parcela['status'] === 'paga' || !empty($parcela['pago_em']);
+                                                $isCancelada = in_array($statusRaw, ['cancelada', 'cancelado'], true);
+                                                $isPaga =
+                                                    !$isCancelada &&
+                                                    ($parcela['status'] === 'paga' || !empty($parcela['pago_em']));
                                                 $isPagamentoParcial = $statusRaw === 'pagamento_parcial';
                                                 $isSaldoRemanescente = $statusRaw === 'saldo_remanescente';
-                                                $isCancelada = in_array($statusRaw, ['cancelada', 'cancelado'], true);
                                                 $podeEditar = !$isPaga && !$isCancelada;
                                             @endphp
                                             <tr
-                                                class="@if ($parcela['status'] === 'vencida') table-danger @elseif($parcela['status'] === 'vence_hoje') table-warning @elseif($parcela['status'] === 'vence_semana') table-info @elseif($isPaga) table-success @elseif($isPagamentoParcial || $isSaldoRemanescente) table-light @endif">
+                                                class="@if ($parcela['status'] === 'vencida') table-danger @elseif($parcela['status'] === 'vence_hoje') table-warning @elseif($parcela['status'] === 'vence_semana') table-info @elseif($isCancelada) table-secondary @elseif($isPaga) table-success @elseif($isPagamentoParcial || $isSaldoRemanescente) table-light @endif">
                                                 <td>
                                                     <span class="badge bg-secondary">{{ $parcela['parcela'] }}</span>
                                                     @if (!empty($parcela['forma_pagamento']))
@@ -348,6 +390,10 @@
                                                     @elseif($parcela['status'] === 'vence_semana')
                                                         <span class="badge bg-info">
                                                             <i class="mdi mdi-calendar-week me-1"></i>Vence na Semana
+                                                        </span>
+                                                    @elseif($isCancelada)
+                                                        <span class="badge bg-secondary">
+                                                            <i class="mdi mdi-close-circle me-1"></i>Cancelada
                                                         </span>
                                                     @elseif($isPaga)
                                                         <span class="badge bg-success">
@@ -514,6 +560,95 @@
                             </div>
                         </div>
                     </div>
+
+                    @if (!empty($temParcelasAbertasGlobal))
+                        <div class="modal fade" id="refazerPagamentoModal" tabindex="-1"
+                            aria-labelledby="refazerPagamentoModalLabel" aria-hidden="true" data-bs-backdrop="static"
+                            data-bs-keyboard="false">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content">
+                                    <form id="refazerPagamentoForm">
+                                        <div class="modal-header bg-primary text-white py-2 px-3">
+                                            <h6 class="modal-title" id="refazerPagamentoModalLabel">
+                                                <i class="mdi mdi-credit-card-refresh-outline me-1"></i>
+                                                Refazer Forma de Pagamento
+                                            </h6>
+                                            <button type="button" class="btn-close btn-close-white"
+                                                data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                        </div>
+                                        <div class="modal-body p-3">
+                                            <div class="alert alert-primary py-2 px-3 mb-3 small">
+                                                <i class="mdi mdi-information-outline me-1"></i>
+                                                <strong>Serão refeitas</strong> as formas de pagamento de
+                                                <strong>{{ $parcelasNaoPagas->count() }} parcela(s)</strong> em aberto,
+                                                totalizando
+                                                <strong>R$ {{ number_format($totalNaoPagas, 2, ',', '.') }}</strong>.
+                                                <br>
+                                                As parcelas atuais serão canceladas e novas serão geradas com base nas
+                                                formas
+                                                de pagamento informadas abaixo.
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <label class="form-label mb-0 fw-semibold">
+                                                        <i class="mdi mdi-credit-card-multiple-outline me-1"></i>
+                                                        Formas de Pagamento
+                                                    </label>
+                                                </div>
+
+                                                <div id="refazer_payment_entries"></div>
+
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-1"
+                                                    id="refazer_add_payment_btn" onclick="refazerAddPaymentEntry()">
+                                                    <i class="mdi mdi-plus me-1"></i>
+                                                    Adicionar outra forma de pagamento
+                                                </button>
+
+                                                <div class="mt-2 p-2 rounded" id="refazer_payment_summary_bar"
+                                                    style="background:#f8f9fb; border:1px solid #e5e7eb;">
+                                                    <div class="d-flex justify-content-between align-items-center small">
+                                                        <span class="text-muted">Valor a alocar:</span>
+                                                        <span class="fw-semibold">R$
+                                                            {{ number_format($totalNaoPagas, 2, ',', '.') }}</span>
+                                                    </div>
+                                                    <div
+                                                        class="d-flex justify-content-between align-items-center small mt-1">
+                                                        <span class="text-muted">Alocado:</span>
+                                                        <span id="refazer_payment_allocated_display"
+                                                            class="fw-semibold">R$ 0,00</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-center small d-none mt-1"
+                                                        id="refazer_payment_remaining_row">
+                                                        <span class="text-warning fw-semibold">Restante:</span>
+                                                        <span id="refazer_payment_remaining_display"
+                                                            class="text-warning fw-semibold">R$ 0,00</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-0">
+                                                <label for="refazer_observacoes"
+                                                    class="form-label small fw-bold">Observações</label>
+                                                <textarea id="refazer_observacoes" name="observacoes" class="form-control" rows="3" maxlength="1000"
+                                                    placeholder="Motivo da alteração, observações internas..."></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer py-2 px-3">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                data-bs-dismiss="modal">
+                                                <i class="mdi mdi-close me-1"></i>Cancelar
+                                            </button>
+                                            <button type="submit" id="btnConfirmRefazerPagamento"
+                                                class="btn btn-primary btn-sm">
+                                                <i class="mdi mdi-check-circle me-1"></i>Confirmar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 @endif
                 <div class="col-lg-12">
 
@@ -569,6 +704,16 @@
             top: 20px;
             z-index: 1020;
         }
+
+        .payment-entry {
+            background: #f9fafb;
+            border-color: #e5e7eb !important;
+            transition: border-color 0.15s;
+        }
+
+        .payment-entry:focus-within {
+            border-color: #6366f1 !important;
+        }
     </style>
 @endpush
 
@@ -580,10 +725,467 @@
             const DETAILS_URL_TEMPLATE = "{{ route('sales.parcela.details', '__ID__') }}";
             const UPDATE_URL_TEMPLATE = "{{ route('sales.parcela.update', '__ID__') }}";
             const REOPEN_URL_TEMPLATE = "{{ route('sales.parcela.reopen', '__ID__') }}";
+            const REFAZER_PAGAMENTO_URL = "{{ route('sales.parcelas.refazer-pagamento', $sale['id']) }}";
             const CSRF_TOKEN = "{{ csrf_token() }}";
 
             let editParcelaModalInstance = null;
             let reopenParcelaModalInstance = null;
+            let refazerPagamentoModalInstance = null;
+
+            @if (!empty($temParcelasAbertasGlobal))
+                const REFAZER_PAGAMENTO_TOTAL = {{ json_encode(round($totalNaoPagasGlobal, 2)) }};
+            @else
+                const REFAZER_PAGAMENTO_TOTAL = 0;
+            @endif
+
+            const REFAZER_PAYMENT_METHODS_MAP = {
+                'dinheiro': 'Dinheiro',
+                'cartao_debito': 'Cartão de Débito',
+                'cartao_credito': 'Cartão de Crédito',
+                'crediario': 'Crediário',
+                'pix': 'PIX'
+            };
+
+            let refazerPaymentEntries = [];
+            let refazerPaymentEntryCounter = 0;
+
+            function refazerFormatCurrency(value) {
+                const num = Number(value);
+                if (!Number.isFinite(num)) return '0,00';
+                return num.toFixed(2).replace('.', ',');
+            }
+
+            function refazerGetDefaultFirstDueDate() {
+                const today = new Date();
+                const dueDate = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+                return dueDate.toLocaleDateString('en-CA');
+            }
+
+            function refazerGetTotalAllocated() {
+                return refazerPaymentEntries.reduce((sum, e) => sum + (parseFloat(e.value) || 0), 0);
+            }
+
+            function refazerIsPaymentValid() {
+                if (refazerPaymentEntries.length === 0) return false;
+                const target = REFAZER_PAGAMENTO_TOTAL;
+                if (target <= 0) return false;
+
+                for (const entry of refazerPaymentEntries) {
+                    if (!entry.method || !(parseFloat(entry.value) > 0)) return false;
+                    if (entry.method === 'crediario' && !entry.firstDueDate) return false;
+                }
+
+                return Math.abs(refazerGetTotalAllocated() - target) <= 0.02;
+            }
+
+            function refazerAddPaymentEntry() {
+                const id = ++refazerPaymentEntryCounter;
+                const target = REFAZER_PAGAMENTO_TOTAL;
+                const allocated = refazerGetTotalAllocated();
+                const remaining = target > 0 ? Math.max(0, target - allocated) : '';
+                refazerPaymentEntries.push({
+                    id,
+                    method: '',
+                    value: remaining > 0.001 ? parseFloat(remaining.toFixed(2)) : '',
+                    installments: 1,
+                    firstDueDate: refazerGetDefaultFirstDueDate(),
+                    userModified: remaining > 0.001,
+                });
+                refazerRenderPaymentEntries();
+                refazerUpdatePaymentSummary();
+            }
+
+            function refazerRemovePaymentEntry(id) {
+                if (refazerPaymentEntries.length <= 1) return;
+                refazerPaymentEntries = refazerPaymentEntries.filter(e => e.id !== id);
+                refazerRenderPaymentEntries();
+                refazerUpdatePaymentSummary();
+            }
+
+            function refazerOnPaymentMethodChange(id) {
+                const entry = refazerPaymentEntries.find(e => e.id === id);
+                if (!entry) return;
+                entry.method = document.getElementById('refazer_payment-method-' + id).value;
+
+                const installmentsDiv = document.getElementById('refazer_payment-installments-' + id);
+                const isInstallable = entry.method === 'crediario';
+                const isCrediario = entry.method === 'crediario';
+                if (installmentsDiv) {
+                    installmentsDiv.style.display = isInstallable ? 'block' : 'none';
+                }
+                if (!isInstallable) {
+                    entry.installments = 1;
+                }
+                if (!entry.firstDueDate) {
+                    entry.firstDueDate = refazerGetDefaultFirstDueDate();
+                }
+                const firstDueDateDiv = document.getElementById('refazer_payment-first-due-date-' + id);
+                if (firstDueDateDiv) {
+                    firstDueDateDiv.style.display = isCrediario ? 'block' : 'none';
+                }
+                refazerUpdateInstallmentHint(id);
+                refazerUpdatePaymentSummary();
+            }
+
+            function refazerOnPaymentValueChange(id) {
+                const entry = refazerPaymentEntries.find(e => e.id === id);
+                if (!entry) return;
+                entry.value = parseFloat(document.getElementById('refazer_payment-value-' + id).value) || 0;
+                entry.userModified = true;
+                refazerUpdateInstallmentHint(id);
+                refazerUpdatePaymentSummary();
+            }
+
+            function refazerOnPaymentInstallmentsChange(id) {
+                const entry = refazerPaymentEntries.find(e => e.id === id);
+                if (!entry) return;
+                entry.installments = parseInt(document.getElementById('refazer_payment-installments-select-' + id)
+                    .value) || 1;
+                refazerUpdateInstallmentHint(id);
+            }
+
+            function refazerOnPaymentFirstDueDateChange(id) {
+                const entry = refazerPaymentEntries.find(e => e.id === id);
+                if (!entry) return;
+                entry.firstDueDate = document.getElementById('refazer_payment-first-due-date-input-' + id).value ||
+                    refazerGetDefaultFirstDueDate();
+            }
+
+            function refazerUpdateInstallmentHint(id) {
+                const entry = refazerPaymentEntries.find(e => e.id === id);
+                if (!entry) return;
+                const hintEl = document.getElementById('refazer_payment-installment-value-' + id);
+                if (!hintEl) return;
+                if (entry.value > 0 && entry.installments > 1) {
+                    hintEl.textContent = entry.installments + 'x de R$ ' + refazerFormatCurrency(entry.value / entry
+                        .installments);
+                } else {
+                    hintEl.textContent = '';
+                }
+            }
+
+            function refazerUpdatePaymentSummary() {
+                const target = REFAZER_PAGAMENTO_TOTAL;
+                const allocated = refazerGetTotalAllocated();
+                const remaining = target - allocated;
+
+                const allocatedDisplay = document.getElementById('refazer_payment_allocated_display');
+                const remainingRow = document.getElementById('refazer_payment_remaining_row');
+                const remainingDisplay = document.getElementById('refazer_payment_remaining_display');
+                const addBtn = document.getElementById('refazer_add_payment_btn');
+
+                if (allocatedDisplay) {
+                    allocatedDisplay.textContent = 'R$ ' + refazerFormatCurrency(allocated);
+                }
+
+                if (remaining > 0.02) {
+                    if (remainingRow) remainingRow.classList.remove('d-none');
+                    if (remainingDisplay) remainingDisplay.textContent = 'R$ ' + refazerFormatCurrency(remaining);
+                    if (allocatedDisplay) allocatedDisplay.className = 'fw-semibold text-warning';
+                    if (addBtn) {
+                        addBtn.disabled = false;
+                        addBtn.title = '';
+                    }
+                } else if (allocated > target + 0.02) {
+                    if (remainingRow) remainingRow.classList.add('d-none');
+                    if (allocatedDisplay) allocatedDisplay.className = 'fw-semibold text-danger';
+                    if (addBtn) {
+                        addBtn.disabled = false;
+                        addBtn.title = '';
+                    }
+                } else {
+                    if (remainingRow) remainingRow.classList.add('d-none');
+                    if (allocatedDisplay) allocatedDisplay.className = 'fw-semibold text-success';
+                    if (addBtn) {
+                        addBtn.disabled = true;
+                        addBtn.title = 'Total já totalmente alocado';
+                    }
+                }
+            }
+
+            function refazerRenderPaymentEntries() {
+                const container = document.getElementById('refazer_payment_entries');
+                if (!container) return;
+                const showRemove = refazerPaymentEntries.length > 1;
+
+                const optionsHtml = (selectedMethod) => ['dinheiro', 'cartao_debito', 'cartao_credito', 'crediario',
+                        'pix'
+                    ]
+                    .map(v =>
+                        `<option value="${v}" ${selectedMethod === v ? 'selected' : ''}>${REFAZER_PAYMENT_METHODS_MAP[v]}</option>`
+                    )
+                    .join('');
+
+                const installmentsOptions = (selected) => Array.from({
+                        length: 12
+                    }, (_, i) => i + 1)
+                    .map(n => `<option value="${n}" ${selected === n ? 'selected' : ''}>${n}x sem juros</option>`)
+                    .join('');
+
+                container.innerHTML = refazerPaymentEntries.map(entry => {
+                    const isInstallable = entry.method === 'crediario';
+                    const isCrediario = entry.method === 'crediario';
+                    const hintText = (entry.value > 0 && entry.installments > 1) ?
+                        entry.installments + 'x de R$ ' + refazerFormatCurrency(entry.value / entry
+                            .installments) : '';
+
+                    return `
+                    <div class="payment-entry border rounded p-2 mb-2" id="refazer_payment-entry-${entry.id}">
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select form-select-sm" id="refazer_payment-method-${entry.id}"
+                                    onchange="refazerOnPaymentMethodChange(${entry.id})">
+                                <option value="">Selecione...</option>
+                                ${optionsHtml(entry.method)}
+                            </select>
+                            ${showRemove ? `<button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0"
+                                                                                                                onclick="refazerRemovePaymentEntry(${entry.id})">
+                                                                                                                <i class="mdi mdi-close"></i>
+                                                                                                            </button>` : ''}
+                        </div>
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" class="form-control" id="refazer_payment-value-${entry.id}"
+                                   value="${entry.value !== '' ? entry.value : ''}"
+                                   step="0.01" min="0.01" placeholder="0,00"
+                                   oninput="refazerOnPaymentValueChange(${entry.id})">
+                        </div>
+                        <div id="refazer_payment-installments-${entry.id}" style="display:${isInstallable ? 'block' : 'none'};">
+                            <label class="form-label form-label-sm mb-1 mt-2">Quantidade de Parcelas</label>
+                            <select class="form-select form-select-sm mb-1"
+                                    id="refazer_payment-installments-select-${entry.id}"
+                                    onchange="refazerOnPaymentInstallmentsChange(${entry.id})">
+                                ${installmentsOptions(entry.installments)}
+                            </select>
+                            <small class="text-muted" id="refazer_payment-installment-value-${entry.id}">${hintText}</small>
+                        </div>
+                        <div id="refazer_payment-first-due-date-${entry.id}" class="mt-2" style="display:${isCrediario ? 'block' : 'none'};">
+                            <label class="form-label form-label-sm mb-1">Primeiro Vencimento</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   id="refazer_payment-first-due-date-input-${entry.id}"
+                                   value="${entry.firstDueDate || refazerGetDefaultFirstDueDate()}"
+                                   onchange="refazerOnPaymentFirstDueDateChange(${entry.id})">
+                        </div>
+                    </div>
+                `;
+                }).join('');
+            }
+
+            function refazerResetForm() {
+                refazerPaymentEntries = [];
+                refazerPaymentEntryCounter = 0;
+                const initId = ++refazerPaymentEntryCounter;
+                refazerPaymentEntries.push({
+                    id: initId,
+                    method: '',
+                    value: REFAZER_PAGAMENTO_TOTAL > 0 ? parseFloat(REFAZER_PAGAMENTO_TOTAL.toFixed(2)) : '',
+                    installments: 1,
+                    firstDueDate: refazerGetDefaultFirstDueDate(),
+                    userModified: REFAZER_PAGAMENTO_TOTAL > 0,
+                });
+                refazerRenderPaymentEntries();
+                refazerUpdatePaymentSummary();
+                const obs = document.getElementById('refazer_observacoes');
+                if (obs) obs.value = '';
+            }
+
+            function refazerGetModalEl() {
+                return document.getElementById('refazerPagamentoModal');
+            }
+
+            function refazerEnsureModalInstance() {
+                if (!refazerPagamentoModalInstance) {
+                    var modalEl = refazerGetModalEl();
+                    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                        refazerPagamentoModalInstance = new window.bootstrap.Modal(modalEl, {
+                            backdrop: 'static',
+                            keyboard: false,
+                        });
+                    }
+                }
+                return refazerPagamentoModalInstance;
+            }
+
+            function refazerHideModal() {
+                var modalInstance = refazerEnsureModalInstance();
+                if (modalInstance) {
+                    modalInstance.hide();
+                } else if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                    window.jQuery('#refazerPagamentoModal').modal('hide');
+                } else {
+                    var fallback = refazerGetModalEl();
+                    if (fallback) {
+                        fallback.classList.remove('show');
+                        fallback.style.display = 'none';
+                    }
+                }
+            }
+
+            window.openRefazerPagamentoModal = function() {
+                if (REFAZER_PAGAMENTO_TOTAL <= 0) {
+                    showError('Não há parcelas em aberto para refazer pagamento.');
+                    return;
+                }
+                refazerResetForm();
+
+                var modalInstance = refazerEnsureModalInstance();
+                if (modalInstance) {
+                    modalInstance.show();
+                } else if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                    window.jQuery('#refazerPagamentoModal').modal({
+                        backdrop: 'static',
+                        keyboard: false,
+                    });
+                    window.jQuery('#refazerPagamentoModal').modal('show');
+                } else {
+                    var fallback = refazerGetModalEl();
+                    if (fallback) {
+                        fallback.classList.add('show');
+                        fallback.style.display = 'block';
+                    }
+                }
+            };
+
+            function submitRefazerPagamento(event) {
+                event.preventDefault();
+
+                if (!refazerIsPaymentValid()) {
+                    const target = REFAZER_PAGAMENTO_TOTAL;
+                    const allocated = refazerGetTotalAllocated();
+                    if (refazerPaymentEntries.length === 0) {
+                        showError('Adicione pelo menos uma forma de pagamento.');
+                    } else if (refazerPaymentEntries.some(e => !e.method)) {
+                        showError('Selecione a forma de pagamento em todas as entradas.');
+                    } else if (refazerPaymentEntries.some(e => !(parseFloat(e.value) > 0))) {
+                        showError('Informe o valor em todas as formas de pagamento.');
+                    } else if (Math.abs(allocated - target) > 0.02) {
+                        showError('A soma dos pagamentos (R$ ' + refazerFormatCurrency(allocated) +
+                            ') deve ser igual ao valor em aberto (R$ ' + refazerFormatCurrency(target) + ').');
+                    } else if (refazerPaymentEntries.some(e => e.method === 'crediario' && !e.firstDueDate)) {
+                        showError('Informe o primeiro vencimento para pagamentos no crediário.');
+                    } else {
+                        showError('Verifique os dados das formas de pagamento.');
+                    }
+                    return;
+                }
+
+                const btnConfirm = document.getElementById('btnConfirmRefazerPagamento');
+                if (btnConfirm) {
+                    btnConfirm.disabled = true;
+                    btnConfirm.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>Processando...';
+                }
+
+                const payload = {
+                    pagamentos: refazerPaymentEntries.map(e => ({
+                        forma_pagamento: e.method,
+                        valor: parseFloat(e.value) || 0,
+                        parcelas: parseInt(e.installments) || 1,
+                        primeiro_vencimento: e.method === 'crediario' ? (e.firstDueDate || null) : null,
+                    })),
+                    observacoes: (document.getElementById('refazer_observacoes').value || '').trim() || null,
+                };
+
+                fetch(REFAZER_PAGAMENTO_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': CSRF_TOKEN,
+                        },
+                        body: JSON.stringify(payload),
+                    })
+                    .then(function(res) {
+                        if (res.status === 422) {
+                            return res.json().then(function(errPayload) {
+                                var erros = errPayload.errors || {};
+                                var msgs = [];
+                                if (errPayload.message) msgs.push(errPayload.message);
+                                Object.keys(erros).forEach(function(k) {
+                                    var arr = Array.isArray(erros[k]) ? erros[k] : [erros[k]];
+                                    arr.forEach(function(m) {
+                                        msgs.push(m);
+                                    });
+                                });
+                                throw new Error(msgs.length ? msgs.join('\n') :
+                                    'Verifique os campos informados.');
+                            });
+                        }
+                        if (!res.ok) {
+                            var status = res.status;
+                            // Lê o body uma única vez como texto (evita "body stream already read")
+                            return res.text().then(function(txt) {
+                                var payload = null;
+                                try {
+                                    if (txt) payload = JSON.parse(txt);
+                                } catch (_) {
+                                    payload = null;
+                                }
+                                var msg = (payload && payload.message) ? payload.message : null;
+                                if (!msg && payload && payload.errors) {
+                                    var parts = [];
+                                    Object.keys(payload.errors).forEach(function(k) {
+                                        var arr = Array.isArray(payload.errors[k]) ? payload.errors[
+                                            k] : [payload.errors[k]];
+                                        arr.forEach(function(m) {
+                                            parts.push(m);
+                                        });
+                                    });
+                                    if (parts.length) msg = parts.join('\n');
+                                }
+                                if (!msg) {
+                                    var short = '';
+                                    if (txt && txt.length > 0) {
+                                        short = txt.length < 400 ? txt : (txt.slice(0, 400) + '...');
+                                    }
+                                    msg = short ? ('Erro ao processar (' + status + '): ' + short) : (
+                                        'Erro ao processar (' + status + ').');
+                                }
+                                if ((!msg || msg.indexOf('Erro ao refazer') !== 0) && payload && payload
+                                    .debug) {
+                                    var d = payload.debug;
+                                    var extra = [];
+                                    if (d.file) extra.push('Arquivo: ' + d.file);
+                                    if (d.line) extra.push('Linha: ' + d.line);
+                                    if (extra.length) msg += ' (' + extra.join(' / ') + ')';
+                                }
+                                throw new Error(msg);
+                            });
+                        }
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        if (data && data.success) {
+                            showSuccess(data.message || 'Forma de pagamento refeita com sucesso.');
+                            refazerHideModal();
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 350);
+                        } else {
+                            showError((data && data.message) || 'Não foi possível refazer a forma de pagamento.');
+                            if (btnConfirm) {
+                                btnConfirm.disabled = false;
+                                btnConfirm.innerHTML = '<i class="mdi mdi-check-circle me-1"></i>Confirmar';
+                            }
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('[refazer-pagamento] erro:', err);
+                        showError(err.message || 'Erro ao refazer forma de pagamento.');
+                        if (btnConfirm) {
+                            btnConfirm.disabled = false;
+                            btnConfirm.innerHTML = '<i class="mdi mdi-check-circle me-1"></i>Confirmar';
+                        }
+                    });
+            }
+
+            window.refazerAddPaymentEntry = refazerAddPaymentEntry;
+            window.refazerRemovePaymentEntry = refazerRemovePaymentEntry;
+            window.refazerOnPaymentMethodChange = refazerOnPaymentMethodChange;
+            window.refazerOnPaymentValueChange = refazerOnPaymentValueChange;
+            window.refazerOnPaymentInstallmentsChange = refazerOnPaymentInstallmentsChange;
+            window.refazerOnPaymentFirstDueDateChange = refazerOnPaymentFirstDueDateChange;
+            window.refazerResetForm = refazerResetForm;
+            window.submitRefazerPagamento = submitRefazerPagamento;
 
             @php
                 $waParcelas = [];
@@ -594,7 +1196,8 @@
                     $statusRaw = strtolower((string) ($parcela['status'] ?? ''));
                     $isPagamentoParcial = $statusRaw === 'pagamento_parcial';
                     $isSaldoRemanescente = $statusRaw === 'saldo_remanescente';
-                    $isPaga = !empty($parcela['pago_em']) || in_array($statusRaw, ['pago', 'paga'], true);
+                    $isCancelada = in_array($statusRaw, ['cancelada', 'cancelado'], true);
+                    $isPaga = !$isCancelada && (!empty($parcela['pago_em']) || in_array($statusRaw, ['pago', 'paga'], true));
                     $isVencida = $statusRaw === 'vencida' || ($parcela['dias_atraso'] ?? 0) > 0;
 
                     $numeroParcela = isset($parcela['numero_parcela']) ? (int) $parcela['numero_parcela'] : $idx + 1;
@@ -630,7 +1233,9 @@
                     $valorBr = 'R$ ' . number_format((float) ($parcela['valor_parcela'] ?? ($parcela['valor_atualizado'] ?? 0)), 2, ',', '.');
 
                     $statusLinha = '';
-                    if ($isPaga) {
+                    if ($isCancelada) {
+                        $statusLinha = 'cancelada';
+                    } elseif ($isPaga) {
                         $pagoEmBr = '';
                         if (!empty($parcela['pago_em'])) {
                             try {
@@ -746,24 +1351,17 @@
 
                 if (pixChave) {
                     linhas.push('Pix. ' + pixChave);
-                } else {
-                    linhas.push('Pix. 92981650580');
                 }
                 if (pixTitular) {
                     linhas.push(pixTitular);
-                } else {
-                    linhas.push('Jaime Martins');
                 }
                 if (pixBanco) {
                     linhas.push(pixBanco);
-                } else {
-                    linhas.push('Caixa econômica');
                 }
+
                 linhas.push('');
                 if (empresaNome) {
                     linhas.push(empresaNome + ' agradece 🤝');
-                } else {
-                    linhas.push('Ótica Asafe agradece 🤝');
                 }
 
                 return linhas.join('\n');
@@ -1201,6 +1799,7 @@
             document.addEventListener('DOMContentLoaded', function() {
                 ensureModalInstance();
                 ensureReopenModalInstance();
+                refazerEnsureModalInstance();
 
                 const form = document.getElementById('editParcelaForm');
                 if (form) {
@@ -1210,6 +1809,11 @@
                 const reopenForm = document.getElementById('reopenParcelaForm');
                 if (reopenForm) {
                     reopenForm.addEventListener('submit', submitReopenParcela);
+                }
+
+                const refazerForm = document.getElementById('refazerPagamentoForm');
+                if (refazerForm) {
+                    refazerForm.addEventListener('submit', submitRefazerPagamento);
                 }
             });
         })();
