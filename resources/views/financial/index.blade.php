@@ -108,10 +108,20 @@
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="mdi mdi-chart-bar text-success me-2"></i>
-                        Vendas x Recebimentos dos Últimos 8 Meses
-                    </h5>
+                    <div>
+                        <h5 class="card-title mb-0">
+                            <i class="mdi mdi-chart-bar text-success me-2"></i>
+                            Vendas x Recebimentos dos Últimos 8 Meses
+                        </h5>
+                        <small class="text-muted">
+                            Total vendido no período:
+                            <strong class="text-primary me-3">R$
+                                {{ number_format((float) ($totalSalesPeriod ?? 0), 2, ',', '.') }}</strong>
+                            Total recebido no período:
+                            <strong class="text-success">R$
+                                {{ number_format((float) ($totalReceiptsPeriod ?? 0), 2, ',', '.') }}</strong>
+                        </small>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="d-flex gap-3 small text-muted mb-2">
@@ -366,7 +376,8 @@
                     .then((data) => {
                         const boletos = Array.isArray(data.boletos) ? data.boletos : [];
                         if (!boletos.length) {
-                            window.showAppModalMessage?.('Nenhuma parcela encontrada para gerar boleto nesta semana.', 'Atenção', 'warning');
+                            window.showAppModalMessage?.('Nenhuma parcela encontrada para gerar boleto nesta semana.',
+                                'Atenção', 'warning');
                             return;
                         }
                         boletos.forEach((b) => {

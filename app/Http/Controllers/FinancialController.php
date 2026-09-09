@@ -204,6 +204,9 @@ class FinancialController extends Controller
             return $row;
         }, $salesReceiptsChart);
 
+        $totalSalesPeriod = (float) collect($salesReceiptsChart)->sum('sales_total');
+        $totalReceiptsPeriod = (float) collect($salesReceiptsChart)->sum('receipts_total');
+
         $installmentsRaw = DB::table('pedido_venda_parcela as pvp')
             ->join('pedido_venda as pv', function ($join) {
                 $join->on('pv.id', '=', 'pvp.pedido_venda_id')
@@ -332,6 +335,8 @@ class FinancialController extends Controller
             'financialData' => $financialData,
             'alertas' => $alertas,
             'salesReceiptsChart' => $salesReceiptsChart,
+            'totalSalesPeriod' => $totalSalesPeriod,
+            'totalReceiptsPeriod' => $totalReceiptsPeriod,
             'installmentSummaries' => $installmentSummaries,
         ]);
     }

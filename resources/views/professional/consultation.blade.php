@@ -1597,6 +1597,34 @@
             formData.append('phone', phone);
             formData.append('consulta_id', consultaId);
 
+            const triggerPdfDownload = (data) => {
+                if (!data || !data.pdf_base64 || !data.file_name) {
+                    return;
+                }
+
+                const binary = window.atob(data.pdf_base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i += 1) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+
+                const blob = new Blob([bytes], {
+                    type: 'application/pdf'
+                });
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = data.file_name;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                window.setTimeout(() => {
+                    URL.revokeObjectURL(objectUrl);
+                }, 5000);
+            };
+
             fetch('/professional/send-whatsapp', {
                     method: 'POST',
                     headers: {
@@ -1607,6 +1635,8 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        triggerPdfDownload(data);
+
                         if (data.whatsapp_url) {
                             whatsappWindow.location.href = data.whatsapp_url;
                         } else if (whatsappWindow) {
@@ -1614,6 +1644,7 @@
                         }
 
                         bootstrap.Modal.getInstance(document.getElementById('prescriptionModal')).hide();
+                        alert(data.message || 'Download do PDF iniciado.');
                     } else {
                         if (whatsappWindow) {
                             whatsappWindow.close();
@@ -1815,6 +1846,34 @@
             formData.append('phone', phone);
             formData.append('consulta_id', consultaId);
 
+            const triggerPdfDownload = (data) => {
+                if (!data || !data.pdf_base64 || !data.file_name) {
+                    return;
+                }
+
+                const binary = window.atob(data.pdf_base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i += 1) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+
+                const blob = new Blob([bytes], {
+                    type: 'application/pdf'
+                });
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = data.file_name;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                window.setTimeout(() => {
+                    URL.revokeObjectURL(objectUrl);
+                }, 5000);
+            };
+
             fetch('{{ route('professional.sendReferralWhatsApp') }}', {
                     method: 'POST',
                     headers: {
@@ -1825,12 +1884,15 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        triggerPdfDownload(data);
+
                         if (data.whatsapp_url) {
                             whatsappWindow.location.href = data.whatsapp_url;
                         } else if (whatsappWindow) {
                             whatsappWindow.close();
                         }
                         bootstrap.Modal.getInstance(document.getElementById('referralModal')).hide();
+                        alert(data.message || 'Download do PDF iniciado.');
                     } else {
                         if (whatsappWindow) {
                             whatsappWindow.close();
@@ -1883,6 +1945,34 @@
             formData.append('phone', phone);
             formData.append('consulta_id', consultaId);
 
+            const triggerPdfDownload = (data) => {
+                if (!data || !data.pdf_base64 || !data.file_name) {
+                    return;
+                }
+
+                const binary = window.atob(data.pdf_base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i += 1) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+
+                const blob = new Blob([bytes], {
+                    type: 'application/pdf'
+                });
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = data.file_name;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                window.setTimeout(() => {
+                    URL.revokeObjectURL(objectUrl);
+                }, 5000);
+            };
+
             fetch('{{ route('professional.sendExamWhatsApp') }}', {
                     method: 'POST',
                     headers: {
@@ -1893,12 +1983,15 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        triggerPdfDownload(data);
+
                         if (data.whatsapp_url) {
                             whatsappWindow.location.href = data.whatsapp_url;
                         } else if (whatsappWindow) {
                             whatsappWindow.close();
                         }
                         bootstrap.Modal.getInstance(document.getElementById('exameModal')).hide();
+                        alert(data.message || 'Download do PDF iniciado.');
                     } else {
                         if (whatsappWindow) {
                             whatsappWindow.close();

@@ -585,26 +585,26 @@
                     <div class="small text-muted mb-1">Arquivo</div>
                     <div class="fw-semibold text-break mb-3" id="rxPdfResultFileName">-</div>
 
-                    <div class="small text-muted mb-1">Caminho local</div>
+                    <div class="small text-muted mb-1">Status do download</div>
                     <div class="border rounded bg-light p-2 small text-break mb-3" id="rxPdfResultPath">-</div>
 
                     <div class="d-grid gap-2">
                         <a href="#" target="_blank" rel="noopener" class="btn btn-outline-primary"
                             id="rxPdfOpenFileBtn">
                             <i class="mdi mdi-open-in-new me-2"></i>
-                            Abrir PDF
+                            Abrir PDF Baixado
                         </a>
                         <button type="button" class="btn btn-outline-secondary" id="rxPdfOpenFolderBtn">
                             <i class="mdi mdi-folder-open me-2"></i>
-                            Abrir Pasta do Arquivo
+                            Abrir Pasta de Downloads
                         </button>
                         <button type="button" class="btn btn-outline-dark" id="rxPdfCopyPathBtn">
                             <i class="mdi mdi-content-copy me-2"></i>
-                            Copiar Caminho
+                            Copiar Nome do Arquivo
                         </button>
                     </div>
                     <div class="small text-muted mt-3 mb-0">
-                        Se a pasta não abrir automaticamente, copie o caminho e abra manualmente no Windows Explorer.
+                        O navegador faz o download na pasta padrão configurada para o usuário.
                     </div>
                 </div>
                 <div class="modal-footer py-2">
@@ -754,6 +754,39 @@
                 return pdfResultModalInstance;
             };
 
+            const base64ToBlob = (base64, mimeType) => {
+                if (!base64) return null;
+                const binary = window.atob(base64);
+                const len = binary.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i += 1) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return new Blob([bytes], {
+                    type: mimeType || 'application/pdf'
+                });
+            };
+
+            const triggerPdfDownload = (data) => {
+                if (!data || !data.pdf_base64 || !data.file_name) return null;
+                if (currentDownloadedFileUrl) {
+                    URL.revokeObjectURL(currentDownloadedFileUrl);
+                    currentDownloadedFileUrl = null;
+                }
+                const blob = base64ToBlob(data.pdf_base64, 'application/pdf');
+                if (!blob) return null;
+                const objectUrl = URL.createObjectURL(blob);
+                currentDownloadedFileUrl = objectUrl;
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = data.file_name;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return objectUrl;
+            };
+
             const toFileUri = (path) => {
                 if (!path) return null;
                 const normalized = String(path).replace(/\\/g, '/');
@@ -769,12 +802,19 @@
                     pdfResultFileNameEl.textContent = (data && data.file_name) || '-';
                 }
                 if (pdfResultPathEl) {
-                    pdfResultPathEl.textContent = (data && data.local_path) || '-';
+                    pdfResultPathEl.textContent = (data && data.local_path) ||
+                        'Download iniciado pelo navegador. Verifique a pasta de downloads configurada.';
                 }
                 if (pdfOpenFileBtn) {
                     const openFileHref = (data && (data.file_url || data.file_uri)) || '#';
                     pdfOpenFileBtn.href = openFileHref;
                     pdfOpenFileBtn.classList.toggle('disabled', !data || (!data.file_url && !data.file_uri));
+                }
+                if (pdfOpenFolderBtn) {
+                    pdfOpenFolderBtn.classList.toggle('disabled', !data || !data.folder_path);
+                }
+                if (pdfCopyPathBtn) {
+                    pdfCopyPathBtn.classList.toggle('disabled', !data || (!data.local_path && !data.file_name));
                 }
 
                 const modal = getPdfResultModal();
@@ -786,6 +826,7 @@
             };
 
             let index = 0;
+            let currentDownloadedFileUrl = null;
             if (initialId) {
                 const found = historyItems.findIndex((x) => String(x.id) === String(initialId));
                 if (found >= 0) index = found;
@@ -941,6 +982,11 @@
                             });
                         })
                         .then(function(data) {
+                            const downloadedFileUrl = triggerPdfDownload(data);
+                            if (downloadedFileUrl) {
+                                data.file_url = downloadedFileUrl;
+                            }
+
                             if (data.wa_phone && data.wa_message) {
                                 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
                                 const waUrl = isMobile ?
@@ -975,18 +1021,19 @@
 
             if (pdfCopyPathBtn) {
                 pdfCopyPathBtn.addEventListener('click', function() {
-                    if (!currentPdfResult || !currentPdfResult.local_path) return;
-                    const path = currentPdfResult.local_path;
+                    if (!currentPdfResult || (!currentPdfResult.local_path && !currentPdfResult.file_name))
+                        return;
+                    const path = currentPdfResult.local_path || currentPdfResult.file_name;
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         navigator.clipboard.writeText(path).then(function() {
-                            showInlineMessage('Caminho copiado para a área de transferência.',
+                            showInlineMessage('Informação copiada para a área de transferência.',
                                 'success');
                         }).catch(function() {
-                            showInlineMessage('Não foi possível copiar o caminho automaticamente.',
+                            showInlineMessage('Não foi possível copiar automaticamente.',
                                 'error');
                         });
                     } else {
-                        showInlineMessage('Seu navegador não suporta cópia automática. Caminho: ' + path,
+                        showInlineMessage('Seu navegador não suporta cópia automática. Informação: ' + path,
                             'info');
                     }
                 });
