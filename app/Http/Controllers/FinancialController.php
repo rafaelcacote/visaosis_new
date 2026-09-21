@@ -788,6 +788,8 @@ class FinancialController extends Controller
 
         $pdf->setPaper('a4', 'landscape');
 
+        \App\Helpers\PdfHelper::addPageNumbers($pdf);
+
         return $pdf->stream('relatorio_contas_a_receber_' . now()->format('Y-m-d') . '.pdf');
     }
 

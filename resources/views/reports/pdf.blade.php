@@ -511,6 +511,7 @@
         <table class="pdf-footer-table">
             <tr>
                 <td class="pdf-footer-left">Documento gerado por {{ AuthHelper::tenantName() ?? 'VisaoSis' }}</td>
+                <td class="pdf-footer-center"></td>
                 <td class="pdf-footer-right">Relatorio de Atendimentos</td>
             </tr>
         </table>

@@ -442,6 +442,8 @@ class ReportController extends Controller
 
         $filename = 'relatorio_atendimentos_' . $date->format('Y-m-d') . '.pdf';
 
+        \App\Helpers\PdfHelper::addPageNumbers($pdf);
+
         return $pdf->stream($filename);
     }
 
@@ -541,6 +543,8 @@ class ReportController extends Controller
         $pdf = \PDF::loadView('reports.products-pdf', compact('produtos', 'stats', 'categorias', 'search', 'categoriaId', 'status'));
 
         $pdf->setPaper('a4', 'portrait');
+
+        \App\Helpers\PdfHelper::addPageNumbers($pdf);
 
         return $pdf->stream('relatorio_produtos_' . now()->format('Y-m-d') . '.pdf');
     }
