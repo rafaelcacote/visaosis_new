@@ -567,6 +567,230 @@ class FinancialController extends Controller
         ]);
     }
 
+    public function receivablesPdf(Request $request)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+        $locationIds = $this->resolveLocationIdsFromSession($tenantId, $locationId, $userLocations);
+
+        $tz = 'America/Manaus';
+        $driver = DB::connection()->getDriverName();
+
+        $dbHojeStr = Carbon::now($tz)->toDateString();
+        if ($driver === 'pgsql') {
+            $row = DB::selectOne("select (now() at time zone 'America/Manaus')::date as d");
+            if ($row && isset($row->d)) {
+                $dbHojeStr = (string) $row->d;
+            }
+        }
+
+        $today = Carbon::parse($dbHojeStr, $tz)->startOfDay();
+        $tomorrow = $today->copy()->addDay();
+        $weekEnd = $today->copy()->addDays(7);
+
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        $base = DB::table('pedido_venda_parcela as pvp')
+            ->join('pedido_venda as pv', function ($join) {
+                $join->on('pv.id', '=', 'pvp.pedido_venda_id')
+                    ->on('pv.tenant_id', '=', 'pvp.tenant_id');
+            })
+            ->leftJoin('pessoa as pe', function ($join) {
+                $join->on('pe.id', '=', 'pv.pessoa_cliente_id')
+                    ->on('pe.tenant_id', '=', 'pv.tenant_id');
+            })
+            ->whereNull('pvp.deleted_at')
+            ->whereNull('pv.deleted_at')
+            ->where('pv.ativo', true)
+            ->when($tenantId, fn($q) => $q->where('pvp.tenant_id', $tenantId))
+            ->when(! empty($locationIds), function ($q) use ($locationIds) {
+                $q->where(function ($q2) use ($locationIds) {
+                    $q2->whereIn('pvp.location_id', $locationIds)->orWhereNull('pvp.location_id');
+                });
+            });
+
+        $statusFilter = (string) $request->get('status', '');
+        $startDate = (string) $request->get('start_date', '');
+        $endDate = (string) $request->get('end_date', '');
+        $q = trim((string) $request->get('q', ''));
+        $orderBy = (string) $request->get('order_by', 'vencimento');
+
+        $unpaid = (clone $base)
+            ->whereNull('pvp.pago_em')
+            ->where(function ($q) use ($paidStatuses) {
+                $q->whereNull('pvp.status')->orWhereNotIn(DB::raw('lower(pvp.status)'), $paidStatuses);
+            })
+            ->when($startDate !== '', fn($qq) => $qq->where('pvp.vencimento_em', '>=', $startDate))
+            ->when($endDate !== '', fn($qq) => $qq->where('pvp.vencimento_em', '<=', $endDate));
+
+        $summary = [
+            'vencidas' => [
+                'count' => (int) (clone $unpaid)->where('pvp.vencimento_em', '<', $today->toDateString())->count(),
+                'valor' => (float) (clone $unpaid)->where('pvp.vencimento_em', '<', $today->toDateString())->sum('pvp.valor'),
+            ],
+            'vence_hoje' => [
+                'count' => (int) (clone $unpaid)->where('pvp.vencimento_em', '=', $today->toDateString())->count(),
+                'valor' => (float) (clone $unpaid)->where('pvp.vencimento_em', '=', $today->toDateString())->sum('pvp.valor'),
+            ],
+            'vence_semana' => [
+                'count' => (int) (clone $unpaid)->whereBetween('pvp.vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()])->count(),
+                'valor' => (float) (clone $unpaid)->whereBetween('pvp.vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()])->sum('pvp.valor'),
+            ],
+            'em_dia' => [
+                'count' => (int) (clone $unpaid)->where('pvp.vencimento_em', '>', $weekEnd->toDateString())->count(),
+                'valor' => (float) (clone $unpaid)->where('pvp.vencimento_em', '>', $weekEnd->toDateString())->sum('pvp.valor'),
+            ],
+        ];
+
+        $query = (clone $base)
+            ->select([
+                'pvp.id as parcela_id',
+                'pvp.numero_parcela',
+                'pvp.total_parcelas',
+                'pvp.valor as valor_parcela',
+                'pvp.vencimento_em',
+                'pvp.pago_em',
+                'pvp.status as parcela_status',
+                'pv.id as pedido_id',
+                'pv.valor_total',
+                'pv.data_pedido',
+                'pe.nome as cliente_nome',
+                'pe.telefone as cliente_telefone',
+                'pe.cpf as cliente_cpf',
+            ]);
+
+        if ($statusFilter === 'paga') {
+            $query->where(function ($q) use ($paidStatuses) {
+                $q->whereNotNull('pvp.pago_em')->orWhereIn(DB::raw('lower(pvp.status)'), $paidStatuses);
+            });
+        } else {
+            $query->whereNull('pvp.pago_em')
+                ->where(function ($q) use ($paidStatuses) {
+                    $q->whereNull('pvp.status')->orWhereNotIn(DB::raw('lower(pvp.status)'), $paidStatuses);
+                });
+
+            if ($statusFilter === 'vencida') {
+                $query->where('pvp.vencimento_em', '<', $today->toDateString());
+            } elseif ($statusFilter === 'vence_hoje') {
+                $query->where('pvp.vencimento_em', '=', $today->toDateString());
+            } elseif ($statusFilter === 'vence_semana') {
+                $query->whereBetween('pvp.vencimento_em', [$tomorrow->toDateString(), $weekEnd->toDateString()]);
+            } elseif ($statusFilter === 'em_dia') {
+                $query->where('pvp.vencimento_em', '>', $weekEnd->toDateString());
+            }
+        }
+
+        if ($startDate !== '') {
+            $query->where('pvp.vencimento_em', '>=', $startDate);
+        }
+        if ($endDate !== '') {
+            $query->where('pvp.vencimento_em', '<=', $endDate);
+        }
+
+        if ($q !== '') {
+            $like = $driver === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($qq) use ($q, $like) {
+                $qq->where('pe.nome', $like, '%' . $q . '%')
+                    ->orWhere('pv.id', $like, '%' . $q . '%');
+            });
+        }
+
+        if ($orderBy === 'valor') {
+            $query->orderByDesc('pvp.valor')->orderBy('pvp.vencimento_em');
+        } elseif ($orderBy === 'cliente') {
+            $query->orderBy('pe.nome')->orderBy('pvp.vencimento_em');
+        } elseif ($orderBy === 'atraso') {
+            $query->orderBy('pvp.vencimento_em');
+        } else {
+            $query->orderBy('pvp.vencimento_em')->orderBy('pvp.id');
+        }
+
+        $rows = $query->get();
+
+        $receivables = $rows->map(function ($row) use ($today, $tomorrow, $weekEnd, $tz, $paidStatuses) {
+            $cliente = (string) ($row->cliente_nome ?? 'Cliente não informado');
+
+            $venc = Carbon::parse((string) $row->vencimento_em, $tz)->startOfDay();
+            $rawStatus = strtolower((string) ($row->parcela_status ?? ''));
+            $isPaid = ! empty($row->pago_em) || in_array($rawStatus, $paidStatuses, true);
+
+            $status = 'em_dia';
+            if ($isPaid) {
+                $status = 'paga';
+            } elseif ($rawStatus === 'pagamento_parcial') {
+                $status = 'pagamento_parcial';
+            } elseif ($rawStatus === 'saldo_remanescente') {
+                $status = 'saldo_remanescente';
+            } elseif ($venc->lt($today)) {
+                $status = 'vencida';
+            } elseif ($venc->equalTo($today)) {
+                $status = 'vence_hoje';
+            } elseif ($venc->gte($tomorrow) && $venc->lte($weekEnd)) {
+                $status = 'vence_semana';
+            }
+
+            $diasAtraso = 0;
+            $podeAtrasar = ! $isPaid && ! in_array($status, ['pagamento_parcial', 'saldo_remanescente'], true);
+            if ($podeAtrasar && $venc->lt($today)) {
+                $diasAtraso = $venc->diffInDays($today);
+            }
+
+            $dataPedido = $row->data_pedido ? Carbon::parse((string) $row->data_pedido, $tz) : null;
+            $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
+            $vendaId = 'VD-' . $year . '-' . str_pad((int) $row->pedido_id, 4, '0', STR_PAD_LEFT);
+
+            $valorParcela = (float) ($row->valor_parcela ?? 0);
+
+            return [
+                'cliente' => $cliente,
+                'venda_id' => $vendaId,
+                'parcela' => (int) $row->numero_parcela . '/' . (int) $row->total_parcelas,
+                'valor_parcela' => $valorParcela,
+                'vencimento' => $venc->toDateString(),
+                'status' => $status,
+                'dias_atraso' => $diasAtraso,
+            ];
+        });
+
+        $statusLabels = [
+            'vencida' => 'Vencidas',
+            'vence_hoje' => 'Vencem Hoje',
+            'vence_semana' => 'Vencem na Semana',
+            'em_dia' => 'Em Dia',
+            'paga' => 'Pagas',
+            'pagamento_parcial' => 'Pagamento Parcial',
+            'saldo_remanescente' => 'Saldo Remanescente',
+        ];
+
+        $orderByLabels = [
+            'vencimento' => 'Vencimento',
+            'valor' => 'Valor',
+            'cliente' => 'Cliente',
+            'atraso' => 'Dias em Atraso',
+        ];
+
+        $filters = [
+            'status_label' => $statusFilter !== '' ? ($statusLabels[$statusFilter] ?? $statusFilter) : 'Todos',
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'q' => $q,
+            'order_by_label' => $orderByLabels[$orderBy] ?? 'Vencimento',
+        ];
+
+        $pdf = \PDF::loadView('financial.receivables-pdf', [
+            'receivables' => $receivables,
+            'filters' => $filters,
+            'summary' => $summary,
+            'totalValor' => (float) $receivables->sum('valor_parcela'),
+            'totalCount' => $receivables->count(),
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->stream('relatorio_contas_a_receber_' . now()->format('Y-m-d') . '.pdf');
+    }
+
     public function paymentForm(string $id)
     {
         $tenantId = session('tenant_id');

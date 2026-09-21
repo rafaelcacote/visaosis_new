@@ -232,6 +232,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('financial')->name('financial.')->group(function () {
         Route::get('/', [FinancialController::class, 'index'])->name('index');
         Route::get('/receivables', [FinancialController::class, 'receivables'])->name('receivables');
+        Route::get('/receivables/pdf', [FinancialController::class, 'receivablesPdf'])->name('receivables.pdf');
         Route::get('/receivables/{id}/payment', [FinancialController::class, 'paymentForm'])->name('receivables.payment');
         Route::get('/receivables/{id}/details', [FinancialController::class, 'receivableDetails'])->name('receivables.details');
         Route::get('/receivables/{id}/history', [FinancialController::class, 'receivableHistory'])->name('receivables.history');
