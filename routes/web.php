@@ -268,5 +268,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendance/pdf', [ReportController::class, 'attendancePdf'])->name('attendance.pdf');
         Route::get('/products', [ReportController::class, 'products'])->name('products');
         Route::get('/products/pdf', [ReportController::class, 'productsPdf'])->name('products.pdf');
+        Route::get('/sales', [ReportController::class, 'sales'])->name('sales');
+        Route::get('/sales/pdf', [ReportController::class, 'salesPdf'])->name('sales.pdf');
     });
 });

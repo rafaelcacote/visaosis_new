@@ -82,21 +82,21 @@
                     </div>
                 </div>
 
-                <!-- Relatório Financeiro -->
+                <!-- Relatório de Vendas -->
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 hover-card">
                         <div class="card-body text-center">
                             <div class="mb-3">
                                 <i class="mdi mdi-cash-multiple text-success" style="font-size: 3rem;"></i>
                             </div>
-                            <h5 class="card-title">Relatório Financeiro</h5>
+                            <h5 class="card-title">Relatório de Vendas</h5>
                             <p class="card-text text-muted">
-                                Acompanhe receitas, despesas, fluxo de caixa e análise financeira detalhada do período.
+                                Acompanhe as vendas realizadas no período, ticket médio e distribuição por status.
                             </p>
                             <div class="mt-auto">
-                                <button class="btn btn-success" onclick="generateReport('financial')" disabled>
+                                <button class="btn btn-success" onclick="generateReport('sales')">
                                     <i class="mdi mdi-chart-pie me-2"></i>
-                                    Em Breve
+                                    Gerar Relatório
                                 </button>
                             </div>
                         </div>
@@ -228,6 +228,9 @@
                     break;
                 case 'financial':
                     url = `{{ route('reports.financial') }}?${params.toString()}`;
+                    break;
+                case 'sales':
+                    url = `{{ route('reports.sales') }}?${params.toString()}`;
                     break;
                 case 'products':
                     url = `{{ route('reports.products') }}`;
