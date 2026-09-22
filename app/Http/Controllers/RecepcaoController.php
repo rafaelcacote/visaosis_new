@@ -250,6 +250,7 @@ class RecepcaoController extends Controller
             $tenantId = session('tenant_id') ?? 1;
             $locationId = session('location_id') ?? 1;
             $userId = Auth::id() ?? 1;
+            $pessoaId = $request->input('pessoa_id');
 
             // Limpar CPF para busca (remover formatação)
             $cpfLimpo = $request->cpf ? preg_replace('/[^0-9]/', '', $request->cpf) : null;
@@ -278,13 +279,36 @@ class RecepcaoController extends Controller
                 }
             }
 
-            // Buscar pessoa existente pelo CPF, tenant_id e location_id
+            // Buscar pessoa existente pelo ID selecionado na busca ou pelo CPF informado
             $pessoa = null;
-            if ($cpfLimpo) {
-                $pessoa = Pessoa::where('cpf', $cpfLimpo)
+            if ($pessoaId) {
+                $pessoa = Pessoa::where('id', $pessoaId)
                     ->where('tenant_id', $tenantId)
                     ->where('location_id', $locationId)
                     ->first();
+
+                if (! $pessoa) {
+                    return redirect()->back()
+                        ->with('validation_message', 'Paciente selecionado não foi encontrado.')
+                        ->withInput();
+                }
+            }
+
+            if ($cpfLimpo) {
+                $pessoaPorCpf = Pessoa::where('cpf', $cpfLimpo)
+                    ->where('tenant_id', $tenantId)
+                    ->where('location_id', $locationId)
+                    ->first();
+
+                if ($pessoaPorCpf && $pessoa && (int) $pessoaPorCpf->id !== (int) $pessoa->id) {
+                    return redirect()->back()
+                        ->with('validation_warning', "CPF {$request->cpf} já está cadastrado para: {$pessoaPorCpf->nome}. Verifique se não há duplicidade ou erro de digitação.")
+                        ->withInput();
+                }
+
+                if (! $pessoa && $pessoaPorCpf) {
+                    $pessoa = $pessoaPorCpf;
+                }
             }
 
             // Se pessoa existe, verificar se os dados conferem
@@ -306,10 +330,15 @@ class RecepcaoController extends Controller
                 }
 
                 // Se chegou aqui, é a mesma pessoa ou nomes similares - usar pessoa existente
-                if (!$pessoa->apelido && $request->apelido) {
-                    $pessoa->apelido = $request->apelido;
-                    $pessoa->save();
-                }
+                $pessoa->user_id = $pessoa->user_id ?: $userId;
+                $pessoa->cpf = $cpfLimpo;
+                $pessoa->nome = $request->nome;
+                $pessoa->apelido = $request->apelido;
+                $pessoa->nascimento_em = $request->nascimento_em;
+                $pessoa->telefone = $request->telefone;
+                $pessoa->email = $request->email;
+                $pessoa->ativo = true;
+                $pessoa->save();
             } else {
                 // Pessoa não existe, criar nova
                 $pessoa = new Pessoa();

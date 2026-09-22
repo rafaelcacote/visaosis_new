@@ -7,6 +7,7 @@ use App\Models\Consulta;
 use App\Models\Profissional;
 use App\Models\Produto;
 use App\Models\Categoria;
+use App\Models\PedidoVenda;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -442,6 +443,8 @@ class ReportController extends Controller
 
         $filename = 'relatorio_atendimentos_' . $date->format('Y-m-d') . '.pdf';
 
+        \App\Helpers\PdfHelper::addPageNumbers($pdf);
+
         return $pdf->stream($filename);
     }
 
@@ -542,6 +545,83 @@ class ReportController extends Controller
 
         $pdf->setPaper('a4', 'portrait');
 
+        \App\Helpers\PdfHelper::addPageNumbers($pdf);
+
         return $pdf->stream('relatorio_produtos_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    private function salesReportQuery(Request $request)
+    {
+        $tenantId = session('tenant_id') ?? 1;
+        $locationId = session('location_id') ?? 1;
+
+        $startDate = (string) $request->get('start_date', now()->format('Y-m-d'));
+        $endDate = (string) $request->get('end_date', now()->format('Y-m-d'));
+        $status = trim((string) $request->get('status', ''));
+
+        $dateStart = Carbon::parse($startDate)->startOfDay();
+        $dateEnd = Carbon::parse($endDate)->endOfDay();
+
+        $query = PedidoVenda::with(['cliente', 'user'])
+            ->where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->whereBetween('data_pedido', [$dateStart, $dateEnd]);
+
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
+        return [$query, $startDate, $endDate, $status];
+    }
+
+    private function buildSalesStats($vendas): array
+    {
+        $vendasAtivas = $vendas->where('ativo', true);
+        $totalValor = (float) $vendasAtivas->sum('valor_total');
+        $totalCount = $vendasAtivas->count();
+
+        return [
+            'total' => $totalCount,
+            'valor_total' => $totalValor,
+            'ticket_medio' => $totalCount > 0 ? $totalValor / $totalCount : 0,
+            'faturadas' => [
+                'count' => $vendas->where('status', PedidoVenda::STATUS_FATURADO)->count(),
+                'valor' => (float) $vendas->where('status', PedidoVenda::STATUS_FATURADO)->sum('valor_total'),
+            ],
+            'abertas' => [
+                'count' => $vendas->where('status', PedidoVenda::STATUS_ABERTO)->count(),
+                'valor' => (float) $vendas->where('status', PedidoVenda::STATUS_ABERTO)->sum('valor_total'),
+            ],
+            'canceladas' => [
+                'count' => $vendas->where('status', PedidoVenda::STATUS_CANCELADO)->count(),
+                'valor' => (float) $vendas->where('status', PedidoVenda::STATUS_CANCELADO)->sum('valor_total'),
+            ],
+        ];
+    }
+
+    public function sales(Request $request)
+    {
+        [$query, $startDate, $endDate, $status] = $this->salesReportQuery($request);
+
+        $vendas = $query->orderByDesc('data_pedido')->get();
+        $stats = $this->buildSalesStats($vendas);
+
+        return view('reports.sales', compact('vendas', 'stats', 'startDate', 'endDate', 'status'));
+    }
+
+    public function salesPdf(Request $request)
+    {
+        [$query, $startDate, $endDate, $status] = $this->salesReportQuery($request);
+
+        $vendas = $query->orderByDesc('data_pedido')->get();
+        $stats = $this->buildSalesStats($vendas);
+
+        $pdf = \PDF::loadView('reports.sales-pdf', compact('vendas', 'stats', 'startDate', 'endDate', 'status'));
+
+        $pdf->setPaper('a4', 'landscape');
+
+        \App\Helpers\PdfHelper::addPageNumbers($pdf);
+
+        return $pdf->stream('relatorio_vendas_' . now()->format('Y-m-d') . '.pdf');
     }
 }

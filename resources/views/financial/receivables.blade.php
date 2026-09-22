@@ -106,7 +106,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h6 class="mb-0">
                         <i class="mdi mdi-filter me-2"></i>
                         Filtros
@@ -191,6 +191,11 @@
                                     {{ (int) ($filters['per_page'] ?? ($perPage ?? 10)) === 100 ? 'selected' : '' }}>100
                                 </option>
                             </select>
+                        </div>
+                        <div class="col-md-auto ms-md-auto d-flex justify-content-end">
+                            <button type="button" class="btn btn-primary" onclick="printReceivablesReport()">
+                                <i class="mdi mdi-file-pdf me-2"></i>Imprimir Relatório
+                            </button>
                         </div>
                         <div class="col-12 d-md-none d-sm-block">
                             <button type="button" class="btn btn-primary btn-sm w-100" onclick="applyFilters()">
@@ -846,6 +851,25 @@
 
             function applyFilters() {
                 document.getElementById('filtersForm')?.submit();
+            }
+
+            function printReceivablesReport() {
+                const params = new URLSearchParams();
+                const q = document.getElementById('searchInput')?.value?.trim();
+                const status = document.getElementById('statusFilter')?.value;
+                const startDate = document.getElementById('startDate')?.value;
+                const endDate = document.getElementById('endDate')?.value;
+                const orderBy = document.getElementById('orderBy')?.value;
+
+                if (q) params.set('q', q);
+                if (status) params.set('status', status);
+                if (startDate) params.set('start_date', startDate);
+                if (endDate) params.set('end_date', endDate);
+                if (orderBy) params.set('order_by', orderBy);
+
+                const urlBase = @json(route('financial.receivables.pdf'));
+                const query = params.toString();
+                window.open(query ? `${urlBase}?${query}` : urlBase, '_blank');
             }
 
             function selectAll() {

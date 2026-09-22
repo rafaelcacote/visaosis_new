@@ -113,7 +113,7 @@ class PrescriptionFormRequest extends FormRequest
             'diagnostico' => ['nullable', 'string', 'max:255'],
             'observacoes_receita' => ['nullable', 'string', 'max:1000'],
             'recomendacoes' => ['nullable', 'string', 'max:1000'],
-            'receita_foto' => ['nullable', 'image', 'max:10240'],
+            'receita_foto' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
             'remover_receita_foto' => ['nullable', 'boolean'],
         ];
 
@@ -219,8 +219,8 @@ class PrescriptionFormRequest extends FormRequest
             'diagnostico' => 'Diagnóstico',
             'recomendacoes' => 'Recomendações',
             'observacoes_receita' => 'Observações da Receita',
-            'receita_foto' => 'Foto da Receita',
-            'remover_receita_foto' => 'Remover Foto da Receita',
+            'receita_foto' => 'Anexo da Receita',
+            'remover_receita_foto' => 'Remover Anexo da Receita',
         ];
     }
 

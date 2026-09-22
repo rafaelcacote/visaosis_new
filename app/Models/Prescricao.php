@@ -85,7 +85,10 @@ class Prescricao extends Model
             return null;
         }
 
-        return asset('storage/' . $storagePath);
+        return route('pessoas.receitas.attachment', [
+            'pessoa' => $this->pessoa_paciente_id,
+            'prescricao' => $this->id,
+        ]);
     }
 
     protected $casts = [

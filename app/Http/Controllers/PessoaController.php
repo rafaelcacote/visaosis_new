@@ -811,6 +811,31 @@ class PessoaController extends Controller
         return view('pessoas.receitas', compact('pessoa', 'prescricoes', 'editPrescricao'));
     }
 
+    public function showPrescriptionAttachment(Pessoa $pessoa, Prescricao $prescricao)
+    {
+        $this->checkTenantAccess($pessoa);
+        $this->checkPrescriptionAccess($pessoa, $prescricao);
+
+        $storagePath = ltrim((string) ($prescricao->receita_foto_caminho ?? ''), '/');
+        if ($storagePath === '') {
+            abort(404);
+        }
+
+        $disk = Storage::disk('public');
+        if (! $disk->exists($storagePath)) {
+            abort(404);
+        }
+
+        $absolutePath = $disk->path($storagePath);
+        $mimeType = $disk->mimeType($storagePath) ?: 'application/octet-stream';
+        $fileName = basename($storagePath);
+
+        return response()->file($absolutePath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . addslashes($fileName) . '"',
+        ]);
+    }
+
     public function updatePrescription(PrescriptionFormRequest $request, Pessoa $pessoa, Prescricao $prescricao)
     {
         $this->checkTenantAccess($pessoa);
@@ -929,12 +954,13 @@ class PessoaController extends Controller
                 'image/png' => 'png',
                 'image/gif' => 'gif',
                 'image/webp' => 'webp',
+                'application/pdf' => 'pdf',
             ];
-            $extension = $extensionMap[$mime] ?? 'img';
+            $extension = $extensionMap[$mime] ?? 'bin';
         }
 
         $baseName = pathinfo($originalName, PATHINFO_FILENAME);
-        $safeBase = Str::slug($baseName) ?: 'foto-receita';
+        $safeBase = Str::slug($baseName) ?: 'anexo-receita';
         $fileName = $safeBase . '-' . (string) Str::uuid() . '.' . $extension;
 
         try {

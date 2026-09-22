@@ -68,6 +68,14 @@ class PedidoVenda extends Model
     }
 
     /**
+     * Relacionamento com o usuário que realizou a venda
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
      * Relacionamento com os itens do pedido
      */
     public function itens()

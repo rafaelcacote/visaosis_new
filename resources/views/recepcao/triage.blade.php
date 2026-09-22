@@ -107,6 +107,7 @@
             <!-- Patient Form -->
             <form id="triageForm" action="{{ route('recepcao.triage.store') }}" method="POST">
                 @csrf
+                <input type="hidden" name="pessoa_id" value="{{ old('pessoa_id') }}">
                 <div class="card mb-4" id="patientForm"
                     style="display: {{ $errors->any() || old('nome') || old('apelido') || old('cpf') || old('profissional_id') || old('tipo') || old('prioridade') ? 'block' : 'none' }};">
                     <div class="card-header">
@@ -116,6 +117,14 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <div id="existingPatientNotice"
+                            class="alert alert-info d-flex align-items-center gap-2 {{ old('pessoa_id') ? '' : 'd-none' }}"
+                            role="alert">
+                            <i class="mdi mdi-account-check-outline fs-5"></i>
+                            <div>
+                                Paciente existente selecionado. As alterações feitas abaixo atualizarão este cadastro.
+                            </div>
+                        </div>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
@@ -455,7 +464,15 @@
             function showNewPatientForm() {
                 document.getElementById('searchResults').style.display = 'none';
                 const patientForm = document.getElementById('triageForm');
+                const existingPatientNotice = document.getElementById('existingPatientNotice');
                 patientForm.reset();
+                const pessoaIdInput = patientForm.querySelector('[name="pessoa_id"]');
+                if (pessoaIdInput) {
+                    pessoaIdInput.value = '';
+                }
+                if (existingPatientNotice) {
+                    existingPatientNotice.classList.add('d-none');
+                }
                 patientForm.querySelectorAll('input').forEach(input => {
                     input.readOnly = false;
                     input.classList.remove('bg-light');
@@ -527,6 +544,14 @@
                 document.getElementById('triageInfo').style.display = 'block';
 
                 const form = document.getElementById('triageForm');
+                const existingPatientNotice = document.getElementById('existingPatientNotice');
+                const pessoaIdInput = form.querySelector('[name="pessoa_id"]');
+                if (pessoaIdInput) {
+                    pessoaIdInput.value = paciente.id || '';
+                }
+                if (existingPatientNotice) {
+                    existingPatientNotice.classList.remove('d-none');
+                }
 
                 // Preencher campos do formulário
                 form.querySelector('[name="nome"]').value = paciente.nome || '';
@@ -556,15 +581,11 @@
 
                 form.querySelector('[name="email"]').value = paciente.email || '';
 
-                // Marcar campos como readonly para pacientes existentes
+                // Manter os campos editáveis mesmo para pacientes existentes
                 form.querySelectorAll('input').forEach(input => {
-                    if (input.name === 'apelido' && !input.value) {
-                        input.readOnly = false;
-                        input.classList.remove('bg-light');
-                        return;
-                    }
-                    input.readOnly = true;
-                    input.classList.add('bg-light');
+                    if (input.name === 'pessoa_id') return;
+                    input.readOnly = false;
+                    input.classList.remove('bg-light');
                 });
 
                 // Reaplicar máscaras nos campos formatados
@@ -582,6 +603,8 @@
             function showFormWithOldData() {
                 const patientForm = document.getElementById('patientForm');
                 const triageInfo = document.getElementById('triageInfo');
+                const existingPatientNotice = document.getElementById('existingPatientNotice');
+                const hasSelectedPatient = !!document.querySelector('#triageForm [name="pessoa_id"]')?.value;
 
                 if (patientForm) {
                     patientForm.style.display = 'block';
@@ -591,6 +614,9 @@
                 if (triageInfo) {
                     triageInfo.style.display = 'block';
                     triageInfo.style.visibility = 'visible';
+                }
+                if (existingPatientNotice) {
+                    existingPatientNotice.classList.toggle('d-none', !hasSelectedPatient);
                 }
 
                 setTimeout(function() {
@@ -608,8 +634,8 @@
                         form.querySelectorAll(
                             'input[name="nome"], input[name="apelido"], input[name="cpf"], input[name="nascimento_em"], input[name="telefone"], input[name="email"]'
                         ).forEach(input => {
-                            input.readOnly = true;
-                            input.classList.add('bg-light');
+                            input.readOnly = false;
+                            input.classList.remove('bg-light');
                         });
                     }
                 }

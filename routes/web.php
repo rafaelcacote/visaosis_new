@@ -153,6 +153,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/print', [PessoaController::class, 'printPrescription'])->name('pessoas.receitas.print');
+    Route::get('pessoas/{pessoa}/receitas/{prescricao}/anexo', [PessoaController::class, 'showPrescriptionAttachment'])->name('pessoas.receitas.attachment');
     Route::post('pessoas/{pessoa}/receitas/{prescricao}/save-pdf-whatsapp', [PessoaController::class, 'savePrescriptionPdfWhatsapp'])->name('pessoas.receitas.save-pdf-whatsapp');
     Route::get('pessoas/{pessoa}/vendas', [PessoaController::class, 'vendas'])->name('pessoas.vendas');
     Route::post('pessoas/{pessoa}/receitas', [PessoaController::class, 'storePrescription'])->name('pessoas.receitas.store');
@@ -232,6 +233,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('financial')->name('financial.')->group(function () {
         Route::get('/', [FinancialController::class, 'index'])->name('index');
         Route::get('/receivables', [FinancialController::class, 'receivables'])->name('receivables');
+        Route::get('/receivables/pdf', [FinancialController::class, 'receivablesPdf'])->name('receivables.pdf');
         Route::get('/receivables/{id}/payment', [FinancialController::class, 'paymentForm'])->name('receivables.payment');
         Route::get('/receivables/{id}/details', [FinancialController::class, 'receivableDetails'])->name('receivables.details');
         Route::get('/receivables/{id}/history', [FinancialController::class, 'receivableHistory'])->name('receivables.history');
@@ -267,5 +269,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendance/pdf', [ReportController::class, 'attendancePdf'])->name('attendance.pdf');
         Route::get('/products', [ReportController::class, 'products'])->name('products');
         Route::get('/products/pdf', [ReportController::class, 'productsPdf'])->name('products.pdf');
+        Route::get('/sales', [ReportController::class, 'sales'])->name('sales');
+        Route::get('/sales/pdf', [ReportController::class, 'salesPdf'])->name('sales.pdf');
     });
 });
