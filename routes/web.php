@@ -153,6 +153,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/print', [PessoaController::class, 'printPrescription'])->name('pessoas.receitas.print');
+    Route::get('pessoas/{pessoa}/receitas/{prescricao}/anexo', [PessoaController::class, 'showPrescriptionAttachment'])->name('pessoas.receitas.attachment');
     Route::post('pessoas/{pessoa}/receitas/{prescricao}/save-pdf-whatsapp', [PessoaController::class, 'savePrescriptionPdfWhatsapp'])->name('pessoas.receitas.save-pdf-whatsapp');
     Route::get('pessoas/{pessoa}/vendas', [PessoaController::class, 'vendas'])->name('pessoas.vendas');
     Route::post('pessoas/{pessoa}/receitas', [PessoaController::class, 'storePrescription'])->name('pessoas.receitas.store');

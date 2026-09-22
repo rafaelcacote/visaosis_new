@@ -73,7 +73,12 @@
                 </div>
 
                 @php
+                    $rxFotoAtualPath =
+                        $isEditing && $prescricaoForm ? $prescricaoForm->receita_foto_caminho ?? null : null;
                     $rxFotoAtualUrl = $isEditing && $prescricaoForm ? $prescricaoForm->receita_foto_url ?? null : null;
+                    $rxFotoAtualIsPdf = $rxFotoAtualPath
+                        ? \Illuminate\Support\Str::endsWith(\Illuminate\Support\Str::lower($rxFotoAtualPath), '.pdf')
+                        : false;
                 @endphp
                 <div class="row g-3 mb-3">
                     <div class="col-12">
@@ -85,27 +90,27 @@
                                 <input type="file" accept="image/*" capture="environment" class="d-none"
                                     id="rxPhotoCamera" onchange="window.copyRxCameraToMain(event)">
                             </label>
-                            <label class="btn btn-outline-info" role="button" title="Anexar imagem existente">
-                                <i class="mdi mdi-folder-multiple-image me-1"></i>Anexar Imagem
-                                <input type="file" accept="image/*" class="d-none" name="receita_foto" id="rxPhotoFile"
-                                    onchange="window.handleRxPhotoSelect(event)">
+                            <label class="btn btn-outline-info" role="button" title="Anexar imagem ou PDF existente">
+                                <i class="mdi mdi-paperclip me-1"></i>Anexar Arquivo
+                                <input type="file" accept="image/*,.pdf,application/pdf" class="d-none"
+                                    name="receita_foto" id="rxPhotoFile" onchange="window.handleRxPhotoSelect(event)">
                             </label>
                             <button class="btn btn-outline-danger" type="button" id="rxPhotoClearBtn"
-                                onclick="window.clearRxPhoto()" style="display:none;" title="Remover foto selecionada">
+                                onclick="window.clearRxPhoto()" style="display:none;" title="Remover arquivo selecionado">
                                 <i class="mdi mdi-delete-outline"></i> Limpar
                             </button>
                             @if ($isEditing && $prescricaoForm && $prescricaoForm->receita_foto_caminho)
                                 <label class="btn btn-outline-warning ms-auto" role="button"
-                                    title="Marcar para remover a foto atual ao salvar">
+                                    title="Marcar para remover o anexo atual ao salvar">
                                     <input type="checkbox" name="remover_receita_foto" id="rxRemovePhotoCb" value="1"
                                         class="form-check-input me-1 d-none" onchange="window.toggleRxRemovePhoto(this)">
                                     <i class="mdi mdi-camera-off-outline me-1"></i>
-                                    <span id="rxRemovePhotoText">Remover Foto Atual</span>
+                                    <span id="rxRemovePhotoText">Remover Anexo Atual</span>
                                 </label>
                             @endif
                         </div>
                         <small class="text-muted d-block mt-1">
-                            Formatos aceitos: PNG, JPG, JPEG, WEBP. Tamanho máximo: 10MB.
+                            Formatos aceitos: PNG, JPG, JPEG, WEBP e PDF. Tamanho máximo: 10MB.
                             No celular, "Tirar Foto" abre a câmera traseira automaticamente.
                         </small>
                         @error('receita_foto')
@@ -116,7 +121,14 @@
                             <div class="d-flex gap-3 align-items-start flex-wrap">
                                 <div class="position-relative">
                                     <img id="rxPhotoPreview" class="img-thumbnail border rounded"
-                                        style="max-height:180px; max-width:100%; object-fit:cover;" alt="Preview">
+                                        style="max-height:180px; max-width:100%; object-fit:cover; display:none;"
+                                        alt="Preview da imagem">
+                                    <div id="rxPhotoPreviewPdf"
+                                        class="border rounded bg-light text-danger d-none flex-column align-items-center justify-content-center px-4"
+                                        style="min-height:180px; min-width:180px;">
+                                        <i class="mdi mdi-file-pdf-box display-6"></i>
+                                        <span class="fw-semibold">PDF selecionado</span>
+                                    </div>
                                 </div>
                                 <div class="small">
                                     <div class="text-muted mb-1">Arquivo selecionado</div>
@@ -124,7 +136,8 @@
                                     <div id="rxPhotoFileSize" class="text-muted">-</div>
                                     <button type="button" class="btn btn-outline-primary btn-sm mt-2"
                                         onclick="window.openRxPhotoPreviewLightbox()" id="rxPhotoPreviewZoomBtn" disabled>
-                                        <i class="mdi mdi-magnify-plus-outline me-1"></i>Ampliar
+                                        <i class="mdi mdi-magnify-plus-outline me-1"></i><span
+                                            id="rxPhotoPreviewZoomText">Ampliar</span>
                                     </button>
                                 </div>
                             </div>
@@ -135,25 +148,46 @@
                                 <div class="card border-warning shadow-sm bg-warning bg-opacity-5">
                                     <div class="card-body p-2 d-flex align-items-start gap-3 flex-wrap">
                                         <div class="position-relative">
-                                            <img id="rxFotoAtualImg" src="{{ $rxFotoAtualUrl }}"
-                                                class="img-thumbnail border-0 rounded"
-                                                style="max-height:140px; object-fit:cover;"
-                                                onclick="window.openRxPhotoLightbox('{{ $rxFotoAtualUrl }}')"
-                                                role="button" alt="Foto atual da receita">
+                                            @if ($rxFotoAtualIsPdf)
+                                                <div class="border rounded bg-light text-danger d-flex flex-column align-items-center justify-content-center px-4"
+                                                    style="min-height:140px; min-width:140px;">
+                                                    <i class="mdi mdi-file-pdf-box display-6"></i>
+                                                    <span class="fw-semibold">PDF atual</span>
+                                                </div>
+                                            @else
+                                                <img id="rxFotoAtualImg" src="{{ $rxFotoAtualUrl }}"
+                                                    class="img-thumbnail border-0 rounded"
+                                                    style="max-height:140px; object-fit:cover;"
+                                                    onclick="window.openRxPhotoLightbox('{{ $rxFotoAtualUrl }}')"
+                                                    role="button" alt="Foto atual da receita">
+                                            @endif
                                         </div>
                                         <div class="small flex-grow-1 min-w-0">
                                             <div class="fw-semibold mb-1">
-                                                <i class="mdi mdi-image-outline me-1 text-warning"></i>
-                                                Foto Atual da Receita
+                                                <i
+                                                    class="mdi {{ $rxFotoAtualIsPdf ? 'mdi-file-pdf-box' : 'mdi-image-outline' }} me-1 text-warning"></i>
+                                                {{ $rxFotoAtualIsPdf ? 'Anexo Atual da Receita' : 'Foto Atual da Receita' }}
                                             </div>
                                             <div class="text-muted mb-2">
-                                                Imagem anexada no cadastro desta receita. Clique na miniatura para ampliar.
+                                                @if ($rxFotoAtualIsPdf)
+                                                    PDF anexado no cadastro desta receita.
+                                                @else
+                                                    Imagem anexada no cadastro desta receita. Clique na miniatura para
+                                                    ampliar.
+                                                @endif
                                             </div>
                                             <div class="d-flex flex-wrap gap-2">
-                                                <button type="button" class="btn btn-sm btn-outline-primary"
-                                                    onclick="window.openRxPhotoLightbox('{{ $rxFotoAtualUrl }}')">
-                                                    <i class="mdi mdi-magnify-plus-outline me-1"></i>Ampliar
-                                                </button>
+                                                @if ($rxFotoAtualIsPdf)
+                                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        onclick="window.openRxFile('{{ $rxFotoAtualUrl }}', true)">
+                                                        <i class="mdi mdi-open-in-new me-1"></i>Abrir PDF
+                                                    </button>
+                                                @else
+                                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        onclick="window.openRxPhotoLightbox('{{ $rxFotoAtualUrl }}')">
+                                                        <i class="mdi mdi-magnify-plus-outline me-1"></i>Ampliar
+                                                    </button>
+                                                @endif
                                                 <a href="{{ $rxFotoAtualUrl }}" target="_blank" rel="noopener" download
                                                     class="btn btn-sm btn-outline-secondary">
                                                     <i class="mdi mdi-download-outline me-1"></i>Download
@@ -254,6 +288,10 @@
                             'recomendacoes' => $prescricao->recomendacoes ?: '-',
                             'observacoes' => $prescricao->observacoes ?: '-',
                             'foto_url' => $prescricao->receita_foto_url,
+                            'foto_is_pdf' => \Illuminate\Support\Str::endsWith(
+                                \Illuminate\Support\Str::lower((string) ($prescricao->receita_foto_caminho ?? '')),
+                                '.pdf',
+                            ),
                             'longe' => [
                                 'od' => [
                                     'esferico' => $prescricao->esfera_od ?: '-',
@@ -397,23 +435,30 @@
                             <div class="card-body p-2 d-flex align-items-start gap-3 flex-wrap">
                                 <div class="position-relative">
                                     <img id="rxFotoHistoricoImg" src="" class="img-thumbnail border-0 rounded"
-                                        style="max-height:150px; cursor:pointer; object-fit:cover;"
+                                        style="max-height:150px; cursor:pointer; object-fit:cover; display:none;"
                                         onclick="window.openRxPhotoLightbox(document.getElementById('rxFotoHistoricoImg').src)"
                                         alt="Foto da receita">
+                                    <div id="rxFotoHistoricoPdf"
+                                        class="border rounded bg-light text-danger d-none flex-column align-items-center justify-content-center px-4"
+                                        style="min-height:150px; min-width:150px;">
+                                        <i class="mdi mdi-file-pdf-box display-6"></i>
+                                        <span class="fw-semibold">PDF da receita</span>
+                                    </div>
                                 </div>
                                 <div class="small flex-grow-1 min-w-0">
-                                    <div class="fw-semibold mb-1">
+                                    <div class="fw-semibold mb-1" id="rxFotoHistoricoTitle">
                                         <i class="mdi mdi-image-outline me-1 text-primary"></i>
                                         Foto da Receita
                                     </div>
-                                    <div class="text-muted mb-2">
+                                    <div class="text-muted mb-2" id="rxFotoHistoricoDesc">
                                         Imagem anexada a esta receita. Clique na miniatura para ampliar.
                                     </div>
                                     <div class="d-flex flex-wrap gap-2">
                                         <button type="button" class="btn btn-sm btn-outline-primary"
                                             id="rxFotoHistoricoZoomBtn"
                                             onclick="window.openRxPhotoLightbox(document.getElementById('rxFotoHistoricoImg').src)">
-                                            <i class="mdi mdi-magnify-plus-outline me-1"></i>Ampliar
+                                            <i class="mdi mdi-magnify-plus-outline me-1"></i><span
+                                                id="rxFotoHistoricoZoomText">Ampliar</span>
                                         </button>
                                         <a href="#" id="rxFotoHistoricoDownload" target="_blank" rel="noopener"
                                             download class="btn btn-sm btn-outline-secondary">
@@ -890,15 +935,57 @@
 
                 const fotoHistoricoWrap = document.getElementById('rxFotoHistoricoWrap');
                 const fotoHistoricoImg = document.getElementById('rxFotoHistoricoImg');
+                const fotoHistoricoPdf = document.getElementById('rxFotoHistoricoPdf');
+                const fotoHistoricoTitle = document.getElementById('rxFotoHistoricoTitle');
+                const fotoHistoricoDesc = document.getElementById('rxFotoHistoricoDesc');
+                const fotoHistoricoZoomBtn = document.getElementById('rxFotoHistoricoZoomBtn');
+                const fotoHistoricoZoomText = document.getElementById('rxFotoHistoricoZoomText');
                 const fotoHistoricoDownload = document.getElementById('rxFotoHistoricoDownload');
                 const fotoUrl = item.foto_url || null;
+                const fotoIsPdf = !!item.foto_is_pdf;
                 if (fotoHistoricoWrap && fotoHistoricoImg && fotoHistoricoDownload) {
                     if (fotoUrl) {
-                        fotoHistoricoImg.src = fotoUrl;
+                        if (fotoIsPdf) {
+                            fotoHistoricoImg.removeAttribute('src');
+                            fotoHistoricoImg.style.display = 'none';
+                            if (fotoHistoricoPdf) fotoHistoricoPdf.classList.remove('d-none');
+                            if (fotoHistoricoPdf) fotoHistoricoPdf.classList.add('d-flex');
+                            if (fotoHistoricoTitle) {
+                                fotoHistoricoTitle.innerHTML =
+                                    '<i class="mdi mdi-file-pdf-box me-1 text-primary"></i>Anexo da Receita';
+                            }
+                            if (fotoHistoricoDesc) {
+                                fotoHistoricoDesc.textContent = 'PDF anexado a esta receita.';
+                            }
+                            if (fotoHistoricoZoomBtn) {
+                                fotoHistoricoZoomBtn.onclick = () => window.openRxFile(fotoUrl, true);
+                            }
+                            if (fotoHistoricoZoomText) fotoHistoricoZoomText.textContent = 'Abrir PDF';
+                        } else {
+                            fotoHistoricoImg.src = fotoUrl;
+                            fotoHistoricoImg.style.display = '';
+                            if (fotoHistoricoPdf) fotoHistoricoPdf.classList.add('d-none');
+                            if (fotoHistoricoPdf) fotoHistoricoPdf.classList.remove('d-flex');
+                            if (fotoHistoricoTitle) {
+                                fotoHistoricoTitle.innerHTML =
+                                    '<i class="mdi mdi-image-outline me-1 text-primary"></i>Foto da Receita';
+                            }
+                            if (fotoHistoricoDesc) {
+                                fotoHistoricoDesc.textContent =
+                                    'Imagem anexada a esta receita. Clique na miniatura para ampliar.';
+                            }
+                            if (fotoHistoricoZoomBtn) {
+                                fotoHistoricoZoomBtn.onclick = () => window.openRxPhotoLightbox(fotoUrl);
+                            }
+                            if (fotoHistoricoZoomText) fotoHistoricoZoomText.textContent = 'Ampliar';
+                        }
                         fotoHistoricoDownload.href = fotoUrl;
                         fotoHistoricoWrap.style.display = '';
                     } else {
                         fotoHistoricoImg.removeAttribute('src');
+                        fotoHistoricoImg.style.display = 'none';
+                        if (fotoHistoricoPdf) fotoHistoricoPdf.classList.add('d-none');
+                        if (fotoHistoricoPdf) fotoHistoricoPdf.classList.remove('d-flex');
                         fotoHistoricoDownload.href = '#';
                         fotoHistoricoWrap.style.display = 'none';
                     }
@@ -1154,15 +1241,18 @@
             const cameraInput = document.getElementById('rxPhotoCamera');
             const previewWrap = document.getElementById('rxPhotoPreviewWrap');
             const previewImg = document.getElementById('rxPhotoPreview');
+            const previewPdf = document.getElementById('rxPhotoPreviewPdf');
             const fileNameEl = document.getElementById('rxPhotoFileName');
             const fileSizeEl = document.getElementById('rxPhotoFileSize');
             const clearBtn = document.getElementById('rxPhotoClearBtn');
             const previewZoomBtn = document.getElementById('rxPhotoPreviewZoomBtn');
+            const previewZoomText = document.getElementById('rxPhotoPreviewZoomText');
             const removeCb = document.getElementById('rxRemovePhotoCb');
             const removeText = document.getElementById('rxRemovePhotoText');
             const atualWrap = document.getElementById('rxFotoAtualWrap');
 
             let currentPreviewUrl = null;
+            let currentPreviewIsPdf = false;
 
             const formatBytes = (bytes) => {
                 if (bytes == null || isNaN(bytes)) return '-';
@@ -1178,6 +1268,32 @@
                         URL.revokeObjectURL(currentPreviewUrl);
                     } catch (e) {}
                     currentPreviewUrl = null;
+                }
+                currentPreviewIsPdf = false;
+            };
+
+            const isPdfFile = (file) => {
+                if (!file) return false;
+                const type = String(file.type || '').toLowerCase();
+                const name = String(file.name || '').toLowerCase();
+                return type === 'application/pdf' || name.endsWith('.pdf');
+            };
+
+            const setPreviewMode = (isPdf) => {
+                if (previewImg) {
+                    if (isPdf) {
+                        previewImg.style.display = 'none';
+                        previewImg.removeAttribute('src');
+                    } else {
+                        previewImg.style.display = '';
+                    }
+                }
+                if (previewPdf) {
+                    previewPdf.classList.toggle('d-none', !isPdf);
+                    previewPdf.classList.toggle('d-flex', isPdf);
+                }
+                if (previewZoomText) {
+                    previewZoomText.textContent = isPdf ? 'Abrir PDF' : 'Ampliar';
                 }
             };
 
@@ -1215,9 +1331,14 @@
                 }
 
                 revokeCurrentPreview();
+                currentPreviewIsPdf = isPdfFile(file);
                 currentPreviewUrl = URL.createObjectURL(file);
-                previewImg.src = currentPreviewUrl;
-                if (fileNameEl) fileNameEl.textContent = file.name || 'imagem';
+                setPreviewMode(currentPreviewIsPdf);
+                if (!currentPreviewIsPdf && previewImg) {
+                    previewImg.src = currentPreviewUrl;
+                }
+                if (fileNameEl) fileNameEl.textContent = file.name || (currentPreviewIsPdf ? 'documento.pdf' :
+                    'imagem');
                 if (fileSizeEl) fileSizeEl.textContent = formatBytes(file.size);
                 if (previewWrap) previewWrap.style.display = '';
                 if (clearBtn) clearBtn.style.display = '';
@@ -1241,6 +1362,7 @@
                     } catch (e) {}
                 }
                 if (previewWrap) previewWrap.style.display = 'none';
+                setPreviewMode(false);
                 if (previewImg) previewImg.removeAttribute('src');
                 if (fileNameEl) fileNameEl.textContent = '-';
                 if (fileSizeEl) fileSizeEl.textContent = '-';
@@ -1254,15 +1376,24 @@
                 if (checked) {
                     atualWrap.classList.add('opacity-50');
                     atualWrap.style.opacity = '0.5';
-                    removeText.textContent = 'Foto será removida';
+                    removeText.textContent = 'Anexo será removido';
                 } else {
                     atualWrap.classList.remove('opacity-50');
                     atualWrap.style.opacity = '';
-                    removeText.textContent = 'Remover Foto Atual';
+                    removeText.textContent = 'Remover Anexo Atual';
                 }
             };
 
             let lightboxInstance = null;
+            window.openRxFile = (url, isPdf = false) => {
+                if (!url) return;
+                if (isPdf) {
+                    window.open(url, '_blank', 'noopener');
+                    return;
+                }
+                window.openRxPhotoLightbox(url);
+            };
+
             window.openRxPhotoLightbox = (url) => {
                 if (!url) return;
                 const modal = document.getElementById('rxPhotoLightboxModal');
@@ -1296,7 +1427,7 @@
 
             window.openRxPhotoPreviewLightbox = () => {
                 if (currentPreviewUrl) {
-                    window.openRxPhotoLightbox(currentPreviewUrl);
+                    window.openRxFile(currentPreviewUrl, currentPreviewIsPdf);
                 }
             };
 
