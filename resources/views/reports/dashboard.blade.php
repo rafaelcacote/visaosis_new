@@ -103,6 +103,28 @@
                     </div>
                 </div>
 
+                <!-- Relatório de Vendas Detalhado -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 hover-card">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="mdi mdi-receipt-text text-info" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">Relatório de Vendas Detalhado</h5>
+                            <p class="card-text text-muted">
+                                Controle financeiro por venda: parcelas, status de cada parcela, valor recebido,
+                                saldo a receber e vendedor responsável.
+                            </p>
+                            <div class="mt-auto">
+                                <button class="btn btn-info text-white" onclick="generateReport('sales-detailed')">
+                                    <i class="mdi mdi-format-list-bulleted me-2"></i>
+                                    Gerar Relatório
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Relatório de Produtos -->
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 hover-card">
@@ -231,6 +253,9 @@
                     break;
                 case 'sales':
                     url = `{{ route('reports.sales') }}?${params.toString()}`;
+                    break;
+                case 'sales-detailed':
+                    url = `{{ route('reports.sales-detailed') }}?${params.toString()}`;
                     break;
                 case 'products':
                     url = `{{ route('reports.products') }}`;
