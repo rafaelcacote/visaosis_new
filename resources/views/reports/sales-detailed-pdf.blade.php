@@ -60,6 +60,40 @@
             padding: 4px 6px;
         }
 
+        .venda-header-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+
+        .venda-header-table td {
+            border: none;
+            padding: 0 4px;
+            vertical-align: middle;
+        }
+
+        .venda-header-table .col-cliente {
+            width: 40%;
+            text-align: left;
+        }
+
+        .venda-header-table .col-valor {
+            width: 16%;
+            text-align: right;
+        }
+
+        .venda-header-table .col-status {
+            width: 12%;
+            text-align: center;
+        }
+
+        .venda-header-table .col-label {
+            display: block;
+            font-size: 8px;
+            font-weight: normal;
+            color: #6c757d;
+        }
+
         .stats-row {
             display: table;
             width: 100%;
@@ -71,7 +105,7 @@
 
         .stat-column {
             display: table-cell;
-            width: 20%;
+            width: 25%;
             text-align: center;
             padding: 12px 8px;
             border-right: 1px solid #dee2e6;
@@ -284,10 +318,6 @@
                     <span class="stat-number">R$ {{ number_format($stats['valor_pendente'], 2, ',', '.') }}</span>
                     <span class="stat-label">A Receber</span>
                 </div>
-                <div class="stat-column">
-                    <span class="stat-number">R$ {{ number_format($stats['ticket_medio'], 2, ',', '.') }}</span>
-                    <span class="stat-label">Ticket Médio</span>
-                </div>
             </div>
         </div>
     </div>
@@ -304,18 +334,43 @@
                 @foreach ($rows as $venda)
                     <div class="venda-block">
                         <div class="venda-title">
-                            {{ $venda['numero'] }} — {{ $venda['cliente'] }} · Vendedor:
-                            {{ $venda['vendedor'] }}
-                            · {{ $venda['data_pedido']->format('d/m/Y H:i') }}
-                            · Total: R$ {{ number_format($venda['valor_total'], 2, ',', '.') }}
-                            · Recebido: R$ {{ number_format($venda['valor_recebido'], 2, ',', '.') }}
-                            · A Receber: R$ {{ number_format($venda['valor_pendente'], 2, ',', '.') }}
-                            · Situação:
-                            <span class="status-{{ $venda['status_recebimento'] }}">
-                                {{ $statusRecebimentoLabels[$venda['status_recebimento']] ?? $venda['status_recebimento'] }}
-                            </span>
+                            <table class="venda-header-table">
+                                <tr>
+                                    <td class="col-cliente">
+                                        {{ $venda['numero'] }} — {{ $venda['cliente'] }}
+                                        <span class="col-label">Vendedor: {{ $venda['vendedor'] }} ·
+                                            {{ $venda['data_pedido']->format('d/m/Y H:i') }}</span>
+                                    </td>
+                                    <td class="col-valor">
+                                        <span class="col-label">Total</span>
+                                        R$ {{ number_format($venda['valor_total'], 2, ',', '.') }}
+                                    </td>
+                                    <td class="col-valor">
+                                        <span class="col-label">Recebido</span>
+                                        R$ {{ number_format($venda['valor_recebido'], 2, ',', '.') }}
+                                    </td>
+                                    <td class="col-valor">
+                                        <span class="col-label">A Receber</span>
+                                        R$ {{ number_format($venda['valor_pendente'], 2, ',', '.') }}
+                                    </td>
+                                    <td class="col-status">
+                                        <span class="col-label">Situação</span>
+                                        <span class="status-{{ $venda['status_recebimento'] }}">
+                                            {{ $statusRecebimentoLabels[$venda['status_recebimento']] ?? $venda['status_recebimento'] }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
-                        <table class="table table-bordered table-sm" style="font-size: 9px;">
+                        <table class="table table-bordered table-sm" style="font-size: 9px; table-layout: fixed;">
+                            <colgroup>
+                                <col style="width: 12%;">
+                                <col style="width: 14%;">
+                                <col style="width: 16%;">
+                                <col style="width: 16%;">
+                                <col style="width: 16%;">
+                                <col style="width: 26%;">
+                            </colgroup>
                             <thead>
                                 <tr>
                                     <th style="background-color: #f8f9fa;">Parcela</th>

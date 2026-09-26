@@ -647,7 +647,8 @@ class ReportController extends Controller
         ])
             ->where('tenant_id', $tenantId)
             ->where('location_id', $locationId)
-            ->whereBetween('data_pedido', [$dateStart, $dateEnd]);
+            ->whereBetween('data_pedido', [$dateStart, $dateEnd])
+            ->where('status', '!=', PedidoVenda::STATUS_CANCELADO);
 
         if ($status !== '') {
             $query->where('status', $status);

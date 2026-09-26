@@ -47,7 +47,6 @@
                                 <option value="">Todos</option>
                                 <option value="faturado" @selected($status === 'faturado')>Faturado</option>
                                 <option value="aberto" @selected($status === 'aberto')>Aberto</option>
-                                <option value="cancelado" @selected($status === 'cancelado')>Cancelado</option>
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-md-3">
@@ -83,30 +82,26 @@
         <div class="col-12 mb-4">
             <div class="card">
                 <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-2 border-end">
+                    <div class="row text-center row-cols-1 row-cols-md-5">
+                        <div class="col border-end">
                             <h2 class="mb-1 text-primary">{{ $stats['total'] }}</h2>
                             <p class="text-muted mb-0">Vendas</p>
                         </div>
-                        <div class="col-md-2 border-end">
+                        <div class="col border-end">
                             <h2 class="mb-1 text-dark">R$ {{ number_format($stats['valor_total'], 2, ',', '.') }}</h2>
                             <p class="text-muted mb-0">Valor Total</p>
                         </div>
-                        <div class="col-md-2 border-end">
+                        <div class="col border-end">
                             <h2 class="mb-1 text-success">R$
                                 {{ number_format($stats['valor_recebido'], 2, ',', '.') }}</h2>
                             <p class="text-muted mb-0">Total Recebido</p>
                         </div>
-                        <div class="col-md-2 border-end">
+                        <div class="col border-end">
                             <h2 class="mb-1 text-danger">R$
                                 {{ number_format($stats['valor_pendente'], 2, ',', '.') }}</h2>
                             <p class="text-muted mb-0">A Receber</p>
                         </div>
-                        <div class="col-md-2 border-end">
-                            <h2 class="mb-1 text-info">R$ {{ number_format($stats['ticket_medio'], 2, ',', '.') }}</h2>
-                            <p class="text-muted mb-0">Ticket Médio</p>
-                        </div>
-                        <div class="col-md-2">
+                        <div class="col">
                             <h2 class="mb-1 text-warning">{{ $stats['parciais'] }}</h2>
                             <p class="text-muted mb-0">Pagamento Parcial</p>
                         </div>
@@ -148,21 +143,21 @@
                                                 {{ $venda['data_pedido']->format('d/m/Y H:i') }}
                                             </small>
                                         </div>
-                                        <div class="text-end me-3">
+                                        <div class="text-end me-3" style="width: 130px;">
                                             <small class="text-muted d-block">Total</small>
                                             <strong>R$ {{ number_format($venda['valor_total'], 2, ',', '.') }}</strong>
                                         </div>
-                                        <div class="text-end me-3">
+                                        <div class="text-end me-3" style="width: 130px;">
                                             <small class="text-muted d-block">Recebido</small>
                                             <strong class="text-success">R$
                                                 {{ number_format($venda['valor_recebido'], 2, ',', '.') }}</strong>
                                         </div>
-                                        <div class="text-end me-3">
+                                        <div class="text-end me-3" style="width: 130px;">
                                             <small class="text-muted d-block">A Receber</small>
                                             <strong class="text-danger">R$
                                                 {{ number_format($venda['valor_pendente'], 2, ',', '.') }}</strong>
                                         </div>
-                                        <div class="text-center me-3">
+                                        <div class="text-center me-3" style="width: 150px;">
                                             @if ($venda['status_recebimento'] === 'quitada')
                                                 <span class="badge bg-success">Quitada</span>
                                             @elseif($venda['status_recebimento'] === 'parcial')
@@ -178,7 +173,16 @@
                                     <div class="collapse" id="venda-{{ $venda['id'] }}">
                                         <div class="px-3 pb-3">
                                             <div class="table-responsive">
-                                                <table class="table table-sm table-bordered mb-0">
+                                                <table class="table table-sm table-bordered mb-0"
+                                                    style="table-layout: fixed; width: 100%;">
+                                                    <colgroup>
+                                                        <col style="width: 12%;">
+                                                        <col style="width: 14%;">
+                                                        <col style="width: 16%;">
+                                                        <col style="width: 16%;">
+                                                        <col style="width: 16%;">
+                                                        <col style="width: 26%;">
+                                                    </colgroup>
                                                     <thead class="table-light">
                                                         <tr>
                                                             <th>Parcela</th>
@@ -265,12 +269,6 @@
                         <small>Pendentes</small>
                         <span class="tag" style="background-color: #fde8e8; color: #c0392b;">
                             {{ $stats['pendentes'] }}
-                        </span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-                        <small>Canceladas</small>
-                        <span class="tag" style="background-color: #f1f1f1; color: #6c757d;">
-                            {{ $stats['canceladas'] }}
                         </span>
                     </li>
                 </ul>
