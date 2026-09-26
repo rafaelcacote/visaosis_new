@@ -650,10 +650,6 @@ class ReportController extends Controller
             ->whereBetween('data_pedido', [$dateStart, $dateEnd])
             ->where('status', '!=', PedidoVenda::STATUS_CANCELADO);
 
-        if ($status !== '') {
-            $query->where('status', $status);
-        }
-
         if ($userId !== '') {
             $query->where('user_id', $userId);
         }
@@ -748,6 +744,15 @@ class ReportController extends Controller
         })->values();
     }
 
+    private function filterSalesDetailedRowsByStatus($rows, string $status)
+    {
+        if ($status === '') {
+            return $rows;
+        }
+
+        return $rows->where('status_recebimento', $status)->values();
+    }
+
     private function buildSalesDetailedStats($rows): array
     {
         $totalCount = $rows->count();
@@ -788,8 +793,8 @@ class ReportController extends Controller
     {
         [$query, $startDate, $endDate, $status, $userId, $q] = $this->salesDetailedReportQuery($request);
 
-        $vendas = $query->orderByDesc('data_pedido')->get();
-        $rows = $this->buildSalesDetailedRows($vendas);
+        $vendas = $query->orderBy('data_pedido')->get();
+        $rows = $this->filterSalesDetailedRowsByStatus($this->buildSalesDetailedRows($vendas), $status);
         $stats = $this->buildSalesDetailedStats($rows);
         $vendedores = $this->salesDetailedVendedores();
 
@@ -800,8 +805,8 @@ class ReportController extends Controller
     {
         [$query, $startDate, $endDate, $status, $userId, $q] = $this->salesDetailedReportQuery($request);
 
-        $vendas = $query->orderByDesc('data_pedido')->get();
-        $rows = $this->buildSalesDetailedRows($vendas);
+        $vendas = $query->orderBy('data_pedido')->get();
+        $rows = $this->filterSalesDetailedRowsByStatus($this->buildSalesDetailedRows($vendas), $status);
         $stats = $this->buildSalesDetailedStats($rows);
 
         $vendedorNome = null;

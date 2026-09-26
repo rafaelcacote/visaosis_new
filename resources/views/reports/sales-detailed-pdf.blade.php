@@ -288,7 +288,8 @@
                     <p><strong>Data Fim:</strong> {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
                 </div>
                 <div class="col-md-3">
-                    <p><strong>Status:</strong> {{ $status !== '' ? ucfirst($status) : 'Todos' }}</p>
+                    <p><strong>Status:</strong>
+                        {{ $status !== '' ? $statusRecebimentoLabels[$status] ?? ucfirst($status) : 'Todos' }}</p>
                 </div>
                 <div class="col-md-3">
                     <p><strong>Vendedor:</strong> {{ $vendedorNome ?? 'Todos' }}</p>

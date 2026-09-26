@@ -45,8 +45,9 @@
                             <label for="status" class="form-label">Status</label>
                             <select class="form-select form-select-sm" id="status" name="status">
                                 <option value="">Todos</option>
-                                <option value="faturado" @selected($status === 'faturado')>Faturado</option>
-                                <option value="aberto" @selected($status === 'aberto')>Aberto</option>
+                                <option value="parcial" @selected($status === 'parcial')>Pagamento Parcial</option>
+                                <option value="quitada" @selected($status === 'quitada')>Quitadas</option>
+                                <option value="pendente" @selected($status === 'pendente')>Pendentes</option>
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-md-3">
