@@ -188,28 +188,6 @@
                     </div>
                 </div>
 
-
-
-                <!-- Relatório Personalizado -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 hover-card">
-                        <div class="card-body text-center">
-                            <div class="mb-3">
-                                <i class="mdi mdi-cog text-dark" style="font-size: 3rem;"></i>
-                            </div>
-                            <h5 class="card-title">Relatório Personalizado</h5>
-                            <p class="card-text text-muted">
-                                Crie relatórios customizados com métricas específicas e visualizações personalizadas.
-                            </p>
-                            <div class="mt-auto">
-                                <button class="btn btn-dark" onclick="generateReport('custom')" disabled>
-                                    <i class="mdi mdi-tools me-2"></i>
-                                    Em Breve
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
