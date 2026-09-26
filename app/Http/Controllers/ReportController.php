@@ -213,18 +213,21 @@ class ReportController extends Controller
             })
             ->get();
 
-        return $profissionais->map(function ($profissional) use ($dateStart, $dateEnd, $tenantId, $locationId) {
-            $consultasQuery = Consulta::where('tenant_id', $tenantId)
-                ->where('location_id', $locationId)
-                ->where('profissional_id', $profissional->id);
+        // Monta a query de consultas de um profissional (ou dos "sem profissional") já com o filtro de período aplicado
+        $buildConsultasQuery = function () use ($dateStart, $dateEnd, $tenantId, $locationId) {
+            $query = Consulta::where('tenant_id', $tenantId)
+                ->where('location_id', $locationId);
 
-            // Aplicar filtro de período
             if ($dateStart->format('Y-m-d') === $dateEnd->format('Y-m-d')) {
-                $consultasQuery->whereDate('agendado_em', $dateStart);
+                $query->whereDate('agendado_em', $dateStart);
             } else {
-                $consultasQuery->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
+                $query->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
             }
 
+            return $query;
+        };
+
+        $buildStatsFromQuery = function ($consultasQuery) {
             $scheduledCount = (clone $consultasQuery)->count();
 
             $attendedCount = (clone $consultasQuery)
@@ -243,19 +246,53 @@ class ReportController extends Controller
                 ->whereHas('encaminhamento')
                 ->count();
 
-            $totalCount = (clone $consultasQuery)->count();
-
             return [
-                'name' => $profissional->nome,
-                'specialty' => $profissional->especialidade->descricao ?? 'Não informada',
                 'scheduled' => $scheduledCount,
                 'attended' => $attendedCount,
                 'cancelled' => $cancelledCount,
                 'returns' => $returnsCount,
                 'referrals' => $referralsCount,
-                'total' => $totalCount
+                'total' => $scheduledCount
             ];
-        })->toArray();
+        };
+
+        $rows = $profissionais->map(function ($profissional) use ($buildConsultasQuery, $buildStatsFromQuery) {
+            $consultasQuery = $buildConsultasQuery()->where('profissional_id', $profissional->id);
+
+            return array_merge([
+                'name' => $profissional->nome,
+                'specialty' => $profissional->especialidade->descricao ?? 'Não informada',
+            ], $buildStatsFromQuery($consultasQuery));
+        })->values();
+
+        // Sem filtro de profissional específico, consultas sem profissional_id (ou vinculadas a um
+        // profissional inativo/de outra location) contam no total do card mas não entravam em
+        // nenhuma linha da tabela, causando divergência entre o contador e a soma das linhas.
+        // Aqui elas são somadas em uma linha "Sem profissional atribuído" para reconciliar os números.
+        if (!$selectedProfessional) {
+            $activeIds = $profissionais->pluck('id')->all();
+
+            $unassignedQuery = $buildConsultasQuery();
+            if (!empty($activeIds)) {
+                $unassignedQuery->where(function ($query) use ($activeIds) {
+                    $query->whereNull('profissional_id')
+                        ->orWhereNotIn('profissional_id', $activeIds);
+                });
+            } else {
+                $unassignedQuery->whereNull('profissional_id');
+            }
+
+            $unassignedStats = $buildStatsFromQuery($unassignedQuery);
+
+            if ($unassignedStats['total'] > 0) {
+                $rows->push(array_merge([
+                    'name' => 'Sem profissional atribuído',
+                    'specialty' => '-',
+                ], $unassignedStats));
+            }
+        }
+
+        return $rows->toArray();
     }
 
     private function calculateAverageWaitTime($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional = null)
