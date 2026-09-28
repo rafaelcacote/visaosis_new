@@ -271,5 +271,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/products/pdf', [ReportController::class, 'productsPdf'])->name('products.pdf');
         Route::get('/sales', [ReportController::class, 'sales'])->name('sales');
         Route::get('/sales/pdf', [ReportController::class, 'salesPdf'])->name('sales.pdf');
+        Route::get('/sales-detailed', [ReportController::class, 'salesDetailed'])->name('sales-detailed');
+        Route::get('/sales-detailed/pdf', [ReportController::class, 'salesDetailedPdf'])->name('sales-detailed.pdf');
     });
 });

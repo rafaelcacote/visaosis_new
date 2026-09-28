@@ -8,6 +8,7 @@ use App\Models\Profissional;
 use App\Models\Produto;
 use App\Models\Categoria;
 use App\Models\PedidoVenda;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -212,18 +213,21 @@ class ReportController extends Controller
             })
             ->get();
 
-        return $profissionais->map(function ($profissional) use ($dateStart, $dateEnd, $tenantId, $locationId) {
-            $consultasQuery = Consulta::where('tenant_id', $tenantId)
-                ->where('location_id', $locationId)
-                ->where('profissional_id', $profissional->id);
+        // Monta a query de consultas de um profissional (ou dos "sem profissional") já com o filtro de período aplicado
+        $buildConsultasQuery = function () use ($dateStart, $dateEnd, $tenantId, $locationId) {
+            $query = Consulta::where('tenant_id', $tenantId)
+                ->where('location_id', $locationId);
 
-            // Aplicar filtro de período
             if ($dateStart->format('Y-m-d') === $dateEnd->format('Y-m-d')) {
-                $consultasQuery->whereDate('agendado_em', $dateStart);
+                $query->whereDate('agendado_em', $dateStart);
             } else {
-                $consultasQuery->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
+                $query->whereBetween('agendado_em', [$dateStart->startOfDay(), $dateEnd->endOfDay()]);
             }
 
+            return $query;
+        };
+
+        $buildStatsFromQuery = function ($consultasQuery) {
             $scheduledCount = (clone $consultasQuery)->count();
 
             $attendedCount = (clone $consultasQuery)
@@ -242,19 +246,53 @@ class ReportController extends Controller
                 ->whereHas('encaminhamento')
                 ->count();
 
-            $totalCount = (clone $consultasQuery)->count();
-
             return [
-                'name' => $profissional->nome,
-                'specialty' => $profissional->especialidade->descricao ?? 'Não informada',
                 'scheduled' => $scheduledCount,
                 'attended' => $attendedCount,
                 'cancelled' => $cancelledCount,
                 'returns' => $returnsCount,
                 'referrals' => $referralsCount,
-                'total' => $totalCount
+                'total' => $scheduledCount
             ];
-        })->toArray();
+        };
+
+        $rows = $profissionais->map(function ($profissional) use ($buildConsultasQuery, $buildStatsFromQuery) {
+            $consultasQuery = $buildConsultasQuery()->where('profissional_id', $profissional->id);
+
+            return array_merge([
+                'name' => $profissional->nome,
+                'specialty' => $profissional->especialidade->descricao ?? 'Não informada',
+            ], $buildStatsFromQuery($consultasQuery));
+        })->values();
+
+        // Sem filtro de profissional específico, consultas sem profissional_id (ou vinculadas a um
+        // profissional inativo/de outra location) contam no total do card mas não entravam em
+        // nenhuma linha da tabela, causando divergência entre o contador e a soma das linhas.
+        // Aqui elas são somadas em uma linha "Sem profissional atribuído" para reconciliar os números.
+        if (!$selectedProfessional) {
+            $activeIds = $profissionais->pluck('id')->all();
+
+            $unassignedQuery = $buildConsultasQuery();
+            if (!empty($activeIds)) {
+                $unassignedQuery->where(function ($query) use ($activeIds) {
+                    $query->whereNull('profissional_id')
+                        ->orWhereNotIn('profissional_id', $activeIds);
+                });
+            } else {
+                $unassignedQuery->whereNull('profissional_id');
+            }
+
+            $unassignedStats = $buildStatsFromQuery($unassignedQuery);
+
+            if ($unassignedStats['total'] > 0) {
+                $rows->push(array_merge([
+                    'name' => 'Sem profissional atribuído',
+                    'specialty' => '-',
+                ], $unassignedStats));
+            }
+        }
+
+        return $rows->toArray();
     }
 
     private function calculateAverageWaitTime($dateStart, $dateEnd, $tenantId, $locationId, $selectedProfessional = null)
@@ -623,5 +661,202 @@ class ReportController extends Controller
         \App\Helpers\PdfHelper::addPageNumbers($pdf);
 
         return $pdf->stream('relatorio_vendas_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    private function salesDetailedReportQuery(Request $request)
+    {
+        $tenantId = session('tenant_id') ?? 1;
+        $locationId = session('location_id') ?? 1;
+
+        $startDate = (string) $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = (string) $request->get('end_date', now()->format('Y-m-d'));
+        $status = trim((string) $request->get('status', ''));
+        $userId = trim((string) $request->get('user_id', ''));
+        $q = trim((string) $request->get('q', ''));
+
+        $dateStart = Carbon::parse($startDate)->startOfDay();
+        $dateEnd = Carbon::parse($endDate)->endOfDay();
+
+        $query = PedidoVenda::with([
+            'cliente',
+            'user',
+            'parcelas' => fn($rel) => $rel->orderBy('numero_parcela'),
+        ])
+            ->where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->whereBetween('data_pedido', [$dateStart, $dateEnd])
+            ->where('status', '!=', PedidoVenda::STATUS_CANCELADO);
+
+        if ($userId !== '') {
+            $query->where('user_id', $userId);
+        }
+
+        if ($q !== '') {
+            $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($qq) use ($q, $like) {
+                $qq->where('id', $like, "%{$q}%")
+                    ->orWhereHas('cliente', function ($qc) use ($q, $like) {
+                        $qc->where('nome', $like, "%{$q}%");
+                    });
+            });
+        }
+
+        return [$query, $startDate, $endDate, $status, $userId, $q];
+    }
+
+    /**
+     * Junta as parcelas de cada venda com status de pagamento, valor recebido e saldo pendente.
+     */
+    private function buildSalesDetailedRows($vendas)
+    {
+        $tz = 'America/Manaus';
+        $today = Carbon::now($tz)->startOfDay();
+        $tomorrow = $today->copy()->addDay();
+        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
+
+        return $vendas->map(function ($venda) use ($today, $tomorrow, $paidStatuses, $tz) {
+            $parcelas = $venda->parcelas->map(function ($parcela) use ($today, $tomorrow, $paidStatuses, $tz) {
+                $venc = $parcela->vencimento_em ? Carbon::parse($parcela->vencimento_em, $tz)->startOfDay() : null;
+                $rawStatus = strtolower((string) ($parcela->status ?? ''));
+                $isPaid = !empty($parcela->pago_em) || in_array($rawStatus, $paidStatuses, true);
+
+                $status = 'em_dia';
+                if ($isPaid) {
+                    $status = 'paga';
+                } elseif ($rawStatus === 'pagamento_parcial') {
+                    $status = 'pagamento_parcial';
+                } elseif ($venc && $venc->lt($today)) {
+                    $status = 'vencida';
+                } elseif ($venc && $venc->equalTo($today)) {
+                    $status = 'vence_hoje';
+                }
+
+                $valorParcela = (float) ($parcela->valor ?? 0);
+                $valorRecebidoInformado = (float) ($parcela->valor_recebido ?? 0);
+                $valorRecebido = $isPaid
+                    ? ($valorRecebidoInformado > 0 ? $valorRecebidoInformado : $valorParcela)
+                    : $valorRecebidoInformado;
+
+                return [
+                    'parcela' => (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
+                    'valor' => $valorParcela,
+                    'valor_recebido' => $valorRecebido,
+                    'vencimento' => $venc?->toDateString(),
+                    'pago_em' => $parcela->pago_em,
+                    'status' => $status,
+                    'forma_pagamento' => $parcela->forma_pagamento,
+                ];
+            })->values();
+
+            $valorTotal = (float) $venda->valor_total;
+            $valorRecebidoTotal = (float) $parcelas->sum('valor_recebido');
+            $isCancelado = $venda->status === PedidoVenda::STATUS_CANCELADO;
+            $valorPendente = $isCancelado ? 0.0 : max(0, round($valorTotal - $valorRecebidoTotal, 2));
+
+            if ($isCancelado) {
+                $statusRecebimento = 'cancelada';
+            } elseif ($valorPendente <= 0.009) {
+                $statusRecebimento = 'quitada';
+            } elseif ($valorRecebidoTotal > 0) {
+                $statusRecebimento = 'parcial';
+            } else {
+                $statusRecebimento = 'pendente';
+            }
+
+            return [
+                'id' => $venda->id,
+                'numero' => $venda->numero,
+                'data_pedido' => $venda->data_pedido,
+                'cliente' => $venda->cliente->nome ?? 'Cliente não informado',
+                'vendedor' => $venda->user->name ?? 'Não informado',
+                'forma_pagamento' => $venda->forma_pagamento ?: 'Não informado',
+                'valor_total' => $valorTotal,
+                'valor_recebido' => $valorRecebidoTotal,
+                'valor_pendente' => $valorPendente,
+                'status' => $venda->status,
+                'status_label' => $venda->status_label,
+                'status_recebimento' => $statusRecebimento,
+                'parcelas' => $parcelas,
+            ];
+        })->values();
+    }
+
+    private function filterSalesDetailedRowsByStatus($rows, string $status)
+    {
+        if ($status === '') {
+            return $rows;
+        }
+
+        return $rows->where('status_recebimento', $status)->values();
+    }
+
+    private function buildSalesDetailedStats($rows): array
+    {
+        $totalCount = $rows->count();
+        $valorTotal = (float) $rows->sum('valor_total');
+
+        return [
+            'total' => $totalCount,
+            'valor_total' => $valorTotal,
+            'valor_recebido' => (float) $rows->sum('valor_recebido'),
+            'valor_pendente' => (float) $rows->sum('valor_pendente'),
+            'ticket_medio' => $totalCount > 0 ? $valorTotal / $totalCount : 0,
+            'quitadas' => $rows->where('status_recebimento', 'quitada')->count(),
+            'parciais' => $rows->where('status_recebimento', 'parcial')->count(),
+            'pendentes' => $rows->where('status_recebimento', 'pendente')->count(),
+            'canceladas' => $rows->where('status_recebimento', 'cancelada')->count(),
+        ];
+    }
+
+    private function salesDetailedVendedores(): \Illuminate\Support\Collection
+    {
+        $tenantId = session('tenant_id') ?? 1;
+        $locationId = session('location_id') ?? 1;
+
+        $userIds = PedidoVenda::where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->whereNotNull('user_id')
+            ->distinct()
+            ->pluck('user_id');
+
+        if ($userIds->isEmpty()) {
+            return collect();
+        }
+
+        return User::whereIn('id', $userIds)->orderBy('name')->get();
+    }
+
+    public function salesDetailed(Request $request)
+    {
+        [$query, $startDate, $endDate, $status, $userId, $q] = $this->salesDetailedReportQuery($request);
+
+        $vendas = $query->orderBy('data_pedido')->get();
+        $rows = $this->filterSalesDetailedRowsByStatus($this->buildSalesDetailedRows($vendas), $status);
+        $stats = $this->buildSalesDetailedStats($rows);
+        $vendedores = $this->salesDetailedVendedores();
+
+        return view('reports.sales-detailed', compact('rows', 'stats', 'startDate', 'endDate', 'status', 'userId', 'q', 'vendedores'));
+    }
+
+    public function salesDetailedPdf(Request $request)
+    {
+        [$query, $startDate, $endDate, $status, $userId, $q] = $this->salesDetailedReportQuery($request);
+
+        $vendas = $query->orderBy('data_pedido')->get();
+        $rows = $this->filterSalesDetailedRowsByStatus($this->buildSalesDetailedRows($vendas), $status);
+        $stats = $this->buildSalesDetailedStats($rows);
+
+        $vendedorNome = null;
+        if ($userId !== '') {
+            $vendedorNome = User::find($userId)?->name;
+        }
+
+        $pdf = \PDF::loadView('reports.sales-detailed-pdf', compact('rows', 'stats', 'startDate', 'endDate', 'status', 'vendedorNome'));
+
+        $pdf->setPaper('a4', 'landscape');
+
+        \App\Helpers\PdfHelper::addPageNumbers($pdf);
+
+        return $pdf->stream('relatorio_vendas_detalhado_' . now()->format('Y-m-d') . '.pdf');
     }
 }
