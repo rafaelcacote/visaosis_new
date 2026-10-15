@@ -304,6 +304,11 @@
                                                     onclick="event.stopPropagation()" target="_blank">
                                                     <i class="mdi mdi-printer"></i>
                                                 </a>
+                                                <a href="{{ route('sales.print-80mm', $sale['id']) }}"
+                                                    class="btn btn-sm btn-outline-dark" title="Imprimir 80 mm"
+                                                    onclick="event.stopPropagation()" target="_blank">
+                                                    <i class="mdi mdi-printer-pos"></i>
+                                                </a>
                                                 @if ($sale['status_pagamento'] === 'pendente' && $sale['status'] !== 'cancelada')
                                                     @php
                                                         $cancelLabel =

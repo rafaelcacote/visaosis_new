@@ -212,6 +212,18 @@
                                                         title="Gerar PDF" target="_blank">
                                                         <i class="mdi mdi-printer"></i>
                                                     </a>
+                                                    <a href="{{ route('ordens-servico.pdf-80mm', ['ordemServico' => $ordem, 'via' => 'otica']) }}"
+                                                        class="btn-action"
+                                                        style="background-color: #111827; color: #ffffff;"
+                                                        title="Imprimir 80 mm - Via da Ótica" target="_blank">
+                                                        <i class="mdi mdi-printer-pos"></i>
+                                                    </a>
+                                                    <a href="{{ route('ordens-servico.pdf-80mm', ['ordemServico' => $ordem, 'via' => 'laboratorio']) }}"
+                                                        class="btn-action"
+                                                        style="background-color: #e5e7eb; color: #374151;"
+                                                        title="Imprimir 80 mm - Via do Laboratório" target="_blank">
+                                                        <i class="mdi mdi-printer-pos"></i>
+                                                    </a>
                                                     <a href="{{ route('ordens-servico.edit', $ordem) }}"
                                                         class="btn-action"
                                                         style="background-color: #fff7ed; color: #ea580c;" title="Editar">

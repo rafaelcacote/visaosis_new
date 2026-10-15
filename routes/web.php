@@ -217,6 +217,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sales/products/search', [SaleController::class, 'searchProducts'])->name('sales.products.search');
     Route::resource('sales', SaleController::class);
     Route::get('/sales/{id}/print', [SaleController::class, 'print'])->name('sales.print');
+    Route::get('/sales/{id}/print-80mm', [SaleController::class, 'print80mm'])->name('sales.print-80mm');
     Route::get('/sales/parcelas/{id}/details', [SaleController::class, 'parcelaDetails'])->name('sales.parcela.details');
     Route::put('/sales/parcelas/{id}', [SaleController::class, 'updateParcela'])->name('sales.parcela.update');
     Route::post('/sales/parcelas/{id}/reopen', [SaleController::class, 'reopenParcela'])->name('sales.parcela.reopen');
@@ -227,6 +228,7 @@ Route::middleware(['auth'])->group(function () {
         'ordens-servico' => 'ordemServico',
     ]);
     Route::get('/ordens-servico/{ordemServico}/pdf', [OrdemServicoController::class, 'pdf'])->name('ordens-servico.pdf');
+    Route::get('/ordens-servico/{ordemServico}/pdf-80mm/{via}', [OrdemServicoController::class, 'pdf80mm'])->name('ordens-servico.pdf-80mm');
     Route::patch('/ordens-servico/{ordemServico}/status', [OrdemServicoController::class, 'updateStatus'])->name('ordens-servico.update-status');
     Route::get('/ordens-servico/api/buscar-clientes', [OrdemServicoController::class, 'buscarClientes'])->name('ordens-servico.buscar-clientes');
     Route::get('/ordens-servico/api/buscar-vendas-cliente', [OrdemServicoController::class, 'buscarVendasCliente'])->name('ordens-servico.buscar-vendas-cliente');
