@@ -153,6 +153,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/print', [PessoaController::class, 'printPrescription'])->name('pessoas.receitas.print');
+    Route::get('pessoas/{pessoa}/receitas/{prescricao}/print-80mm', [PessoaController::class, 'printPrescription80mm'])->name('pessoas.receitas.print-80mm');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/anexo', [PessoaController::class, 'showPrescriptionAttachment'])->name('pessoas.receitas.attachment');
     Route::post('pessoas/{pessoa}/receitas/{prescricao}/save-pdf-whatsapp', [PessoaController::class, 'savePrescriptionPdfWhatsapp'])->name('pessoas.receitas.save-pdf-whatsapp');
     Route::get('pessoas/{pessoa}/vendas', [PessoaController::class, 'vendas'])->name('pessoas.vendas');
@@ -200,6 +201,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/patient-history-full/{id}', [ProfissionalWorkflowController::class, 'patientHistoryFull'])->name('patientHistoryFull');
         Route::get('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescription'])->name('printPrescription');
         Route::post('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescriptionFromForm'])->name('printPrescriptionFromForm');
+        Route::get('/print-prescription-80mm/{id}', [ProfissionalWorkflowController::class, 'printPrescription80mm'])->name('printPrescription80mm');
+        Route::post('/print-prescription-80mm/{id}', [ProfissionalWorkflowController::class, 'printPrescription80mmFromForm'])->name('printPrescription80mmFromForm');
         Route::get('/print-exame/{id}', [ProfissionalWorkflowController::class, 'printExamDoc'])->name('print-exame');
         Route::get('/print-referral/{id}', [ProfissionalWorkflowController::class, 'printReferralDoc'])->name('print-referral');
         Route::get('/new-prescription', [ProfissionalWorkflowController::class, 'newPrescription'])->name('newPrescription');

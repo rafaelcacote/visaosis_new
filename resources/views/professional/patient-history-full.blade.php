@@ -66,10 +66,16 @@
                                                     <i class="mdi mdi-file-document text-success me-2"></i>
                                                     Receita
                                                 </h6>
-                                                <a href="{{ route('professional.printPrescription', $consultation['id']) }}"
-                                                    target="_blank" class="btn btn-sm btn-outline-success">
-                                                    <i class="mdi mdi-printer"></i> Imprimir
-                                                </a>
+                                                <div class="d-flex gap-2 flex-wrap">
+                                                    <a href="{{ route('professional.printPrescription', $consultation['id']) }}"
+                                                        target="_blank" class="btn btn-sm btn-outline-success">
+                                                        <i class="mdi mdi-printer"></i> Imprimir
+                                                    </a>
+                                                    <a href="{{ route('professional.printPrescription80mm', $consultation['id']) }}"
+                                                        target="_blank" class="btn btn-sm btn-outline-dark">
+                                                        <i class="mdi mdi-printer-pos"></i> 80 mm
+                                                    </a>
+                                                </div>
                                             </div>
                                             <div class="card-body">
                                                 <div class="table-responsive mb-3">

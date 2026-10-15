@@ -979,6 +979,10 @@
                         <i class="mdi mdi-printer me-2"></i>
                         Imprimir
                     </button>
+                    <button type="button" class="btn btn-outline-dark" onclick="printPrescription80mm()">
+                        <i class="mdi mdi-printer-pos me-2"></i>
+                        Imprimir 80 mm
+                    </button>
                     <button type="button" class="btn btn-success" onclick="sendWhatsApp()">
                         <i class="mdi mdi-whatsapp me-2"></i>
                         Salvar e Enviar WhatsApp
@@ -1576,6 +1580,33 @@
                 })
                 .catch(() => {
                     win.location.href = '/professional/print-prescription/{{ $consulta['id'] }}';
+                });
+        }
+
+        function printPrescription80mm() {
+            const win = window.open('about:blank', '_blank');
+            const form = document.getElementById('prescriptionForm');
+            if (!form) {
+                win.location.href = '{{ route('professional.printPrescription80mm', $consulta['id']) }}';
+                return;
+            }
+
+            const formData = new FormData(form);
+            fetch('{{ route('professional.printPrescription80mmFromForm', $consulta->id) }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then((r) => r.text())
+                .then((html) => {
+                    win.document.open();
+                    win.document.write(html);
+                    win.document.close();
+                })
+                .catch(() => {
+                    win.location.href = '{{ route('professional.printPrescription80mm', $consulta['id']) }}';
                 });
         }
 

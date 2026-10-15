@@ -1073,6 +1073,16 @@ class ProfissionalWorkflowController extends Controller
         return $pdf->stream('receita-' . $consulta->id . '.pdf');
     }
 
+    public function printPrescription80mm($id)
+    {
+        $consulta = Consulta::with(['paciente', 'profissional'])
+            ->where('id', $id)
+            ->firstOrFail();
+        $prescription = $this->buildPrescriptionPdfData($consulta);
+
+        return view('professional.prescription-80mm', compact('prescription'));
+    }
+
     public function printPrescriptionFromForm(Request $request, $id)
     {
         $consulta = Consulta::with(['paciente', 'profissional'])
@@ -1083,6 +1093,16 @@ class ProfissionalWorkflowController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
 
         return $pdf->stream('receita-' . $consulta->id . '.pdf');
+    }
+
+    public function printPrescription80mmFromForm(Request $request, $id)
+    {
+        $consulta = Consulta::with(['paciente', 'profissional'])
+            ->where('id', $id)
+            ->firstOrFail();
+        $prescription = $this->buildPrescriptionPdfData($consulta, $request);
+
+        return view('professional.prescription-80mm', compact('prescription'));
     }
 
     private function buildPrescriptionPdfData(Consulta $consulta, ?Request $request = null): array

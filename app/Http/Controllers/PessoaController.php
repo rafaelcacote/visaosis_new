@@ -252,6 +252,13 @@ class PessoaController extends Controller
         return $pdf->stream('receita-' . $prescricao->id . '.pdf');
     }
 
+    public function printPrescription80mm(Pessoa $pessoa, Prescricao $prescricao)
+    {
+        [$prescription, $paciente] = $this->buildPrescriptionPdfData($pessoa, $prescricao);
+
+        return view('professional.prescription-80mm', compact('prescription'));
+    }
+
     public function savePrescriptionPdfWhatsapp(Request $request, Pessoa $pessoa, Prescricao $prescricao)
     {
         [$prescription, $paciente] = $this->buildPrescriptionPdfData($pessoa, $prescricao);

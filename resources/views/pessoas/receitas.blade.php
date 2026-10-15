@@ -398,6 +398,10 @@
                                 'pessoa' => $pessoa->id,
                                 'prescricao' => $prescricao->id,
                             ]),
+                            'print_80mm_url' => route('pessoas.receitas.print-80mm', [
+                                'pessoa' => $pessoa->id,
+                                'prescricao' => $prescricao->id,
+                            ]),
                             'save_pdf_whatsapp_url' => route('pessoas.receitas.save-pdf-whatsapp', [
                                 'pessoa' => $pessoa->id,
                                 'prescricao' => $prescricao->id,
@@ -636,6 +640,10 @@
                             <i class="mdi mdi-printer me-2"></i>
                             Imprimir
                         </button>
+                        <button type="button" class="btn btn-outline-dark" id="rxPrint80Btn">
+                            <i class="mdi mdi-printer-pos me-2"></i>
+                            Imprimir 80 mm
+                        </button>
                     </div>
                 </div>
             @endif
@@ -748,6 +756,7 @@
 
             const editBtn = document.getElementById('rxEditBtn');
             const printBtn = document.getElementById('rxPrintBtn');
+            const print80Btn = document.getElementById('rxPrint80Btn');
             const savePdfWhatsappBtn = document.getElementById('rxSavePdfWhatsappBtn');
             const pdfResultModalEl = document.getElementById('rxPdfResultModal');
             const pdfResultMessageEl = document.getElementById('rxPdfResultMessage');
@@ -1066,6 +1075,10 @@
                     printBtn.disabled = !item.print_url;
                 }
 
+                if (print80Btn) {
+                    print80Btn.disabled = !item.print_80mm_url;
+                }
+
                 if (savePdfWhatsappBtn) {
                     savePdfWhatsappBtn.disabled = !item.save_pdf_whatsapp_url;
                 }
@@ -1097,6 +1110,14 @@
                     const item = historyItems[index];
                     if (!item || !item.print_url) return;
                     window.open(item.print_url, '_blank', 'noopener');
+                });
+            }
+
+            if (print80Btn) {
+                print80Btn.addEventListener('click', function() {
+                    const item = historyItems[index];
+                    if (!item || !item.print_80mm_url) return;
+                    window.open(item.print_80mm_url, '_blank', 'noopener');
                 });
             }
 
