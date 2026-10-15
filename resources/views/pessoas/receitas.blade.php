@@ -33,6 +33,22 @@
     @php
         $isEditing = isset($editPrescricao);
         $prescricaoForm = $isEditing ? $editPrescricao : null;
+        $selectedProfissionalId = old(
+            'profissional_id',
+            $isEditing
+                ? optional(optional($prescricaoForm)->consulta)->profissional_id
+                : $currentProfissionalId ?? null,
+        );
+        $selectedProfissionalMode = old(
+            'profissional_origem',
+            $isEditing
+                ? (optional(optional($prescricaoForm)->consulta)->profissional_id
+                    ? 'sistema'
+                    : 'externo')
+                : ($selectedProfissionalId
+                    ? 'sistema'
+                    : 'externo'),
+        );
     @endphp
 
     <div class="card">
@@ -52,14 +68,29 @@
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-8">
-                        <label class="form-label">Nome do profissional que prescreveu</label>
-                        <input type="text" class="form-control @error('especialista_externo') is-invalid @enderror"
-                            name="especialista_externo"
-                            value="{{ old('especialista_externo', $isEditing ? $prescricaoForm->especialista_externo : null) }}"
-                            placeholder="Ex: Dr(a). Fulano de Tal">
-                        @error('especialista_externo')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                        @enderror
+                        <label class="form-label d-block">Origem do Profissional</label>
+                        <div class="d-flex gap-3 flex-wrap" id="profissionalOrigemGroup">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="profissional_origem"
+                                    id="profissionalOrigemSistema" value="sistema"
+                                    {{ $selectedProfissionalMode === 'sistema' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="profissionalOrigemSistema">
+                                    Selecionar do cadastro do sistema
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="profissional_origem"
+                                    id="profissionalOrigemExterno" value="externo"
+                                    {{ $selectedProfissionalMode === 'externo' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="profissionalOrigemExterno">
+                                    Informar profissional externo
+                                </label>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Informe apenas uma opção. Se selecionar do sistema, a receita será vinculada a um profissional
+                            cadastrado.
+                        </small>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Data da Receita</label>
@@ -67,6 +98,35 @@
                             name="data_receita"
                             value="{{ old('data_receita', $isEditing ? optional($prescricaoForm->data_receita)->format('Y-m-d') : now()->format('Y-m-d')) }}">
                         @error('data_receita')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6" id="profissionalSistemaWrap">
+                        <label class="form-label">Profissional do Sistema</label>
+                        <select class="form-select @error('profissional_id') is-invalid @enderror" name="profissional_id"
+                            id="profissionalSistemaSelect">
+                            <option value="">Selecione</option>
+                            @foreach ($profissionais ?? [] as $prof)
+                                <option value="{{ $prof->id }}"
+                                    {{ (string) $selectedProfissionalId === (string) $prof->id ? 'selected' : '' }}>
+                                    {{ $prof->nome }}{{ $prof->especialidade ? ' - ' . $prof->especialidade->descricao : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('profissional_id')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-md-6" id="profissionalExternoWrap">
+                        <label class="form-label">Nome do profissional externo</label>
+                        <input type="text" class="form-control @error('especialista_externo') is-invalid @enderror"
+                            name="especialista_externo" id="profissionalExternoInput"
+                            value="{{ old('especialista_externo', $isEditing ? $prescricaoForm->especialista_externo : null) }}"
+                            placeholder="Ex: Dr(a). Fulano de Tal">
+                        @error('especialista_externo')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
@@ -102,8 +162,9 @@
                             @if ($isEditing && $prescricaoForm && $prescricaoForm->receita_foto_caminho)
                                 <label class="btn btn-outline-warning ms-auto" role="button"
                                     title="Marcar para remover o anexo atual ao salvar">
-                                    <input type="checkbox" name="remover_receita_foto" id="rxRemovePhotoCb" value="1"
-                                        class="form-check-input me-1 d-none" onchange="window.toggleRxRemovePhoto(this)">
+                                    <input type="checkbox" name="remover_receita_foto" id="rxRemovePhotoCb"
+                                        value="1" class="form-check-input me-1 d-none"
+                                        onchange="window.toggleRxRemovePhoto(this)">
                                     <i class="mdi mdi-camera-off-outline me-1"></i>
                                     <span id="rxRemovePhotoText">Remover Anexo Atual</span>
                                 </label>
@@ -1434,6 +1495,39 @@
             if (removeCb) {
                 window.toggleRxRemovePhoto(removeCb);
             }
+        })();
+
+        (function initProfissionalOrigemToggle() {
+            const systemRadio = document.getElementById('profissionalOrigemSistema');
+            const externalRadio = document.getElementById('profissionalOrigemExterno');
+            const systemWrap = document.getElementById('profissionalSistemaWrap');
+            const externalWrap = document.getElementById('profissionalExternoWrap');
+            const systemSelect = document.getElementById('profissionalSistemaSelect');
+            const externalInput = document.getElementById('profissionalExternoInput');
+
+            if (!systemRadio || !externalRadio || !systemWrap || !externalWrap || !systemSelect || !externalInput) {
+                return;
+            }
+
+            const applyMode = () => {
+                const useSystem = systemRadio.checked;
+
+                systemWrap.style.display = useSystem ? '' : 'none';
+                externalWrap.style.display = useSystem ? 'none' : '';
+
+                systemSelect.disabled = !useSystem;
+                externalInput.disabled = useSystem;
+
+                if (useSystem) {
+                    externalInput.value = '';
+                } else {
+                    systemSelect.value = '';
+                }
+            };
+
+            systemRadio.addEventListener('change', applyMode);
+            externalRadio.addEventListener('change', applyMode);
+            applyMode();
         })();
     </script>
 @endpush

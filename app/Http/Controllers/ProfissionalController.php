@@ -8,7 +8,9 @@ use App\Models\Especialidade;
 use App\Rules\ValidCpf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class ProfissionalController extends Controller
 {
@@ -133,7 +135,8 @@ class ProfissionalController extends Controller
             'nascimento_em' => 'nullable|date|before:today',
             'telefone' => 'nullable|string|size:11',
             'email' => 'nullable|email|max:255',
-            'chave_pix' => 'nullable|string|max:255'
+            'chave_pix' => 'nullable|string|max:255',
+            'assinatura_imagem' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ], [
             'nome.required' => 'O nome é obrigatório.',
             'cpf.required' => 'O CPF é obrigatório.',
@@ -144,7 +147,10 @@ class ProfissionalController extends Controller
             'nascimento_em.before' => 'A data de nascimento deve ser anterior ao dia de hoje.',
             'email.email' => 'Por favor, insira um e-mail válido.',
             'nascimento_em.date' => 'A data de nascimento deve ser uma data válida.',
-            'telefone.size' => 'O telefone deve conter exatamente 11 dígitos.'
+            'telefone.size' => 'O telefone deve conter exatamente 11 dígitos.',
+            'assinatura_imagem.image' => 'O arquivo da assinatura deve ser uma imagem válida.',
+            'assinatura_imagem.mimes' => 'A assinatura deve estar em PNG, JPG, JPEG ou WEBP.',
+            'assinatura_imagem.max' => 'A assinatura deve ter no máximo 5MB.',
         ]);
 
         try {
@@ -193,6 +199,13 @@ class ProfissionalController extends Controller
                 'chave_pix' => $request->chave_pix,
                 'ativo' => true
             ]);
+
+            if ($request->hasFile('assinatura_imagem') && $request->file('assinatura_imagem')->isValid()) {
+                $assinaturaCaminho = $this->storeAssinaturaFile($request->file('assinatura_imagem'), $profissional);
+                if ($assinaturaCaminho) {
+                    $profissional->update(['assinatura_caminho' => $assinaturaCaminho]);
+                }
+            }
 
             DB::commit();
 
@@ -270,7 +283,9 @@ class ProfissionalController extends Controller
             'nascimento_em' => 'nullable|date|before:today',
             'telefone' => 'nullable|string|size:11',
             'email' => 'nullable|email|max:255',
-            'chave_pix' => 'nullable|string|max:255'
+            'chave_pix' => 'nullable|string|max:255',
+            'assinatura_imagem' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'remover_assinatura' => 'nullable|boolean',
         ], [
             'nome.required' => 'O nome é obrigatório.',
             'cpf.required' => 'O CPF é obrigatório.',
@@ -281,7 +296,10 @@ class ProfissionalController extends Controller
             'nascimento_em.before' => 'A data de nascimento deve ser anterior ao dia de hoje.',
             'email.email' => 'Por favor, insira um e-mail válido.',
             'nascimento_em.date' => 'A data de nascimento deve ser uma data válida.',
-            'telefone.size' => 'O telefone deve conter exatamente 11 dígitos.'
+            'telefone.size' => 'O telefone deve conter exatamente 11 dígitos.',
+            'assinatura_imagem.image' => 'O arquivo da assinatura deve ser uma imagem válida.',
+            'assinatura_imagem.mimes' => 'A assinatura deve estar em PNG, JPG, JPEG ou WEBP.',
+            'assinatura_imagem.max' => 'A assinatura deve ter no máximo 5MB.',
         ]);
 
         try {
@@ -300,6 +318,25 @@ class ProfissionalController extends Controller
                 'chave_pix' => $request->chave_pix,
                 'ativo' => $request->has('ativo')
             ];
+
+            $assinaturaAtual = $profissional->assinatura_caminho;
+            $removerAssinatura = (bool) $request->boolean('remover_assinatura');
+            $recebeuNovaAssinatura = $request->hasFile('assinatura_imagem') && $request->file('assinatura_imagem')->isValid();
+
+            if ($removerAssinatura && $assinaturaAtual) {
+                $this->deleteAssinaturaIfExists($assinaturaAtual);
+                $assinaturaAtual = null;
+            }
+
+            if ($recebeuNovaAssinatura) {
+                if ($assinaturaAtual) {
+                    $this->deleteAssinaturaIfExists($assinaturaAtual);
+                }
+
+                $assinaturaAtual = $this->storeAssinaturaFile($request->file('assinatura_imagem'), $profissional);
+            }
+
+            $updateData['assinatura_caminho'] = $assinaturaAtual;
 
             $profissional->update($updateData);
 
@@ -325,6 +362,10 @@ class ProfissionalController extends Controller
         
         try {
             DB::beginTransaction();
+
+            if ($profissional->assinatura_caminho) {
+                $this->deleteAssinaturaIfExists($profissional->assinatura_caminho);
+            }
 
             $profissional->delete();
 
@@ -449,6 +490,44 @@ class ProfissionalController extends Controller
         // Verificar se o profissional pertence a uma location do tenant atual
         if (empty($locationIds) || !in_array($profissional->location_id, $locationIds)) {
             abort(403, 'Acesso negado. Este profissional não pertence ao seu tenant.');
+        }
+    }
+
+    private function storeAssinaturaFile($file, Profissional $profissional): ?string
+    {
+        if (! $file) {
+            return null;
+        }
+
+        $tenantId = (int) (session('tenant_id') ?: ($profissional->tenant_id ?? 0));
+        $directory = $tenantId > 0
+            ? "tenants/{$tenantId}/profissionais/{$profissional->id}/assinatura"
+            : "profissionais/{$profissional->id}/assinatura";
+
+        $originalName = $file->getClientOriginalName() ?: 'assinatura';
+        $extension = strtolower((string) ($file->getClientOriginalExtension() ?: 'png'));
+        $safeBase = Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) ?: 'assinatura-profissional';
+        $fileName = $safeBase . '-' . (string) Str::uuid() . '.' . $extension;
+
+        try {
+            return (string) $file->storeAs($directory, $fileName, 'public');
+        } catch (\Throwable $e) {
+            report($e);
+            return null;
+        }
+    }
+
+    private function deleteAssinaturaIfExists($caminho): void
+    {
+        $path = ltrim((string) $caminho, '/');
+        if ($path === '') {
+            return;
+        }
+
+        try {
+            Storage::disk('public')->delete($path);
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 }

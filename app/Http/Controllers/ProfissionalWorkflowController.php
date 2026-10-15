@@ -362,6 +362,7 @@ class ProfissionalWorkflowController extends Controller
                 // Optional fields (set if your model has them)
                 'registro_conselho' => $profissional->registro_conselho ?? null,
                 'especialidade' => $profissional->especialidade->descricao ?? null,
+                'assinatura_data_uri' => $profissional?->assinatura_data_uri,
             ],
             'prescricao' => [
                 'od_esferico' => $request->input('od_esferico', optional($prescricao)->esfera_od),
@@ -899,6 +900,7 @@ class ProfissionalWorkflowController extends Controller
                 'nome' => $profissional->nome ?? '',
                 'registro_conselho' => $profissional->registro_conselho ?? null,
                 'especialidade' => $profissional->especialidade->descricao ?? null,
+                'assinatura_data_uri' => $profissional?->assinatura_data_uri,
             ],
             'prescricao' => [
                 'od_esferico' => optional($prescricao)->esfera_od,
@@ -1111,6 +1113,7 @@ class ProfissionalWorkflowController extends Controller
                 'nome' => $profissional->nome ?? '',
                 'registro_conselho' => $profissional->registro_conselho ?? null,
                 'especialidade' => $profissional->especialidade->descricao ?? null,
+                'assinatura_data_uri' => $profissional?->assinatura_data_uri,
             ],
             'prescricao' => [
                 'od_esferico' => $request?->input('od_esferico', optional($prescricao)->esfera_od) ?? optional($prescricao)->esfera_od,
@@ -1192,6 +1195,7 @@ class ProfissionalWorkflowController extends Controller
                 'nome' => $profissional->nome ?? '',
                 'registro_conselho' => $profissional->registro_conselho ?? null,
                 'especialidade' => $profissional->especialidade->descricao ?? null,
+                'assinatura_data_uri' => $profissional?->assinatura_data_uri,
             ],
         ];
     }
@@ -1252,6 +1256,7 @@ class ProfissionalWorkflowController extends Controller
                 'nome' => $profissional->nome ?? '',
                 'registro_conselho' => $profissional->registro_conselho ?? null,
                 'especialidade' => $profissional->especialidade->descricao ?? null,
+                'assinatura_data_uri' => $profissional?->assinatura_data_uri,
             ],
         ];
     }

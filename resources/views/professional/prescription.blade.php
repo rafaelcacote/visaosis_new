@@ -150,6 +150,12 @@
             </div>
             <div class="col-md-6 text-end">
                 <div class="signature-area">
+                    @if (!empty($prescription['profissional']['assinatura_data_uri']))
+                        <div class="signature-image-wrap">
+                            <img src="{{ $prescription['profissional']['assinatura_data_uri'] }}"
+                                alt="Assinatura do profissional" class="signature-image">
+                        </div>
+                    @endif
                     <hr style="width: 300px; margin-left: auto;">
                     <p class="mb-0">
                         <strong>{{ $prescription['profissional']['nome'] ?? ($prescription['profissional']->nome ?? '') }}</strong>
@@ -193,6 +199,18 @@
 
     .signature-area {
         margin-top: 40px;
+    }
+
+    .signature-image-wrap {
+        min-height: 70px;
+        margin-bottom: 8px;
+    }
+
+    .signature-image {
+        max-width: 220px;
+        max-height: 70px;
+        object-fit: contain;
+        display: inline-block;
     }
 
     .rx-side__text {

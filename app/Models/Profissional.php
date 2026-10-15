@@ -24,6 +24,7 @@ class Profissional extends Model
         'telefone',
         'email',
         'chave_pix',
+        'assinatura_caminho',
         'ativo',
         'pausar_atendimento',
     ];
@@ -99,6 +100,29 @@ class Profissional extends Model
     public function getStatusClassAttribute()
     {
         return $this->ativo ? 'success' : 'danger';
+    }
+
+    public function getAssinaturaDataUriAttribute(): ?string
+    {
+        $path = ltrim((string) ($this->attributes['assinatura_caminho'] ?? ''), '/');
+        if ($path === '') {
+            return null;
+        }
+
+        try {
+            $disk = \Illuminate\Support\Facades\Storage::disk('public');
+            if (! $disk->exists($path)) {
+                return null;
+            }
+
+            $mimeType = $disk->mimeType($path) ?: 'image/png';
+            $imageContent = $disk->get($path);
+
+            return 'data:' . $mimeType . ';base64,' . base64_encode($imageContent);
+        } catch (\Throwable $e) {
+            report($e);
+            return null;
+        }
     }
 
     // Mutators
