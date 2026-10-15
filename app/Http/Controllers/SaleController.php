@@ -976,6 +976,39 @@ class SaleController extends Controller
      */
     public function print(string $id)
     {
+        [$sale, $tenantData, $vendedor] = $this->buildPrintableSaleData($id);
+
+        // Gerar PDF
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('sales.print', compact('sale', 'tenantData', 'vendedor'));
+
+        // Configurar papel A4 em modo retrato
+        $pdf->setPaper('A4', 'portrait');
+
+        // Configurar opções do DOMPDF
+        $pdf->setOption('enable-remote', true);
+        $pdf->setOption('enable-local-file-access', true);
+        $pdf->setOption('defaultFont', 'DejaVu Sans');
+
+        // IMPORTANTE: Configurar margens usando a sintaxe correta do DOMPDF
+        $pdf->setOption('margin-top', '15mm');
+        $pdf->setOption('margin-bottom', '15mm');
+        $pdf->setOption('margin-left', '20mm');
+        $pdf->setOption('margin-right', '20mm');
+
+        $nomeArquivo = 'venda-' . $sale['numero'] . '.pdf';
+
+        return $pdf->stream($nomeArquivo);
+    }
+
+    public function print80mm(string $id)
+    {
+        [$sale, $tenantData, $vendedor] = $this->buildPrintableSaleData($id);
+
+        return view('sales.print-80mm', compact('sale', 'tenantData', 'vendedor'));
+    }
+
+    private function buildPrintableSaleData(string $id): array
+    {
         $tenantId = session('tenant_id');
 
         $pedidoVenda = PedidoVenda::with(['cliente', 'itens.produto'])
@@ -1184,26 +1217,7 @@ class SaleController extends Controller
             'created_at' => $pedidoVenda->created_at
         ];
 
-        // Gerar PDF
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('sales.print', compact('sale', 'tenantData', 'vendedor'));
-
-        // Configurar papel A4 em modo retrato
-        $pdf->setPaper('A4', 'portrait');
-
-        // Configurar opções do DOMPDF
-        $pdf->setOption('enable-remote', true);
-        $pdf->setOption('enable-local-file-access', true);
-        $pdf->setOption('defaultFont', 'DejaVu Sans');
-
-        // IMPORTANTE: Configurar margens usando a sintaxe correta do DOMPDF
-        $pdf->setOption('margin-top', '15mm');
-        $pdf->setOption('margin-bottom', '15mm');
-        $pdf->setOption('margin-left', '20mm');
-        $pdf->setOption('margin-right', '20mm');
-
-        $nomeArquivo = 'venda-' . $numero . '.pdf';
-
-        return $pdf->stream($nomeArquivo);
+        return [$sale, $tenantData, $vendedor];
     }
 
     /**
