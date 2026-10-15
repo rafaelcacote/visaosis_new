@@ -525,7 +525,29 @@ class OrdemServicoController extends Controller
 
     public function pdf(OrdemServico $ordemServico)
     {
-        // Carrega relacionamentos necessários
+        [$ordemServico, $currentStatus] = $this->prepareOrderPrintData($ordemServico);
+
+        $pdf = Pdf::loadView('ordens-servico.pdf', compact('ordemServico', 'currentStatus'));
+
+        $filename = 'ordem_servico_' . str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) . '.pdf';
+
+        return $pdf->stream($filename);
+    }
+
+    public function pdf80mm(OrdemServico $ordemServico, string $via)
+    {
+        $via = strtolower(trim($via));
+        if (!in_array($via, ['otica', 'laboratorio'], true)) {
+            abort(404);
+        }
+
+        [$ordemServico, $currentStatus] = $this->prepareOrderPrintData($ordemServico);
+
+        return view('ordens-servico.pdf-80mm', compact('ordemServico', 'currentStatus', 'via'));
+    }
+
+    private function prepareOrderPrintData(OrdemServico $ordemServico): array
+    {
         $ordemServico->load([
             'pedido.cliente',
             'fornecedor',
@@ -534,7 +556,6 @@ class OrdemServicoController extends Controller
             'itensOrdem.item.produto.categoria'
         ]);
 
-        // Preparar status para o PDF
         $currentStatus = [
             'text' => $ordemServico->status_label,
             'class' => match ($ordemServico->status) {
@@ -548,10 +569,6 @@ class OrdemServicoController extends Controller
             }
         ];
 
-        $pdf = Pdf::loadView('ordens-servico.pdf', compact('ordemServico', 'currentStatus'));
-
-        $filename = 'ordem_servico_' . str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) . '.pdf';
-
-        return $pdf->stream($filename);
+        return [$ordemServico, $currentStatus];
     }
 }
