@@ -10,6 +10,7 @@ use App\Models\ItemPedido;
 use App\Models\ItemOrdem;
 use App\Models\Prescricao;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -23,18 +24,23 @@ class OrdemServicoController extends Controller
         $prioridade = $request->get('prioridade', 'todas');
 
         $tenantId = session('tenant_id');
-        $locationId = session('location_id');
+        $locationIds = $this->getAccessibleLocationIds();
+
+        if (! $tenantId || empty($locationIds)) {
+            $ordensServico = OrdemServico::whereRaw('1 = 0')->paginate(15);
+
+            return view('ordens-servico.index', compact(
+                'ordensServico',
+                'search',
+                'status',
+                'prioridade'
+            ));
+        }
 
         $query = OrdemServico::with(['pedido.cliente', 'fornecedor', 'itensOrdem'])
-            ->where('ativo', true);
-
-        if ($tenantId) {
-            $query->where('tenant_id', $tenantId);
-        }
-
-        if ($locationId) {
-            $query->where('location_id', $locationId);
-        }
+            ->where('ativo', true)
+            ->where('tenant_id', $tenantId)
+            ->whereIn('location_id', $locationIds);
 
         // Aplicar filtros
         if ($search) {
@@ -69,7 +75,7 @@ class OrdemServicoController extends Controller
     public function create()
     {
         $tenantId = session('tenant_id');
-        $locationId = session('location_id');
+        $locationIds = $this->getAccessibleLocationIds();
 
         $query = Laboratorio::where('ativo', true);
 
@@ -77,8 +83,8 @@ class OrdemServicoController extends Controller
             $query->where('tenant_id', $tenantId);
         }
 
-        if ($locationId) {
-            $query->where('location_id', $locationId);
+        if (! empty($locationIds)) {
+            $query->whereIn('location_id', $locationIds);
         }
 
         $fornecedores = $query->orderBy('razao_social')->get();
@@ -91,6 +97,7 @@ class OrdemServicoController extends Controller
         $request->validate([
             'pedido_id' => 'required|exists:pedido_venda,id',
             'fornecedor_id' => 'required|exists:fornecedor,id',
+            'prescricao_id' => 'nullable|exists:prescricao,id',
             'itens_selecionados' => 'required|array|min:1',
             'itens_selecionados.*' => 'required|exists:item_pedido,id',
             'quantidade' => 'required|integer|min:1',
@@ -105,6 +112,48 @@ class OrdemServicoController extends Controller
             'itens_selecionados.*.exists' => 'Um ou mais itens selecionados são inválidos.'
         ]);
 
+        $tenantId = session('tenant_id');
+        $locationId = $this->getWritableLocationId();
+
+        if (! $tenantId || ! $locationId) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Tenant ou localização inválidos para criar a ordem de serviço.');
+        }
+
+        $pedido = $this->findScopedPedidoVenda((int) $request->pedido_id);
+        if (! $pedido) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['pedido_id' => 'A venda informada não pertence ao tenant/localização atuais.']);
+        }
+
+        $fornecedor = $this->findScopedLaboratorio((int) $request->fornecedor_id);
+        if (! $fornecedor) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['fornecedor_id' => 'O laboratório informado não pertence ao tenant/localização atuais.']);
+        }
+
+        if ($request->filled('prescricao_id') && ! $this->findScopedPrescricao((int) $request->prescricao_id)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['prescricao_id' => 'A prescrição informada não pertence ao tenant/localização atuais.']);
+        }
+
+        $itemIds = collect($request->itens_selecionados)
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $itens = $this->findScopedItensPedido($itemIds, $pedido->id);
+        if (count($itemIds) !== $itens->count()) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['itens_selecionados' => 'Há itens inválidos ou sem acesso para a venda selecionada.']);
+        }
+
         $precoUnit = (float) ($request->preco_unit ?? 0);
         $desconto = (float) ($request->desconto ?? 0);
         $total_linha = ($precoUnit * (int) $request->quantidade) - $desconto;
@@ -112,17 +161,15 @@ class OrdemServicoController extends Controller
         // Usar transação para garantir consistência
         DB::beginTransaction();
         try {
-            $tenantId = session('tenant_id');
-            $locationId = session('location_id');
             $userId = auth()->id();
 
             $ordemServico = OrdemServico::create([
                 'tenant_id' => $tenantId,
                 'location_id' => $locationId,
                 'user_id' => $userId,
-                'pedido_id' => $request->pedido_id,
-                'prescricao_id' => $request->prescricao_id,
-                'fornecedor_id' => $request->fornecedor_id,
+                'pedido_id' => $pedido->id,
+                'prescricao_id' => $request->filled('prescricao_id') ? (int) $request->prescricao_id : null,
+                'fornecedor_id' => $fornecedor->id,
                 'quantidade' => $request->quantidade,
                 'preco_unit' => $precoUnit,
                 'desconto' => $desconto,
@@ -135,20 +182,20 @@ class OrdemServicoController extends Controller
             ]);
 
             // Criar registros na tabela item_ordem para cada item selecionado
-            foreach ($request->itens_selecionados as $itemId) {
+            foreach ($itens as $item) {
                 ItemOrdem::create([
                     'tenant_id' => $tenantId,
                     'location_id' => $locationId,
                     'user_id' => $userId,
                     'ordem_id' => $ordemServico->id,
-                    'item_id' => $itemId
+                    'item_id' => $item->id
                 ]);
             }
 
             DB::commit();
 
             return redirect()->route('ordens-servico.show', $ordemServico)
-                ->with('success', 'Ordem de serviço criada com sucesso com ' . count($request->itens_selecionados) . ' item(s)!');
+                ->with('success', 'Ordem de serviço criada com sucesso com ' . $itens->count() . ' item(s)!');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()
@@ -157,25 +204,19 @@ class OrdemServicoController extends Controller
         }
     }
 
-    public function show($id)
+    public function show(OrdemServico $ordemServico)
     {
-        // Buscar ordem de serviço com relacionamentos
-        try {
-            $ordemServico = OrdemServico::findOrFail($id);
+        $this->checkTenantAccess($ordemServico);
 
-            // Carrega relacionamentos
-            $ordemServico->load([
-                'pedido.cliente',
-                'fornecedor',
-                'user',
-                'prescricao.paciente',
-                'itensOrdem.item.produto.categoria'
-            ]);
+        $ordemServico->load([
+            'pedido.cliente',
+            'fornecedor',
+            'user',
+            'prescricao.paciente',
+            'itensOrdem.item.produto.categoria'
+        ]);
 
-            return view('ordens-servico.show', compact('ordemServico'));
-        } catch (\Exception $e) {
-            abort(404, 'Ordem de serviço não encontrada.');
-        }
+        return view('ordens-servico.show', compact('ordemServico'));
     }
 
     public function buscarClientes(Request $request)
@@ -183,22 +224,12 @@ class OrdemServicoController extends Controller
         $search = $request->get('q');
         $cpfLimpo = preg_replace('/[^0-9]/', '', $search);
 
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-
         // Se for busca por ID de venda (numérico), buscar diretamente a venda
         if (is_numeric($search)) {
-            $query = PedidoVenda::with('cliente')
-                ->where('id', $search)
+            $query = $this->applyScope(
+                PedidoVenda::with('cliente')->where('status', PedidoVenda::STATUS_FATURADO)
+            )->where('id', $search)
                 ->where('status', PedidoVenda::STATUS_FATURADO);
-
-            if ($tenantId) {
-                $query->where('tenant_id', $tenantId);
-            }
-
-            if ($locationId) {
-                $query->where('location_id', $locationId);
-            }
 
             $venda = $query->first();
 
@@ -219,11 +250,9 @@ class OrdemServicoController extends Controller
         }
 
         // Busca por clientes (nome, email, CPF)
-        $query = Pessoa::where('ativo', true);
-
-        if ($tenantId) {
-            $query->where('tenant_id', $tenantId);
-        }
+        $query = $this->applyScope(
+            Pessoa::query()->where('ativo', true)
+        );
 
         if ($search) {
             $query->where(function ($q) use ($search, $cpfLimpo) {
@@ -258,20 +287,10 @@ class OrdemServicoController extends Controller
         $clienteId = $request->get('cliente_id');
         $termo = $request->get('termo', '');
 
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-
         $query = PedidoVenda::with(['cliente', 'itens.produto'])
             ->where('pessoa_cliente_id', $clienteId)
             ->where('status', PedidoVenda::STATUS_FATURADO);
-
-        if ($tenantId) {
-            $query->where('tenant_id', $tenantId);
-        }
-
-        if ($locationId) {
-            $query->where('location_id', $locationId);
-        }
+        $this->applyScope($query);
 
         if ($termo) {
             $query->where('id', 'LIKE', "%{$termo}%");
@@ -321,22 +340,12 @@ class OrdemServicoController extends Controller
     {
         $search = $request->get('q');
 
-        $tenantId = session('tenant_id');
-        $locationId = session('location_id');
-
         $query = Prescricao::with('paciente')
             ->where('ativo', true)
             ->whereHas('paciente', function ($q) {
                 $q->where('ativo', true);
             });
-
-        if ($tenantId) {
-            $query->where('tenant_id', $tenantId);
-        }
-
-        if ($locationId) {
-            $query->where('location_id', $locationId);
-        }
+        $this->applyScope($query);
 
         if ($search) {
             // Buscar por ID da prescrição ou nome do paciente
@@ -414,8 +423,10 @@ class OrdemServicoController extends Controller
 
     public function edit(OrdemServico $ordemServico)
     {
+        $this->checkTenantAccess($ordemServico);
+
         $tenantId = session('tenant_id');
-        $locationId = session('location_id');
+        $locationIds = $this->getAccessibleLocationIds();
 
         $query = Laboratorio::where('ativo', true);
 
@@ -423,8 +434,8 @@ class OrdemServicoController extends Controller
             $query->where('tenant_id', $tenantId);
         }
 
-        if ($locationId) {
-            $query->where('location_id', $locationId);
+        if (! empty($locationIds)) {
+            $query->whereIn('location_id', $locationIds);
         }
 
         $fornecedores = $query->orderBy('razao_social')->get();
@@ -455,6 +466,8 @@ class OrdemServicoController extends Controller
 
     public function update(Request $request, OrdemServico $ordemServico)
     {
+        $this->checkTenantAccess($ordemServico);
+
         $request->validate([
             'fornecedor_id' => 'required|exists:fornecedor,id',
             'quantidade' => 'required|integer|min:1',
@@ -466,11 +479,18 @@ class OrdemServicoController extends Controller
             'observacoes' => 'nullable|string|max:1000'
         ]);
 
+        $fornecedor = $this->findScopedLaboratorio((int) $request->fornecedor_id);
+        if (! $fornecedor) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['fornecedor_id' => 'O laboratório informado não pertence ao tenant/localização atuais.']);
+        }
+
         $desconto = $request->desconto ?? 0;
         $total_linha = ($request->preco_unit * $request->quantidade) - $desconto;
 
         $ordemServico->update([
-            'fornecedor_id' => $request->fornecedor_id,
+            'fornecedor_id' => $fornecedor->id,
             'quantidade' => $request->quantidade,
             'preco_unit' => $request->preco_unit,
             'desconto' => $desconto,
@@ -487,6 +507,8 @@ class OrdemServicoController extends Controller
 
     public function destroy(OrdemServico $ordemServico)
     {
+        $this->checkTenantAccess($ordemServico);
+
         $ordemServico->delete();
         return redirect()->route('ordens-servico.index')
             ->with('success', 'Ordem de serviço excluída com sucesso!');
@@ -494,6 +516,8 @@ class OrdemServicoController extends Controller
 
     public function updateStatus(Request $request, OrdemServico $ordemServico)
     {
+        $this->checkTenantAccess($ordemServico);
+
         $validatedData = $request->validate([
             'status' => 'required|string|in:pendente,enviado,em_producao,pronto,entregue,cancelado'
         ]);
@@ -525,6 +549,8 @@ class OrdemServicoController extends Controller
 
     public function pdf(OrdemServico $ordemServico)
     {
+        $this->checkTenantAccess($ordemServico);
+
         [$ordemServico, $currentStatus] = $this->prepareOrderPrintData($ordemServico);
 
         $pdf = Pdf::loadView('ordens-servico.pdf', compact('ordemServico', 'currentStatus'));
@@ -536,6 +562,8 @@ class OrdemServicoController extends Controller
 
     public function pdf80mm(OrdemServico $ordemServico, string $via)
     {
+        $this->checkTenantAccess($ordemServico);
+
         $via = strtolower(trim($via));
         if (!in_array($via, ['otica', 'laboratorio'], true)) {
             abort(404);
@@ -548,6 +576,8 @@ class OrdemServicoController extends Controller
 
     private function prepareOrderPrintData(OrdemServico $ordemServico): array
     {
+        $this->checkTenantAccess($ordemServico);
+
         $ordemServico->load([
             'pedido.cliente',
             'fornecedor',
@@ -570,5 +600,100 @@ class OrdemServicoController extends Controller
         ];
 
         return [$ordemServico, $currentStatus];
+    }
+
+    private function getAccessibleLocationIds(): array
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->filter()
+                ->map(fn($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            if (! empty($locationIds)) {
+                return $locationIds;
+            }
+        }
+
+        return $locationId ? [(int) $locationId] : [];
+    }
+
+    private function getWritableLocationId(): ?int
+    {
+        $locationId = session('location_id');
+        if ($locationId) {
+            return (int) $locationId;
+        }
+
+        $locationIds = $this->getAccessibleLocationIds();
+
+        return ! empty($locationIds) ? (int) $locationIds[0] : null;
+    }
+
+    private function checkTenantAccess(OrdemServico $ordemServico): void
+    {
+        $tenantId = session('tenant_id');
+        $locationIds = $this->getAccessibleLocationIds();
+
+        if (! $tenantId || (int) $ordemServico->tenant_id !== (int) $tenantId) {
+            abort(403, 'Acesso negado. Esta ordem de serviço não pertence ao seu tenant.');
+        }
+
+        if (! empty($locationIds) && $ordemServico->location_id !== null && ! in_array((int) $ordemServico->location_id, $locationIds, true)) {
+            abort(403, 'Acesso negado. Esta ordem de serviço não pertence à sua localização.');
+        }
+    }
+
+    private function applyScope(Builder $query, string $tenantColumn = 'tenant_id', string $locationColumn = 'location_id'): Builder
+    {
+        $tenantId = session('tenant_id');
+        if (! $tenantId) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->where($tenantColumn, $tenantId);
+
+        $locationIds = $this->getAccessibleLocationIds();
+        if (! empty($locationIds)) {
+            $query->whereIn($locationColumn, $locationIds);
+        }
+
+        return $query;
+    }
+
+    private function findScopedPedidoVenda(int $pedidoId): ?PedidoVenda
+    {
+        return $this->applyScope(
+            PedidoVenda::query()->where('ativo', true)->where('status', PedidoVenda::STATUS_FATURADO)
+        )->find($pedidoId);
+    }
+
+    private function findScopedLaboratorio(int $fornecedorId): ?Laboratorio
+    {
+        return $this->applyScope(
+            Laboratorio::query()->where('ativo', true)
+        )->find($fornecedorId);
+    }
+
+    private function findScopedPrescricao(int $prescricaoId): ?Prescricao
+    {
+        return $this->applyScope(
+            Prescricao::query()->where('ativo', true)
+        )->find($prescricaoId);
+    }
+
+    private function findScopedItensPedido(array $itemIds, int $pedidoId)
+    {
+        return $this->applyScope(
+            ItemPedido::query()->where('ativo', true)->where('pedido_id', $pedidoId)
+        )->whereIn('id', $itemIds)->get();
     }
 }

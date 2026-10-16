@@ -60,6 +60,53 @@ class OrdemServico extends Model
     const PRIORIDADE_URGENTE = 'urgente';
     const PRIORIDADE_EXPRESSA = 'expressa';
 
+    /**
+     * Para rotas usamos apenas o id.
+     */
+    public function getRouteKeyName()
+    {
+        return 'id';
+    }
+
+    /**
+     * Resolve model pela URL considerando tenant e locations acessíveis.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $tenantId = session('tenant_id');
+        if (! $tenantId) {
+            return null;
+        }
+
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        $locationIds = collect($userLocations)
+            ->where('tenant_id', $tenantId)
+            ->pluck('location_id')
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($locationIds) && $locationId) {
+            $locationIds = [(int) $locationId];
+        }
+
+        $query = static::where('tenant_id', $tenantId)
+            ->where($field ?? $this->getRouteKeyName(), $value);
+
+        if (! empty($locationIds)) {
+            $query->where(function ($q) use ($locationIds) {
+                $q->whereNull('location_id')
+                    ->orWhereIn('location_id', $locationIds);
+            });
+        }
+
+        return $query->first();
+    }
+
     // Accessors
     public function getStatusLabelAttribute()
     {
