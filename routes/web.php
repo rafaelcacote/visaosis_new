@@ -263,7 +263,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/send-whatsapp/{id}', [FinancialController::class, 'sendWhatsApp'])->name('send-whatsapp');
         Route::post('/receive-payment', [FinancialController::class, 'receivePayment'])->name('receive-payment');
     });
-    Route::post('/professional/toggle-pause/{id}', [ProfissionalWorkflowController::class, 'togglePause']);
+    Route::post('/professional/toggle-pause/{id}', [ProfissionalWorkflowController::class, 'togglePause'])->name('professional.togglePause');
 
     // Relatórios
     Route::prefix('reports')->name('reports.')->group(function () {

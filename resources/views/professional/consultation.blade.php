@@ -173,7 +173,7 @@
                         <div class="card-body">
 
                             <form id="prescriptionForm"
-                                action="/professional/save-prescription-draft/{{ $consulta['id'] }}" method="POST">
+                                action="{{ route('professional.savePrescriptionDraft', $consulta['id']) }}" method="POST">
                                 @csrf
                                 @php
                                     $glassesFields = [
@@ -546,7 +546,8 @@
                             <h5 class="card-title mb-0">Exame</h5>
                         </div>
                         <div class="card-body">
-                            <form id="exameForm" action="/professional/save-exame/{{ $consulta['id'] }}" method="POST">
+                            <form id="exameForm" action="{{ route('professional.saveExame', $consulta['id']) }}"
+                                method="POST">
                                 @csrf
 
                                 <div class="row mb-3">
@@ -1560,7 +1561,7 @@
             const win = window.open('about:blank', '_blank');
             const form = document.getElementById('prescriptionForm');
             if (!form) {
-                win.location.href = '/professional/print-prescription/{{ $consulta['id'] }}';
+                win.location.href = '{{ route('professional.printPrescription', $consulta['id']) }}';
                 return;
             }
 
@@ -1579,7 +1580,7 @@
                     setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
                 })
                 .catch(() => {
-                    win.location.href = '/professional/print-prescription/{{ $consulta['id'] }}';
+                    win.location.href = '{{ route('professional.printPrescription', $consulta['id']) }}';
                 });
         }
 
@@ -1656,7 +1657,7 @@
                 }, 5000);
             };
 
-            fetch('/professional/send-whatsapp', {
+            fetch('{{ route('professional.sendWhatsApp') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1701,7 +1702,7 @@
                 return;
             }
 
-            fetch('/professional/refer-patient/{{ $consulta->id }}', {
+            fetch('{{ route('professional.referPatient', $consulta->id) }}', {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -1733,7 +1734,7 @@
                 const formData = new FormData(document.getElementById('finishForm'));
                 formData.append('inicio', new Date().toISOString());
 
-                fetch('/professional/finish-consultation/{{ $consulta->id }}', {
+                fetch('{{ route('professional.finishConsultation', $consulta->id) }}', {
                         method: 'POST',
                         body: formData,
                         headers: {
