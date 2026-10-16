@@ -66,18 +66,42 @@ class Consulta extends Model
     ];
 
     /**
-     * Resolve model pela URL considerando tenant (chave composta).
+     * Resolve model pela URL considerando tenant e locations acessíveis.
      */
     public function resolveRouteBinding($value, $field = null)
     {
         $tenantId = session('tenant_id');
-        if (!$tenantId) {
+        if (! $tenantId) {
             return null;
         }
 
-        return static::where('tenant_id', $tenantId)
-            ->where('id', $value)
-            ->first();
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        $locationIds = collect($userLocations)
+            ->where('tenant_id', $tenantId)
+            ->pluck('location_id')
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($locationIds) && $locationId) {
+            $locationIds = [(int) $locationId];
+        }
+
+        $query = static::where('tenant_id', $tenantId)
+            ->where($field ?? $this->getRouteKeyName(), $value);
+
+        if (! empty($locationIds)) {
+            $query->where(function ($q) use ($locationIds) {
+                $q->whereNull('location_id')
+                    ->orWhereIn('location_id', $locationIds);
+            });
+        }
+
+        return $query->first();
     }
 
     // Scopes
@@ -168,11 +192,40 @@ class Consulta extends Model
      */
     public static function getUltimaConsulta($pessoa_paciente_id)
     {
-        $consulta = self::where('pessoa_paciente_id', $pessoa_paciente_id)
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        $query = self::where('pessoa_paciente_id', $pessoa_paciente_id)
             ->where('status', self::STATUS_ATENDIDO)
             ->whereNotNull('atendido_em')
-            ->orderByDesc('atendido_em')
-            ->first();
+            ->orderByDesc('atendido_em');
+
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->filter()
+                ->map(fn($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            if (empty($locationIds) && $locationId) {
+                $locationIds = [(int) $locationId];
+            }
+
+            if (! empty($locationIds)) {
+                $query->where(function ($q) use ($locationIds) {
+                    $q->whereNull('location_id')
+                        ->orWhereIn('location_id', $locationIds);
+                });
+            }
+        }
+
+        $consulta = $query->first();
 
         return $consulta ? $consulta->atendido_em : null;
     }
