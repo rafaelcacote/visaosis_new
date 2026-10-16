@@ -1654,12 +1654,14 @@ class ProfissionalWorkflowController extends Controller
 
         $query->where($tenantColumn, $tenantId);
 
+        $currentLocationId = $this->currentLocationId();
+        if ($currentLocationId) {
+            return $query->where($locationColumn, $currentLocationId);
+        }
+
         $locationIds = $this->accessibleLocationIds();
         if (! empty($locationIds)) {
-            $query->where(function ($q) use ($locationColumn, $locationIds) {
-                $q->whereNull($locationColumn)
-                    ->orWhereIn($locationColumn, $locationIds);
-            });
+            $query->whereIn($locationColumn, $locationIds);
         }
 
         return $query;
@@ -1667,7 +1669,10 @@ class ProfissionalWorkflowController extends Controller
 
     private function consultaQuery(array $with = []): Builder
     {
-        $query = Consulta::query();
+        $query = Consulta::query()
+            ->whereHas('paciente', function (Builder $patientQuery) {
+                $this->applyTenantLocationScope($patientQuery);
+            });
 
         if (! empty($with)) {
             $query->with($with);
