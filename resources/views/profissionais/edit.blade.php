@@ -29,7 +29,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <form action="{{ route('profissionais.update', $profissional->id) }}" method="POST" id="profissionalForm">
+                <form action="{{ route('profissionais.update', $profissional->id) }}" method="POST" id="profissionalForm" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -177,6 +177,8 @@
                             </div>
                         </div>
                     </div>
+
+                    @include('profissionais.partials.signature-upload')
 
                     <div class="row">
                         <div class="col-md-12">

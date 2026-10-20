@@ -173,7 +173,7 @@
                         <div class="card-body">
 
                             <form id="prescriptionForm"
-                                action="/professional/save-prescription-draft/{{ $consulta['id'] }}" method="POST">
+                                action="{{ route('professional.savePrescriptionDraft', $consulta['id']) }}" method="POST">
                                 @csrf
                                 @php
                                     $glassesFields = [
@@ -546,7 +546,8 @@
                             <h5 class="card-title mb-0">Exame</h5>
                         </div>
                         <div class="card-body">
-                            <form id="exameForm" action="/professional/save-exame/{{ $consulta['id'] }}" method="POST">
+                            <form id="exameForm" action="{{ route('professional.saveExame', $consulta['id']) }}"
+                                method="POST">
                                 @csrf
 
                                 <div class="row mb-3">
@@ -978,6 +979,10 @@
                     <button type="button" class="btn btn-primary" onclick="printPrescription()">
                         <i class="mdi mdi-printer me-2"></i>
                         Imprimir
+                    </button>
+                    <button type="button" class="btn btn-outline-dark" onclick="printPrescription80mm()">
+                        <i class="mdi mdi-printer-pos me-2"></i>
+                        Imprimir 80 mm
                     </button>
                     <button type="button" class="btn btn-success" onclick="sendWhatsApp()">
                         <i class="mdi mdi-whatsapp me-2"></i>
@@ -1556,7 +1561,7 @@
             const win = window.open('about:blank', '_blank');
             const form = document.getElementById('prescriptionForm');
             if (!form) {
-                win.location.href = '/professional/print-prescription/{{ $consulta['id'] }}';
+                win.location.href = '{{ route('professional.printPrescription', $consulta['id']) }}';
                 return;
             }
 
@@ -1575,7 +1580,34 @@
                     setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
                 })
                 .catch(() => {
-                    win.location.href = '/professional/print-prescription/{{ $consulta['id'] }}';
+                    win.location.href = '{{ route('professional.printPrescription', $consulta['id']) }}';
+                });
+        }
+
+        function printPrescription80mm() {
+            const win = window.open('about:blank', '_blank');
+            const form = document.getElementById('prescriptionForm');
+            if (!form) {
+                win.location.href = '{{ route('professional.printPrescription80mm', $consulta['id']) }}';
+                return;
+            }
+
+            const formData = new FormData(form);
+            fetch('{{ route('professional.printPrescription80mmFromForm', $consulta->id) }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then((r) => r.text())
+                .then((html) => {
+                    win.document.open();
+                    win.document.write(html);
+                    win.document.close();
+                })
+                .catch(() => {
+                    win.location.href = '{{ route('professional.printPrescription80mm', $consulta['id']) }}';
                 });
         }
 
@@ -1625,7 +1657,7 @@
                 }, 5000);
             };
 
-            fetch('/professional/send-whatsapp', {
+            fetch('{{ route('professional.sendWhatsApp') }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1670,7 +1702,7 @@
                 return;
             }
 
-            fetch('/professional/refer-patient/{{ $consulta->id }}', {
+            fetch('{{ route('professional.referPatient', $consulta->id) }}', {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -1702,7 +1734,7 @@
                 const formData = new FormData(document.getElementById('finishForm'));
                 formData.append('inicio', new Date().toISOString());
 
-                fetch('/professional/finish-consultation/{{ $consulta->id }}', {
+                fetch('{{ route('professional.finishConsultation', $consulta->id) }}', {
                         method: 'POST',
                         body: formData,
                         headers: {

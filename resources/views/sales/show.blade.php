@@ -42,6 +42,10 @@
                     <i class="mdi mdi-printer me-2"></i>
                     Imprimir PDF
                 </a>
+                <a href="{{ route('sales.print-80mm', $sale['id']) }}" class="btn btn-outline-dark" target="_blank">
+                    <i class="mdi mdi-printer-pos me-2"></i>
+                    Imprimir 80 mm
+                </a>
                 @if (request()->boolean('from_history') && request()->filled('return_url'))
                     <a href="{{ request('return_url') }}" class="btn btn-outline-info">
                         <i class="mdi mdi-history me-2"></i>

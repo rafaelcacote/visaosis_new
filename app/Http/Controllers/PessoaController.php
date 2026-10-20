@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Helpers\AuthHelper;
 use App\Http\Requests\PrescriptionFormRequest;
+use App\Models\Consulta;
+use App\Models\Profissional;
 use App\Models\Pessoa;
 use App\Models\PedidoVenda;
 use App\Models\Prescricao;
@@ -235,8 +237,10 @@ class PessoaController extends Controller
         }
 
         $prescricoes = $query->orderByDesc('created_at')->get();
+        $profissionais = $this->getAvailableProfessionals();
+        $currentProfissionalId = $this->getCurrentProfessionalId();
 
-        return view('pessoas.receitas', compact('pessoa', 'prescricoes'));
+        return view('pessoas.receitas', compact('pessoa', 'prescricoes', 'profissionais', 'currentProfissionalId'));
     }
 
     public function printPrescription(Pessoa $pessoa, Prescricao $prescricao)
@@ -246,6 +250,13 @@ class PessoaController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
 
         return $pdf->stream('receita-' . $prescricao->id . '.pdf');
+    }
+
+    public function printPrescription80mm(Pessoa $pessoa, Prescricao $prescricao)
+    {
+        [$prescription, $paciente] = $this->buildPrescriptionPdfData($pessoa, $prescricao);
+
+        return view('professional.prescription-80mm', compact('prescription'));
     }
 
     public function savePrescriptionPdfWhatsapp(Request $request, Pessoa $pessoa, Prescricao $prescricao)
@@ -329,6 +340,7 @@ class PessoaController extends Controller
                 'nome' => $profissional->nome ?? ($prescricao->especialista_externo ?: 'Especialista Externo'),
                 'registro_conselho' => $profissional->registro_conselho ?? null,
                 'especialidade' => $profissional->especialidade->descricao ?? ($prescricao->especialista_externo ? 'Especialista Externo' : null),
+                'assinatura_data_uri' => $profissional?->assinatura_data_uri,
             ],
             'prescricao' => [
                 'od_esferico' => $prescricao->esfera_od,
@@ -720,10 +732,21 @@ class PessoaController extends Controller
         try {
             DB::beginTransaction();
 
+            $profissionalId = isset($validatedData['profissional_id']) && $validatedData['profissional_id'] !== ''
+                ? (int) $validatedData['profissional_id']
+                : null;
+            $consultaId = null;
+
+            if ($profissionalId) {
+                $consulta = $this->createSystemPrescriptionConsulta($pessoa, $profissionalId);
+                $consultaId = $consulta->id;
+            }
+
             $prescricao = \App\Models\Prescricao::create([
                 'pessoa_paciente_id' => $pessoa->id,
                 'user_id' => auth()->id(),
-                'especialista_externo' => $validatedData['especialista_externo'],
+                'consulta_id' => $consultaId,
+                'especialista_externo' => $profissionalId ? null : ($validatedData['especialista_externo'] ?? null),
                 'data_receita' => $validatedData['data_receita'] ?? now()->toDateString(),
                 'esfera_od' => $validatedData['od_esferico'],
                 'cilindro_od' => $validatedData['od_cilindrico'],
@@ -807,8 +830,10 @@ class PessoaController extends Controller
 
         $prescricoes = $query->orderByDesc('created_at')->get();
         $editPrescricao = $prescricao;
+        $profissionais = $this->getAvailableProfessionals();
+        $currentProfissionalId = $this->getCurrentProfessionalId();
 
-        return view('pessoas.receitas', compact('pessoa', 'prescricoes', 'editPrescricao'));
+        return view('pessoas.receitas', compact('pessoa', 'prescricoes', 'editPrescricao', 'profissionais', 'currentProfissionalId'));
     }
 
     public function showPrescriptionAttachment(Pessoa $pessoa, Prescricao $prescricao)
@@ -841,10 +866,6 @@ class PessoaController extends Controller
         $this->checkTenantAccess($pessoa);
         $this->checkPrescriptionAccess($pessoa, $prescricao);
 
-        if (! $prescricao->especialista_externo) {
-            abort(403, 'Apenas receitas de especialista externo podem ser editadas.');
-        }
-
         $validatedData = $request->validated();
 
         try {
@@ -866,8 +887,40 @@ class PessoaController extends Controller
                 $fotoCaminho = $this->storeReceitaFotoFile($request->file('receita_foto'), $pessoa, $prescricao) ?: null;
             }
 
+            $profissionalId = isset($validatedData['profissional_id']) && $validatedData['profissional_id'] !== ''
+                ? (int) $validatedData['profissional_id']
+                : null;
+            $consultaId = $prescricao->consulta_id;
+
+            if ($profissionalId) {
+                if ($consultaId) {
+                    $consulta = Consulta::query()->find($consultaId);
+                    if (! $consulta) {
+                        $consulta = $this->createSystemPrescriptionConsulta($pessoa, $profissionalId);
+                    } else {
+                        $consulta->fill([
+                            'tenant_id' => AuthHelper::tenantId(),
+                            'location_id' => AuthHelper::locationId(),
+                            'user_id' => auth()->id(),
+                            'pessoa_paciente_id' => $pessoa->id,
+                            'profissional_id' => $profissionalId,
+                            'tipo' => Consulta::TIPO_CONSULTA,
+                            'status' => Consulta::STATUS_ATENDIDO,
+                            'ativo' => true,
+                        ]);
+                        $consulta->atendido_em = $consulta->atendido_em ?: now('America/Manaus');
+                        $consulta->save();
+                    }
+                } else {
+                    $consulta = $this->createSystemPrescriptionConsulta($pessoa, $profissionalId);
+                }
+
+                $consultaId = $consulta->id;
+            }
+
             $prescricao->update([
-                'especialista_externo' => $validatedData['especialista_externo'],
+                'consulta_id' => $profissionalId ? $consultaId : null,
+                'especialista_externo' => $profissionalId ? null : ($validatedData['especialista_externo'] ?? null),
                 'data_receita' => $validatedData['data_receita'] ?? $prescricao->data_receita ?? now()->toDateString(),
                 'esfera_od' => $validatedData['od_esferico'],
                 'cilindro_od' => $validatedData['od_cilindrico'],
@@ -983,5 +1036,59 @@ class PessoaController extends Controller
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+    private function getAvailableProfessionals()
+    {
+        $tenantId = AuthHelper::tenantId();
+        $locationId = AuthHelper::locationId();
+
+        if (! $tenantId || ! $locationId) {
+            return collect();
+        }
+
+        return Profissional::query()
+            ->ativos()
+            ->where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->with('especialidade')
+            ->orderBy('nome')
+            ->get();
+    }
+
+    private function getCurrentProfessionalId(): ?int
+    {
+        $tenantId = AuthHelper::tenantId();
+        $locationId = AuthHelper::locationId();
+        $userId = auth()->id();
+
+        if (! $tenantId || ! $locationId || ! $userId) {
+            return null;
+        }
+
+        $profissionalId = Profissional::query()
+            ->where('tenant_id', $tenantId)
+            ->where('location_id', $locationId)
+            ->where('user_id', $userId)
+            ->value('id');
+
+        return $profissionalId ? (int) $profissionalId : null;
+    }
+
+    private function createSystemPrescriptionConsulta(Pessoa $pessoa, int $profissionalId): Consulta
+    {
+        $consulta = new Consulta();
+        $consulta->tenant_id = AuthHelper::tenantId();
+        $consulta->location_id = AuthHelper::locationId();
+        $consulta->user_id = auth()->id();
+        $consulta->pessoa_paciente_id = $pessoa->id;
+        $consulta->profissional_id = $profissionalId;
+        $consulta->tipo = Consulta::TIPO_CONSULTA;
+        $consulta->status = Consulta::STATUS_ATENDIDO;
+        $consulta->atendido_em = now('America/Manaus');
+        $consulta->ativo = true;
+        $consulta->save();
+
+        return $consulta;
     }
 }

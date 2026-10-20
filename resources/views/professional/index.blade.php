@@ -646,7 +646,8 @@
             }
 
             // Atualizar status para "Em Atendimento" e redirecionar
-            fetch(`/professional/update-status/${selectedConsultationId}`, {
+            const updateStatusUrlTemplate = "{{ route('professional.update-status', 'PLACEHOLDER') }}";
+            fetch(updateStatusUrlTemplate.replace('PLACEHOLDER', selectedConsultationId), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -661,7 +662,9 @@
                 .then(data => {
                     if (data.success) {
                         // Redirecionar para a tela de consulta
-                        window.location.href = `/professional/consultation/${selectedConsultationId}`;
+                        const consultationUrlTemplate = "{{ route('professional.consultation', 'PLACEHOLDER') }}";
+                        window.location.href = consultationUrlTemplate.replace('PLACEHOLDER',
+                            selectedConsultationId);
                     } else {
                         window.showAppModalMessage?.('Erro ao iniciar atendimento.', 'Erro', 'danger');
                     }
@@ -755,7 +758,8 @@
                 return;
             }
 
-            fetch(`/professional/toggle-pause/${profissionalId}`, {
+            const togglePauseUrlTemplate = "{{ route('professional.togglePause', 'PLACEHOLDER') }}";
+            fetch(togglePauseUrlTemplate.replace('PLACEHOLDER', profissionalId), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

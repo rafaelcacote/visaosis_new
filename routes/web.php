@@ -153,6 +153,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('pessoas/search', [PessoaController::class, 'search'])->name('pessoas.search');
     Route::get('pessoas/{pessoa}/receitas', [PessoaController::class, 'receitas'])->name('pessoas.receitas');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/print', [PessoaController::class, 'printPrescription'])->name('pessoas.receitas.print');
+    Route::get('pessoas/{pessoa}/receitas/{prescricao}/print-80mm', [PessoaController::class, 'printPrescription80mm'])->name('pessoas.receitas.print-80mm');
     Route::get('pessoas/{pessoa}/receitas/{prescricao}/anexo', [PessoaController::class, 'showPrescriptionAttachment'])->name('pessoas.receitas.attachment');
     Route::post('pessoas/{pessoa}/receitas/{prescricao}/save-pdf-whatsapp', [PessoaController::class, 'savePrescriptionPdfWhatsapp'])->name('pessoas.receitas.save-pdf-whatsapp');
     Route::get('pessoas/{pessoa}/vendas', [PessoaController::class, 'vendas'])->name('pessoas.vendas');
@@ -200,6 +201,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/patient-history-full/{id}', [ProfissionalWorkflowController::class, 'patientHistoryFull'])->name('patientHistoryFull');
         Route::get('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescription'])->name('printPrescription');
         Route::post('/print-prescription/{id}', [ProfissionalWorkflowController::class, 'printPrescriptionFromForm'])->name('printPrescriptionFromForm');
+        Route::get('/print-prescription-80mm/{id}', [ProfissionalWorkflowController::class, 'printPrescription80mm'])->name('printPrescription80mm');
+        Route::post('/print-prescription-80mm/{id}', [ProfissionalWorkflowController::class, 'printPrescription80mmFromForm'])->name('printPrescription80mmFromForm');
         Route::get('/print-exame/{id}', [ProfissionalWorkflowController::class, 'printExamDoc'])->name('print-exame');
         Route::get('/print-referral/{id}', [ProfissionalWorkflowController::class, 'printReferralDoc'])->name('print-referral');
         Route::get('/new-prescription', [ProfissionalWorkflowController::class, 'newPrescription'])->name('newPrescription');
@@ -214,6 +217,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sales/products/search', [SaleController::class, 'searchProducts'])->name('sales.products.search');
     Route::resource('sales', SaleController::class);
     Route::get('/sales/{id}/print', [SaleController::class, 'print'])->name('sales.print');
+    Route::get('/sales/{id}/print-80mm', [SaleController::class, 'print80mm'])->name('sales.print-80mm');
     Route::get('/sales/parcelas/{id}/details', [SaleController::class, 'parcelaDetails'])->name('sales.parcela.details');
     Route::put('/sales/parcelas/{id}', [SaleController::class, 'updateParcela'])->name('sales.parcela.update');
     Route::post('/sales/parcelas/{id}/reopen', [SaleController::class, 'reopenParcela'])->name('sales.parcela.reopen');
@@ -224,6 +228,7 @@ Route::middleware(['auth'])->group(function () {
         'ordens-servico' => 'ordemServico',
     ]);
     Route::get('/ordens-servico/{ordemServico}/pdf', [OrdemServicoController::class, 'pdf'])->name('ordens-servico.pdf');
+    Route::get('/ordens-servico/{ordemServico}/pdf-80mm/{via}', [OrdemServicoController::class, 'pdf80mm'])->name('ordens-servico.pdf-80mm');
     Route::patch('/ordens-servico/{ordemServico}/status', [OrdemServicoController::class, 'updateStatus'])->name('ordens-servico.update-status');
     Route::get('/ordens-servico/api/buscar-clientes', [OrdemServicoController::class, 'buscarClientes'])->name('ordens-servico.buscar-clientes');
     Route::get('/ordens-servico/api/buscar-vendas-cliente', [OrdemServicoController::class, 'buscarVendasCliente'])->name('ordens-servico.buscar-vendas-cliente');
@@ -258,7 +263,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/send-whatsapp/{id}', [FinancialController::class, 'sendWhatsApp'])->name('send-whatsapp');
         Route::post('/receive-payment', [FinancialController::class, 'receivePayment'])->name('receive-payment');
     });
-    Route::post('/professional/toggle-pause/{id}', [ProfissionalWorkflowController::class, 'togglePause']);
+    Route::post('/professional/toggle-pause/{id}', [ProfissionalWorkflowController::class, 'togglePause'])->name('professional.togglePause');
 
     // Relatórios
     Route::prefix('reports')->name('reports.')->group(function () {

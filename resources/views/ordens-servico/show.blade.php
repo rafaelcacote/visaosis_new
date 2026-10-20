@@ -21,6 +21,16 @@
                 <i class="mdi mdi-file-pdf me-2"></i>
                 Gerar PDF
             </a>
+            <a href="{{ route('ordens-servico.pdf-80mm', ['ordemServico' => $ordemServico, 'via' => 'otica']) }}"
+                class="btn btn-outline-dark" target="_blank">
+                <i class="mdi mdi-printer-pos me-2"></i>
+                80 mm Ótica
+            </a>
+            <a href="{{ route('ordens-servico.pdf-80mm', ['ordemServico' => $ordemServico, 'via' => 'laboratorio']) }}"
+                class="btn btn-outline-secondary" target="_blank">
+                <i class="mdi mdi-printer-pos me-2"></i>
+                80 mm Laboratório
+            </a>
             <a href="{{ route('ordens-servico.edit', $ordemServico) }}" class="btn btn-primary">
                 <i class="mdi mdi-pencil me-2"></i>
                 Editar

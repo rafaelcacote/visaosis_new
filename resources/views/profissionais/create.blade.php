@@ -29,7 +29,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <form action="{{ route('profissionais.store') }}" method="POST" id="profissionalForm">
+                <form action="{{ route('profissionais.store') }}" method="POST" id="profissionalForm" enctype="multipart/form-data">
                     @csrf
 
                     <div class="row">
@@ -176,6 +176,8 @@
                             </div>
                         </div>
                     </div>
+
+                    @include('profissionais.partials.signature-upload')
 
                     <div class="row">
                         <div class="col-12">

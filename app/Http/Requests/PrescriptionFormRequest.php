@@ -144,9 +144,23 @@ class PrescriptionFormRequest extends FormRequest
 
             $rules['validade_dias'] = ['nullable', 'integer', 'in:180,365'];
         } elseif (in_array($routeName, ['pessoas.receitas.store', 'pessoas.receitas.update'], true)) {
+            $tenantId = AuthHelper::tenantId() ?? 1;
+            $locationId = AuthHelper::locationId() ?? 1;
+
             $rules = array_merge(
                 [
-                    'especialista_externo' => ['required', 'string', 'max:255'],
+                    'profissional_id' => [
+                        'nullable',
+                        'integer',
+                        Rule::exists('profissional', 'id')->where(function ($query) use ($tenantId, $locationId) {
+                            $query
+                                ->where('tenant_id', $tenantId)
+                                ->where('location_id', $locationId)
+                                ->where('ativo', true)
+                                ->whereNull('deleted_at');
+                        }),
+                    ],
+                    'especialista_externo' => ['nullable', 'string', 'max:255'],
                 ],
                 $rules,
             );
@@ -158,6 +172,32 @@ class PrescriptionFormRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    public function withValidator($validator): void
+    {
+        $routeName = (string) $this->route()?->getName();
+
+        if (! in_array($routeName, ['pessoas.receitas.store', 'pessoas.receitas.update'], true)) {
+            return;
+        }
+
+        $validator->after(function ($validator) {
+            $profissionalId = $this->input('profissional_id');
+            $especialistaExterno = trim((string) $this->input('especialista_externo', ''));
+
+            if (blank($profissionalId) && $especialistaExterno === '') {
+                $message = 'Selecione um profissional do sistema ou informe um profissional externo.';
+                $validator->errors()->add('profissional_id', $message);
+                $validator->errors()->add('especialista_externo', $message);
+            }
+
+            if (! blank($profissionalId) && $especialistaExterno !== '') {
+                $message = 'Informe apenas uma opção: profissional do sistema ou profissional externo.';
+                $validator->errors()->add('profissional_id', $message);
+                $validator->errors()->add('especialista_externo', $message);
+            }
+        });
     }
 
     public function messages(): array
