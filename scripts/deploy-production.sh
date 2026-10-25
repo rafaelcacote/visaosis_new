@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# OBSOLETO. Produção agora é o container visaosis_prod em /opt/stack,
+# publicado por GitHub Actions a partir da branch main.
+#
 # Deploy Produção — branch main
 # Corre no servidor Hostinger VPS via SSH (manual).
 # NÃO corre migrations (protege dados). Corre migrate à mão quando precisares.
