@@ -5,14 +5,14 @@ set -euo pipefail
 
 cd /opt/stack
 umask 077
-mkdir -p env
+mkdir -p visaosis-env
 
 if [[ ! -f .env ]]; then
   echo "Falta /opt/stack/.env do stack compartilhado." >&2
   exit 1
 fi
 
-secrets="env/visaosis.secrets"
+secrets="visaosis-env/secrets"
 if [[ ! -f "${secrets}" ]]; then
   cat > "${secrets}" <<EOF
 VISAOSIS_PROD_DB_PASSWORD=$(openssl rand -hex 24)
@@ -88,11 +88,11 @@ CERBERUS_DB_PASSWORD=${cerberus_password}
 EOF
 }
 
-write_app_env env/visaosis-prod.env production false https://app.visaosis.com.br \
+write_app_env visaosis-env/prod.env production false https://app.visaosis.com.br \
   "${VISAOSIS_PROD_APP_KEY}" visaosis_prod visaosis_prod "${VISAOSIS_PROD_DB_PASSWORD}" error \
   https://cerberus.otimisoft.com.br cerberus_prod cerberus_prod "${CERBERUS_PROD_DB_PASSWORD}"
 
-write_app_env env/visaosis-dev.env local true https://dev.visaosis.com.br \
+write_app_env visaosis-env/dev.env local true https://dev.visaosis.com.br \
   "${VISAOSIS_DEV_APP_KEY}" visaosis_dev visaosis_dev "${VISAOSIS_DEV_DB_PASSWORD}" debug \
   https://cerberusdev.otimisoft.com.br cerberus_dev cerberus_dev "${CERBERUS_DEV_DB_PASSWORD}"
 

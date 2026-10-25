@@ -8,7 +8,7 @@ set -a
 # shellcheck disable=SC1091
 source .env
 # shellcheck disable=SC1091
-source env/visaosis.secrets
+source visaosis-env/secrets
 set +a
 
 DUMP="${1:-/opt/stack/visaosis_20261022_213710.dump}"
