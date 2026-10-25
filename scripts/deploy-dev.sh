@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# OBSOLETO. Desenvolvimento agora é o container visaosis_dev em /opt/stack,
+# publicado por GitHub Actions a partir da branch develop.
+#
 # Deploy DEV / Homolog — branch develop
 # Corre no servidor Hostinger VPS via SSH (manual).
 #
