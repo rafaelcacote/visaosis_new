@@ -295,9 +295,9 @@ class RecepcaoController extends Controller
             }
 
             if ($cpfLimpo) {
+                // Busca por CPF dentro do mesmo tenant, ignorando registros excluídos (soft delete)
                 $pessoaPorCpf = Pessoa::where('cpf', $cpfLimpo)
                     ->where('tenant_id', $tenantId)
-                    ->where('location_id', $locationId)
                     ->first();
 
                 if ($pessoaPorCpf && $pessoa && (int) $pessoaPorCpf->id !== (int) $pessoa->id) {
@@ -309,6 +309,26 @@ class RecepcaoController extends Controller
                 if (! $pessoa && $pessoaPorCpf) {
                     $pessoa = $pessoaPorCpf;
                 }
+            }
+
+            // Verificar duplicidade de Nome Completo + Apelido no mesmo tenant antes de salvar,
+            // ignorando registros excluídos (soft delete) e o próprio paciente em atualização.
+            $nomeNormalizado = mb_strtoupper((string) $request->nome, 'UTF-8');
+            $apelidoNormalizado = mb_strtoupper((string) $request->apelido, 'UTF-8');
+            $pessoaIdAtual = $pessoa ? (int) $pessoa->id : null;
+
+            $duplicadoNomeApelido = Pessoa::where('tenant_id', $tenantId)
+                ->where('nome', $nomeNormalizado)
+                ->where('apelido', $apelidoNormalizado)
+                ->when($pessoaIdAtual, function ($query) use ($pessoaIdAtual) {
+                    return $query->where('id', '!=', $pessoaIdAtual);
+                })
+                ->first();
+
+            if ($duplicadoNomeApelido) {
+                return redirect()->back()
+                    ->with('validation_message', "Já existe um paciente cadastrado com o mesmo Nome Completo e Apelido ({$duplicadoNomeApelido->nome} / {$duplicadoNomeApelido->apelido}) neste tenant. Verifique para não duplicar o cadastro.")
+                    ->withInput();
             }
 
             // Se pessoa existe, verificar se os dados conferem

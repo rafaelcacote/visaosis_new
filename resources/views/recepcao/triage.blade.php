@@ -331,6 +331,8 @@
                 setupNicknameAutoFill();
             });
 
+            let lastAutoNickname = null;
+
             function extractFirstName(fullName) {
                 return (fullName || '')
                     .trim()
@@ -349,8 +351,10 @@
                 const firstName = extractFirstName(nomeInput.value);
                 const currentNickname = (apelidoInput.value || '').trim();
 
-                if (force || !currentNickname) {
+                // Continua acompanhando o nome enquanto o apelido não for alterado manualmente
+                if (force || !currentNickname || apelidoInput.value === lastAutoNickname) {
                     apelidoInput.value = firstName;
+                    lastAutoNickname = firstName;
                 }
             }
 
@@ -361,6 +365,8 @@
                 const nomeInput = form.querySelector('[name="nome"]');
                 const apelidoInput = form.querySelector('[name="apelido"]');
                 if (!nomeInput || !apelidoInput) return;
+
+                lastAutoNickname = apelidoInput.value === extractFirstName(nomeInput.value) ? apelidoInput.value : null;
 
                 nomeInput.addEventListener('input', function() {
                     fillNicknameFromName(false);
@@ -555,6 +561,7 @@
 
                 // Preencher campos do formulário
                 form.querySelector('[name="nome"]').value = paciente.nome || '';
+                lastAutoNickname = null;
                 form.querySelector('[name="apelido"]').value = paciente.apelido || '';
                 fillNicknameFromName(!paciente.apelido);
 

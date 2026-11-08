@@ -128,18 +128,39 @@ class PessoaController extends Controller
                 ->with('error', 'Nenhuma localização disponível para criar o cliente.');
         }
 
+        // Normalizar nome e apelido (o model Pessoa armazena em maiúsculas)
+        $nomeNormalizado = mb_strtoupper(trim((string) $request->nome), 'UTF-8');
+        $apelidoNormalizado = mb_strtoupper(trim((string) $request->apelido), 'UTF-8');
+        $request->merge([
+            'nome' => $nomeNormalizado,
+            'apelido' => $apelidoNormalizado,
+        ]);
+
+        // Verifica duplicidade de CPF no mesmo tenant, ignorando registros excluídos (soft delete)
         $cpfRules = ['nullable', 'string', new ValidCpf];
         if ($cpfLimpo) {
             $cpfRules[] = Rule::unique('pessoa', 'cpf')
-                ->where(function ($query) use ($cpfLimpo, $tenantId) {
+                ->where(function ($query) use ($tenantId) {
                     return $query->where('tenant_id', $tenantId)
-                        ->where('cpf', $cpfLimpo)
                         ->whereNull('deleted_at');
                 });
         }
 
+        // Verifica duplicidade de Nome Completo + Apelido no mesmo tenant, ignorando excluídos (soft delete)
+        $nomeRules = [
+            'required',
+            'string',
+            'max:255',
+            Rule::unique('pessoa', 'nome')
+                ->where(function ($query) use ($tenantId, $apelidoNormalizado) {
+                    return $query->where('tenant_id', $tenantId)
+                        ->where('apelido', $apelidoNormalizado)
+                        ->whereNull('deleted_at');
+                }),
+        ];
+
         $request->validate([
-            'nome' => 'required|string|max:255',
+            'nome' => $nomeRules,
             'apelido' => 'required|string|max:255',
             'cpf' => $cpfRules,
             'nome_mae' => 'nullable|string|max:255',
@@ -159,6 +180,7 @@ class PessoaController extends Controller
         ], [
             'nome.required' => 'O nome é obrigatório.',
             'apelido.required' => 'O apelido é obrigatório.',
+            'nome.unique' => 'Já existe um cliente com o mesmo Nome Completo e Apelido neste tenant.',
             'cpf.unique' => 'Este CPF já está cadastrado no sistema.',
             'sexo.in' => 'Sexo deve ser Masculino ou Feminino.',
             'nascimento_em.before' => 'A data de nascimento deve ser anterior ao dia de hoje.',
@@ -450,19 +472,41 @@ class PessoaController extends Controller
 
         $tenantId = session('tenant_id');
 
+        // Normalizar nome e apelido (o model Pessoa armazena em maiúsculas)
+        $nomeNormalizado = mb_strtoupper(trim((string) $request->nome), 'UTF-8');
+        $apelidoNormalizado = mb_strtoupper(trim((string) $request->apelido), 'UTF-8');
+        $request->merge([
+            'nome' => $nomeNormalizado,
+            'apelido' => $apelidoNormalizado,
+        ]);
+
+        // Verifica duplicidade de CPF no mesmo tenant, ignorando registros excluídos (soft delete)
         $cpfRules = ['nullable', 'string', new ValidCpf];
         if ($cpfLimpo) {
             $cpfRules[] = Rule::unique('pessoa', 'cpf')
                 ->ignore($pessoa->id)
-                ->where(function ($query) use ($cpfLimpo, $tenantId) {
+                ->where(function ($query) use ($tenantId) {
                     return $query->where('tenant_id', $tenantId)
-                        ->where('cpf', $cpfLimpo)
                         ->whereNull('deleted_at');
                 });
         }
 
+        // Verifica duplicidade de Nome Completo + Apelido no mesmo tenant, ignorando excluídos (soft delete)
+        $nomeRules = [
+            'required',
+            'string',
+            'max:255',
+            Rule::unique('pessoa', 'nome')
+                ->ignore($pessoa->id)
+                ->where(function ($query) use ($tenantId, $apelidoNormalizado) {
+                    return $query->where('tenant_id', $tenantId)
+                        ->where('apelido', $apelidoNormalizado)
+                        ->whereNull('deleted_at');
+                }),
+        ];
+
         $request->validate([
-            'nome' => 'required|string|max:255',
+            'nome' => $nomeRules,
             'apelido' => 'required|string|max:255',
             'cpf' => $cpfRules,
             'nome_mae' => 'nullable|string|max:255',
@@ -482,6 +526,7 @@ class PessoaController extends Controller
         ], [
             'nome.required' => 'O nome é obrigatório.',
             'apelido.required' => 'O apelido é obrigatório.',
+            'nome.unique' => 'Já existe um cliente com o mesmo Nome Completo e Apelido neste tenant.',
             'cpf.unique' => 'Este CPF já está cadastrado no sistema.',
             'sexo.in' => 'Sexo deve ser Masculino ou Feminino.',
             'nascimento_em.before' => 'A data de nascimento deve ser anterior ao dia de hoje.',
