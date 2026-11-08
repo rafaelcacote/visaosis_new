@@ -118,14 +118,30 @@ class ProfissionalController extends Controller
             'telefone' => $telefoneLimpo
         ]);
 
+        // Identificar o tenant do usuário (necessário para validar CPF por tenant)
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        if (!$locationId && $tenantId) {
+            $firstLocation = collect($userLocations)->where('tenant_id', $tenantId)->first();
+            $locationId = $firstLocation['location_id'] ?? null;
+        }
+
+        if (!$tenantId && $locationId) {
+            $match = collect($userLocations)->firstWhere('location_id', (int) $locationId);
+            $tenantId = $match['tenant_id'] ?? null;
+        }
+
         $request->validate([
             'nome' => 'required|string|max:255',
             'cpf' => [
                 'required',
                 'string',
                 new ValidCpf(),
-                Rule::unique('profissional', 'cpf')->where(function ($query) use ($cpfLimpo) {
-                    return $query->where('cpf', $cpfLimpo)
+                Rule::unique('profissional', 'cpf')->where(function ($query) use ($cpfLimpo, $tenantId) {
+                    return $query->where('tenant_id', $tenantId)
+                        ->where('cpf', $cpfLimpo)
                         ->whereNull('deleted_at');
                 })
             ],
@@ -155,25 +171,6 @@ class ProfissionalController extends Controller
 
         try {
             DB::beginTransaction();
-
-            // Obter location_id e tenant_id (coluna tenant_id é NOT NULL na tabela profissional)
-            $locationId = session('location_id');
-            $tenantId = session('tenant_id');
-            $userLocations = session('user_locations', []);
-
-            // Se não tem location_id, buscar a primeira location do tenant
-            if (!$locationId && $tenantId) {
-                $firstLocation = collect($userLocations)
-                    ->where('tenant_id', $tenantId)
-                    ->first();
-                $locationId = $firstLocation['location_id'] ?? null;
-            }
-
-            // Sessão pode ter só location_id (ex.: fluxo antigo); obter tenant pela location
-            if (!$tenantId && $locationId) {
-                $match = collect($userLocations)->firstWhere('location_id', (int) $locationId);
-                $tenantId = $match['tenant_id'] ?? null;
-            }
 
             if (!$tenantId) {
                 return back()->withInput()
@@ -272,8 +269,9 @@ class ProfissionalController extends Controller
                 'required',
                 'string',
                 new ValidCpf(),
-                Rule::unique('profissional', 'cpf')->ignore($profissional->id)->where(function ($query) use ($cpfLimpo) {
-                    return $query->where('cpf', $cpfLimpo)
+                Rule::unique('profissional', 'cpf')->ignore($profissional->id)->where(function ($query) use ($cpfLimpo, $profissional) {
+                    return $query->where('tenant_id', $profissional->tenant_id)
+                        ->where('cpf', $cpfLimpo)
                         ->whereNull('deleted_at');
                 })
             ],
