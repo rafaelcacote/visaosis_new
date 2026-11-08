@@ -155,6 +155,7 @@
                             <option value="{{ \App\Models\Consulta::STATUS_AGUARDANDO }}">Aguardando</option>
                             <option value="{{ \App\Models\Consulta::STATUS_EM_ATENDIMENTO }}">Em Atendimento</option>
                             <option value="{{ \App\Models\Consulta::STATUS_ATENDIDO }}">Atendidos</option>
+                            <option value="{{ \App\Models\Consulta::STATUS_ENCAMINHADO }}">Encaminhados</option>
                             <option value="{{ \App\Models\Consulta::STATUS_CANCELADO }}">Cancelados</option>
                         </select>
 
@@ -239,6 +240,14 @@
                                                                     </span>
                                                                 @break
 
+                                                                @case(\App\Models\Consulta::STATUS_ENCAMINHADO)
+                                                                    <span class="tag"
+                                                                        style="background-color: #f3e8ff; color: #7e22ce;">
+                                                                        <i class="mdi mdi-share"></i>
+                                                                        Encaminhado
+                                                                    </span>
+                                                                @break
+
                                                                 @default
                                                                     <span class="text-muted">{{ $consulta->status_label }}</span>
                                                             @endswitch
@@ -312,6 +321,13 @@
                                                         <span class="tag tag-status tag-status-inativo">
                                                             <i class="mdi mdi-close-circle"></i>
                                                             Cancelado
+                                                        </span>
+                                                    @break
+
+                                                    @case(\App\Models\Consulta::STATUS_ENCAMINHADO)
+                                                        <span class="tag" style="background-color: #f3e8ff; color: #7e22ce;">
+                                                            <i class="mdi mdi-share"></i>
+                                                            Encaminhado
                                                         </span>
                                                     @break
 

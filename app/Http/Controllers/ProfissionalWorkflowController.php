@@ -148,6 +148,20 @@ class ProfissionalWorkflowController extends Controller
         if (! $consulta) {
             return redirect()->route('professional.index')->with('error', 'Paciente não encontrado.');
         }
+
+        // Não permite acessar/editar consultas já finalizadas (ex.: alterando o id na URL)
+        $statusFinalizados = [
+            Consulta::STATUS_ATENDIDO,
+            Consulta::STATUS_ENCAMINHADO,
+            Consulta::STATUS_CANCELADO,
+            Consulta::STATUS_FALTOU,
+        ];
+
+        if (in_array((int) $consulta->status, $statusFinalizados, true)) {
+            return redirect()->route('professional.index')
+                ->with('error', 'Esta consulta já foi finalizada e não pode ser editada.');
+        }
+
         $patient = $consulta->paciente;
 
         // Buscar o último atendimento do paciente
@@ -396,7 +410,11 @@ class ProfissionalWorkflowController extends Controller
         $phone = $request->input('phone');
         $consultaId = $request->input('consulta_id');
 
-        if (! $phone || ! $consultaId) {
+        if (! $phone) {
+            return response()->json(['success' => false, 'message' => 'Dados Incompletos, atualize o telefone do cliente!'], 400);
+        }
+
+        if (! $consultaId) {
             return response()->json(['success' => false, 'message' => 'Dados incompletos'], 400);
         }
 

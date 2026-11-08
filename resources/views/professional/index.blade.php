@@ -161,6 +161,7 @@
                             <option value="Aguardando">Aguardando</option>
                             <option value="Em Atendimento">Em Atendimento</option>
                             <option value="Atendido">Atendido</option>
+                            <option value="Encaminhado">Encaminhado</option>
                             <option value="Cancelado">Cancelado</option>
                         </select>
                         <span class="tag" style="background-color: #e0f0ff; color: #1d7dd6;">{{ $patients->count() }}
@@ -234,6 +235,14 @@
                                                                     <span class="tag tag-status tag-status-inativo">
                                                                         <i class="mdi mdi-close-circle"></i>
                                                                         Cancelado
+                                                                    </span>
+                                                                @break
+
+                                                                @case(\App\Models\Consulta::STATUS_ENCAMINHADO)
+                                                                    <span class="tag"
+                                                                        style="background-color: #f3e8ff; color: #7e22ce;">
+                                                                        <i class="mdi mdi-share"></i>
+                                                                        Encaminhado
                                                                     </span>
                                                                 @break
                                                             @endswitch
@@ -328,6 +337,13 @@
                                                         <span class="tag tag-status tag-status-inativo">
                                                             <i class="mdi mdi-close-circle"></i>
                                                             Cancelado
+                                                        </span>
+                                                    @break
+
+                                                    @case(\App\Models\Consulta::STATUS_ENCAMINHADO)
+                                                        <span class="tag" style="background-color: #f3e8ff; color: #7e22ce;">
+                                                            <i class="mdi mdi-share"></i>
+                                                            Encaminhado
                                                         </span>
                                                     @break
                                                 @endswitch
@@ -591,6 +607,8 @@
                     statusText = 'Em Atendimento';
                 } else if (rowStatus == {{ \App\Models\Consulta::STATUS_ATENDIDO }}) {
                     statusText = 'Atendido';
+                } else if (rowStatus == {{ \App\Models\Consulta::STATUS_ENCAMINHADO }}) {
+                    statusText = 'Encaminhado';
                 } else if (rowStatus == {{ \App\Models\Consulta::STATUS_CANCELADO }}) {
                     statusText = 'Cancelado';
                 }
