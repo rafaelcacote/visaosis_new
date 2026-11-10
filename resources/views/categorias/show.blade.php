@@ -40,6 +40,15 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
+                            <label class="text-muted">Tipo</label>
+                            <p class="font-weight-medium">{{ $categoria->tipo_label }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
                             <label class="text-muted">Status</label>
                             <div>
                                 @if($categoria->ativo)

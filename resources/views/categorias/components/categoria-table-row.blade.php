@@ -11,6 +11,13 @@
         </div>
     </td>
     <td class="d-none d-md-table-cell">
+        <span class="tag"
+            style="{{ $categoria->tipo === 'servico' ? 'background-color: #e0f0ff; color: #1d7dd6;' : 'background-color: #e3f9e5; color: #1f9d55;' }}">
+            <i class="mdi mdi-{{ $categoria->tipo === 'servico' ? 'room-service-outline' : 'package-variant-closed' }}"></i>
+            {{ $categoria->tipo_label }}
+        </span>
+    </td>
+    <td class="d-none d-md-table-cell">
         @if ($categoria->ativo)
             <span class="tag tag-status tag-status-ativo">
                 <i class="mdi mdi-check-circle"></i>

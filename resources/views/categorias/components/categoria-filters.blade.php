@@ -11,6 +11,16 @@
                                placeholder="Descrição">
                     </div>
                     <div class="col-12 col-sm-6 col-md-3">
+                        <label for="tipo" class="form-label">Tipo</label>
+                        <select class="form-select form-select-sm" id="tipo" name="tipo">
+                            <option value="">Todos</option>
+                            <option value="produto" {{ ($filters['tipo'] ?? '') === 'produto' ? 'selected' : '' }}>Produto
+                            </option>
+                            <option value="servico" {{ ($filters['tipo'] ?? '') === 'servico' ? 'selected' : '' }}>Serviço
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-2">
                         <label for="status" class="form-label">Status</label>
                         <select class="form-select form-select-sm" id="status" name="status">
                             <option value="">Todos</option>
@@ -18,7 +28,7 @@
                             <option value="0" {{ ($filters['status'] ?? '') == '0' ? 'selected' : '' }}>Inativos</option>
                         </select>
                     </div>
-                    <div class="col-12 col-sm-6 col-md-5">
+                    <div class="col-12 col-sm-6 col-md-3">
                         <div class="d-flex gap-2 flex-wrap">
                             <button type="submit" class="btn btn-sm btn-outline-primary">
                                 <i class="mdi mdi-magnify me-1"></i>

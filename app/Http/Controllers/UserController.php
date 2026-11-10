@@ -16,9 +16,11 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
+        // Normaliza para string: parâmetros vazios chegam como null
+        // (middleware ConvertEmptyStringsToNull) e quebrariam as comparações.
         $filters = [
-            'search' => $request->get('search', ''),
-            'status' => $request->get('status', ''),
+            'search' => (string) $request->get('search', ''),
+            'status' => (string) $request->get('status', ''),
             'per_page' => $request->get('per_page', 5),
         ];
 

@@ -15,9 +15,12 @@ class CategoriaController extends Controller
      */
     public function index(Request $request)
     {
+        // Normaliza para string: parâmetros vazios chegam como null
+        // (middleware ConvertEmptyStringsToNull) e quebrariam as comparações.
         $filters = [
-            'search' => $request->get('search', ''),
-            'status' => $request->get('status', ''),
+            'search' => (string) $request->input('search', ''),
+            'status' => (string) $request->input('status', ''),
+            'tipo' => (string) $request->input('tipo', ''),
         ];
 
         // Obter tenant_id e location_ids da sessão
@@ -55,6 +58,11 @@ class CategoriaController extends Controller
         // Filtro de status
         if ($filters['status'] !== '') {
             $query->where('ativo', $filters['status'] == '1');
+        }
+
+        // Filtro de tipo
+        if (in_array($filters['tipo'], [Categoria::TIPO_PRODUTO, Categoria::TIPO_SERVICO], true)) {
+            $query->where('tipo', $filters['tipo']);
         }
 
         // Paginação
@@ -117,10 +125,13 @@ class CategoriaController extends Controller
                     }
                 }
             ],
-            'ativo' => 'nullable|boolean'
+            'ativo' => 'nullable|boolean',
+            'tipo' => ['required', Rule::in([Categoria::TIPO_PRODUTO, Categoria::TIPO_SERVICO])]
         ], [
             'descricao.required' => 'A descrição é obrigatória.',
             'descricao.max' => 'A descrição não pode ter mais de 255 caracteres.',
+            'tipo.required' => 'O tipo é obrigatório.',
+            'tipo.in' => 'O tipo deve ser produto ou serviço.',
         ]);
 
         try {
@@ -131,6 +142,7 @@ class CategoriaController extends Controller
                 'location_id' => $locationId,
                 'user_id' => auth()->id(),
                 'descricao' => $request->descricao,
+                'tipo' => $request->input('tipo', Categoria::TIPO_PRODUTO),
                 'ativo' => $request->has('ativo') ? true : true
             ]);
 
@@ -193,10 +205,13 @@ class CategoriaController extends Controller
                     }
                 }
             ],
-            'ativo' => 'nullable|boolean'
+            'ativo' => 'nullable|boolean',
+            'tipo' => ['required', Rule::in([Categoria::TIPO_PRODUTO, Categoria::TIPO_SERVICO])]
         ], [
             'descricao.required' => 'A descrição é obrigatória.',
             'descricao.max' => 'A descrição não pode ter mais de 255 caracteres.',
+            'tipo.required' => 'O tipo é obrigatório.',
+            'tipo.in' => 'O tipo deve ser produto ou serviço.',
         ]);
 
         try {
@@ -204,6 +219,7 @@ class CategoriaController extends Controller
 
             $categoria->update([
                 'descricao' => $request->descricao,
+                'tipo' => $request->input('tipo', $categoria->tipo),
                 'ativo' => $request->has('ativo') && $request->ativo == '1'
             ]);
 

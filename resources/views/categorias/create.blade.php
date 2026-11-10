@@ -43,6 +43,24 @@
                     </div>
 
                     <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="tipo">Tipo <span class="text-danger">*</span></label>
+                                <select class="form-select @error('tipo') is-invalid @enderror" id="tipo" name="tipo"
+                                    required>
+                                    <option value="produto" {{ old('tipo', 'produto') === 'produto' ? 'selected' : '' }}>
+                                        Produto</option>
+                                    <option value="servico" {{ old('tipo') === 'servico' ? 'selected' : '' }}>Serviço
+                                    </option>
+                                </select>
+                                @error('tipo')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-12">
                             <div class="form-check mt-3">
                                 <label class="form-check-label">

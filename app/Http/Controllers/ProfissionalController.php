@@ -19,10 +19,12 @@ class ProfissionalController extends Controller
      */
     public function index(Request $request)
     {
+        // Normaliza para string: parâmetros vazios chegam como null
+        // (middleware ConvertEmptyStringsToNull) e quebrariam as comparações.
         $filters = [
-            'search' => $request->get('search', ''),
-            'especialidade_id' => $request->get('especialidade_id', ''),
-            'status' => $request->get('status', ''),
+            'search' => (string) $request->get('search', ''),
+            'especialidade_id' => (string) $request->get('especialidade_id', ''),
+            'status' => (string) $request->get('status', ''),
         ];
 
         // Obter tenant_id e location_ids da sessão

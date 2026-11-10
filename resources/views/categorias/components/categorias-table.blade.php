@@ -26,6 +26,7 @@
                             <thead>
                                 <tr>
                                     <th class="list-actions-col-descricao">Descrição</th>
+                                    <th class="d-none d-md-table-cell">Tipo</th>
                                     <th class="d-none d-md-table-cell">Status</th>
                                     <th class="list-actions-col-acoes">Ação</th>
                                 </tr>

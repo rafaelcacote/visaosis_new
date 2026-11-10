@@ -11,11 +11,16 @@ class Categoria extends Model
 
     protected $table = 'categoria_produto';
 
+    // Tipo constants
+    const TIPO_PRODUTO = 'produto';
+    const TIPO_SERVICO = 'servico';
+
     protected $fillable = [
         'tenant_id',
         'location_id',
         'user_id',
         'descricao',
+        'tipo',
         'ativo'
     ];
 
@@ -33,6 +38,11 @@ class Categoria extends Model
     }
 
     // Accessors
+    public function getTipoLabelAttribute()
+    {
+        return $this->tipo === self::TIPO_SERVICO ? 'Serviço' : 'Produto';
+    }
+
     public function getStatusAttribute()
     {
         return $this->ativo ? 'Ativo' : 'Inativo';

@@ -115,7 +115,7 @@
                 <div class="card-body">
                     <form class="row g-3 align-items-end form-aligned-sm js-list-filter-form" id="filtersForm"
                         method="GET" action="{{ route('financial.receivables') }}">
-                        <div class="col-md-3 col-sm-6">
+                        <div class="col-md-2 col-sm-6">
                             <label for="searchInput" class="form-label">Buscar</label>
                             <input type="text" class="form-control form-control-sm" placeholder="cliente, venda..."
                                 id="searchInput" name="q" value="{{ $filters['q'] ?? '' }}">
