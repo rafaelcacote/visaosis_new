@@ -363,6 +363,53 @@
                                 </tr>
                             </table>
                         </div>
+                        <p style="font-size: 9px; font-weight: bold; margin: 4px 0 2px;">Itens do pedido</p>
+                        <table class="table table-bordered table-sm"
+                            style="font-size: 9px; table-layout: fixed; margin-bottom: 4px;">
+                            <colgroup>
+                                <col style="width: 46%;">
+                                <col style="width: 12%;">
+                                <col style="width: 14%;">
+                                <col style="width: 12%;">
+                                <col style="width: 16%;">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th style="background-color: #f8f9fa;">Produto</th>
+                                    <th style="background-color: #f8f9fa;" class="text-center">Qtd.</th>
+                                    <th style="background-color: #f8f9fa;" class="text-end">Preço Unit.</th>
+                                    <th style="background-color: #f8f9fa;" class="text-end">Desconto</th>
+                                    <th style="background-color: #f8f9fa;" class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($venda['itens'] as $item)
+                                    <tr>
+                                        <td>{{ $item['nome'] }}</td>
+                                        <td class="text-center">{{ $item['quantidade'] }}</td>
+                                        <td class="text-end">R$
+                                            {{ number_format($item['preco_unitario'], 2, ',', '.') }}</td>
+                                        <td class="text-end">R$ {{ number_format($item['desconto'], 2, ',', '.') }}
+                                        </td>
+                                        <td class="text-end">R$ {{ number_format($item['subtotal'], 2, ',', '.') }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center">Nenhum item cadastrado.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold;">
+                                    <td colspan="3" class="text-end">Total do desconto</td>
+                                    <td class="text-end">R$
+                                        {{ number_format($venda['desconto_total'], 2, ',', '.') }}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <p style="font-size: 9px; font-weight: bold; margin: 4px 0 2px;">Parcelas</p>
                         <table class="table table-bordered table-sm" style="font-size: 9px; table-layout: fixed;">
                             <colgroup>
                                 <col style="width: 12%;">

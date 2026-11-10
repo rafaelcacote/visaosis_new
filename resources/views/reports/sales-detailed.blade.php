@@ -134,9 +134,9 @@
                         <div class="accordion" id="vendasAccordion">
                             @foreach ($rows as $venda)
                                 <div class="border-bottom">
-                                    <div class="d-flex flex-wrap justify-content-between align-items-center p-3"
-                                        style="cursor: pointer;" data-bs-toggle="collapse"
-                                        data-bs-target="#venda-{{ $venda['id'] }}">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center p-3 venda-row-toggle"
+                                        style="cursor: pointer;" role="button" tabindex="0" aria-expanded="false"
+                                        aria-controls="venda-{{ $venda['id'] }}" data-target="venda-{{ $venda['id'] }}">
                                         <div class="me-3" style="min-width: 220px;">
                                             <h6 class="mb-0">{{ $venda['numero'] }} — {{ $venda['cliente'] }}</h6>
                                             <small class="text-muted">
@@ -169,10 +169,69 @@
                                                 <span class="badge bg-danger">Pendente</span>
                                             @endif
                                         </div>
-                                        <i class="mdi mdi-chevron-down"></i>
+                                        <i class="mdi mdi-chevron-down venda-row-chevron"></i>
                                     </div>
-                                    <div class="collapse" id="venda-{{ $venda['id'] }}">
+                                    <div class="venda-collapse" id="venda-{{ $venda['id'] }}">
                                         <div class="px-3 pb-3">
+                                            <h6 class="text-muted mt-3 mb-2">
+                                                <i class="mdi mdi-package-variant-closed me-1"></i>Itens do pedido
+                                            </h6>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered mb-3"
+                                                    style="table-layout: fixed; width: 100%;">
+                                                    <colgroup>
+                                                        <col style="width: 46%;">
+                                                        <col style="width: 12%;">
+                                                        <col style="width: 14%;">
+                                                        <col style="width: 12%;">
+                                                        <col style="width: 16%;">
+                                                    </colgroup>
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Produto</th>
+                                                            <th class="text-center">Qtd.</th>
+                                                            <th class="text-end">Preço Unit.</th>
+                                                            <th class="text-end">Desconto</th>
+                                                            <th class="text-end">Subtotal</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @forelse ($venda['itens'] as $item)
+                                                            <tr>
+                                                                <td>{{ $item['nome'] }}</td>
+                                                                <td class="text-center">{{ $item['quantidade'] }}</td>
+                                                                <td class="text-end">R$
+                                                                    {{ number_format($item['preco_unitario'], 2, ',', '.') }}
+                                                                </td>
+                                                                <td class="text-end">R$
+                                                                    {{ number_format($item['desconto'], 2, ',', '.') }}
+                                                                </td>
+                                                                <td class="text-end">R$
+                                                                    {{ number_format($item['subtotal'], 2, ',', '.') }}
+                                                                </td>
+                                                            </tr>
+                                                        @empty
+                                                            <tr>
+                                                                <td colspan="5" class="text-center text-muted">
+                                                                    Nenhum item cadastrado para esta venda.
+                                                                </td>
+                                                            </tr>
+                                                        @endforelse
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr class="fw-medium">
+                                                            <td colspan="3" class="text-end">Total do desconto</td>
+                                                            <td class="text-end">R$
+                                                                {{ number_format($venda['desconto_total'], 2, ',', '.') }}
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                            <h6 class="text-muted mb-2">
+                                                <i class="mdi mdi-cash-multiple me-1"></i>Parcelas
+                                            </h6>
                                             <div class="table-responsive">
                                                 <table class="table table-sm table-bordered mb-0"
                                                     style="table-layout: fixed; width: 100%;">
@@ -303,3 +362,61 @@
 
     </div>
 @endsection
+
+@push('styles')
+    <style>
+        .venda-row-chevron {
+            transition: transform 0.2s ease;
+        }
+
+        .venda-row-chevron.rotate-180 {
+            transform: rotate(180deg);
+        }
+
+        .venda-collapse {
+            display: none;
+        }
+
+        .venda-collapse.show {
+            display: block;
+        }
+    </style>
+@endpush
+
+@push('scripts')
+    <script>
+        (function() {
+            'use strict';
+
+            function toggleVendaRow(header) {
+                var targetId = header.getAttribute('data-target');
+                if (!targetId) return;
+
+                var target = document.getElementById(targetId);
+                if (!target) return;
+
+                var willOpen = !target.classList.contains('show');
+                target.classList.toggle('show', willOpen);
+                header.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+                var chevron = header.querySelector('.venda-row-chevron');
+                if (chevron) {
+                    chevron.classList.toggle('rotate-180', willOpen);
+                }
+            }
+
+            document.querySelectorAll('.venda-row-toggle').forEach(function(header) {
+                header.addEventListener('click', function() {
+                    toggleVendaRow(header);
+                });
+
+                header.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        toggleVendaRow(header);
+                    }
+                });
+            });
+        })();
+    </script>
+@endpush

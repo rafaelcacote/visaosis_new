@@ -681,6 +681,7 @@ class ReportController extends Controller
             'cliente',
             'user',
             'parcelas' => fn($rel) => $rel->orderBy('numero_parcela'),
+            'itens.produto',
         ])
             ->where('tenant_id', $tenantId)
             ->where('location_id', $locationId)
@@ -748,7 +749,21 @@ class ReportController extends Controller
                 ];
             })->values();
 
+            $itens = $venda->itens->map(function ($item) {
+                return [
+                    'nome' => $item->produto->nome ?? 'Produto não encontrado',
+                    'quantidade' => (int) $item->quantidade,
+                    'preco_unitario' => (float) $item->preco_unit,
+                    'desconto' => (float) $item->desconto,
+                    'subtotal' => (float) $item->total_linha,
+                ];
+            })->values();
+
             $valorTotal = (float) $venda->valor_total;
+            $subtotalItens = (float) $itens->sum(fn($item) => $item['preco_unitario'] * $item['quantidade']);
+            $descontoTotal = (float) $venda->desconto_valor > 0
+                ? (float) $venda->desconto_valor
+                : max(0, round($subtotalItens - $valorTotal, 2));
             $valorRecebidoTotal = (float) $parcelas->sum('valor_recebido');
             $isCancelado = $venda->status === PedidoVenda::STATUS_CANCELADO;
             $valorPendente = $isCancelado ? 0.0 : max(0, round($valorTotal - $valorRecebidoTotal, 2));
@@ -771,11 +786,13 @@ class ReportController extends Controller
                 'vendedor' => $venda->user->name ?? 'Não informado',
                 'forma_pagamento' => $venda->forma_pagamento ?: 'Não informado',
                 'valor_total' => $valorTotal,
+                'desconto_total' => $descontoTotal,
                 'valor_recebido' => $valorRecebidoTotal,
                 'valor_pendente' => $valorPendente,
                 'status' => $venda->status,
                 'status_label' => $venda->status_label,
                 'status_recebimento' => $statusRecebimento,
+                'itens' => $itens,
                 'parcelas' => $parcelas,
             ];
         })->values();
