@@ -596,6 +596,7 @@ class ReportController extends Controller
         $startDate = (string) $request->get('start_date', now()->format('Y-m-d'));
         $endDate = (string) $request->get('end_date', now()->format('Y-m-d'));
         $status = trim((string) $request->get('status', ''));
+        $tipo = trim((string) $request->get('tipo', ''));
 
         $dateStart = Carbon::parse($startDate)->startOfDay();
         $dateEnd = Carbon::parse($endDate)->endOfDay();
@@ -609,7 +610,15 @@ class ReportController extends Controller
             $query->where('status', $status);
         }
 
-        return [$query, $startDate, $endDate, $status];
+        // Filtro por tipo da categoria do produto: mantém vendas que possuam
+        // ao menos um item cujo produto pertença a uma categoria do tipo.
+        if (in_array($tipo, [Categoria::TIPO_PRODUTO, Categoria::TIPO_SERVICO], true)) {
+            $query->whereHas('itens.produto.categoria', function ($q) use ($tipo) {
+                $q->where('tipo', $tipo);
+            });
+        }
+
+        return [$query, $startDate, $endDate, $status, $tipo];
     }
 
     private function buildSalesStats($vendas): array
@@ -639,22 +648,22 @@ class ReportController extends Controller
 
     public function sales(Request $request)
     {
-        [$query, $startDate, $endDate, $status] = $this->salesReportQuery($request);
+        [$query, $startDate, $endDate, $status, $tipo] = $this->salesReportQuery($request);
 
         $vendas = $query->orderByDesc('data_pedido')->get();
         $stats = $this->buildSalesStats($vendas);
 
-        return view('reports.sales', compact('vendas', 'stats', 'startDate', 'endDate', 'status'));
+        return view('reports.sales', compact('vendas', 'stats', 'startDate', 'endDate', 'status', 'tipo'));
     }
 
     public function salesPdf(Request $request)
     {
-        [$query, $startDate, $endDate, $status] = $this->salesReportQuery($request);
+        [$query, $startDate, $endDate, $status, $tipo] = $this->salesReportQuery($request);
 
         $vendas = $query->orderByDesc('data_pedido')->get();
         $stats = $this->buildSalesStats($vendas);
 
-        $pdf = \PDF::loadView('reports.sales-pdf', compact('vendas', 'stats', 'startDate', 'endDate', 'status'));
+        $pdf = \PDF::loadView('reports.sales-pdf', compact('vendas', 'stats', 'startDate', 'endDate', 'status', 'tipo'));
 
         $pdf->setPaper('a4', 'landscape');
 

@@ -148,6 +148,11 @@
             'cancelado' => 'Cancelado',
         ];
 
+        $tipoLabelsMap = [
+            'produto' => 'Produto',
+            'servico' => 'Serviço',
+        ];
+
         $logoBase64 = null;
         if (AuthHelper::hasTenantLogo()) {
             try {
@@ -207,6 +212,10 @@
                 </div>
                 <div class="col-md-3">
                     <p><strong>Status:</strong> {{ $status !== '' ? $statusLabelsMap[$status] ?? $status : 'Todos' }}
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Tipo:</strong> {{ ($tipo ?? '') !== '' ? $tipoLabelsMap[$tipo] ?? $tipo : 'Todos' }}
                     </p>
                 </div>
             </div>

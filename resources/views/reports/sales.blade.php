@@ -31,17 +31,17 @@
                 <div class="card-body">
                     <form id="filterForm" method="GET" action="{{ route('reports.sales') }}"
                         class="row g-3 align-items-end">
-                        <div class="col-12 col-sm-6 col-md-3">
+                        <div class="col-12 col-sm-6 col-md-2">
                             <label for="start_date" class="form-label">Data Início</label>
                             <input type="date" class="form-control form-control-sm" id="start_date" name="start_date"
                                 value="{{ $startDate }}">
                         </div>
-                        <div class="col-12 col-sm-6 col-md-3">
+                        <div class="col-12 col-sm-6 col-md-2">
                             <label for="end_date" class="form-label">Data Fim</label>
                             <input type="date" class="form-control form-control-sm" id="end_date" name="end_date"
                                 value="{{ $endDate }}">
                         </div>
-                        <div class="col-12 col-sm-6 col-md-3">
+                        <div class="col-12 col-sm-6 col-md-2">
                             <label for="status" class="form-label">Status</label>
                             <select class="form-select form-select-sm" id="status" name="status">
                                 <option value="">Todos</option>
@@ -50,7 +50,15 @@
                                 <option value="cancelado" @selected($status === 'cancelado')>Cancelado</option>
                             </select>
                         </div>
-                        <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
+                        <div class="col-12 col-sm-6 col-md-2">
+                            <label for="tipo" class="form-label">Tipo</label>
+                            <select class="form-select form-select-sm" id="tipo" name="tipo">
+                                <option value="">Todos</option>
+                                <option value="servico" @selected($tipo === 'servico')>Serviço</option>
+                                <option value="produto" @selected($tipo === 'produto')>Produto</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-4 d-flex gap-2">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 <i class="mdi mdi-magnify me-1"></i>
                                 Filtrar
@@ -197,6 +205,7 @@
                                 'start_date' => $startDate ?? null,
                                 'end_date' => $endDate ?? null,
                                 'status' => $status ?? null,
+                                'tipo' => $tipo ?? null,
                             ];
                             $filtered = array_filter($raw, function ($v) {
                                 return $v !== null && $v !== '';
