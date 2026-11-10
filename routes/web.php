@@ -215,6 +215,7 @@ Route::middleware(['auth'])->group(function () {
     // Módulo de Vendas
     Route::post('/sales/authorize-discount', [SaleController::class, 'authorizeDiscount'])->name('sales.authorize-discount');
     Route::get('/sales/products/search', [SaleController::class, 'searchProducts'])->name('sales.products.search');
+    Route::get('/sales/export', [SaleController::class, 'export'])->name('sales.export');
     Route::resource('sales', SaleController::class);
     Route::get('/sales/{id}/print', [SaleController::class, 'print'])->name('sales.print');
     Route::get('/sales/{id}/print-80mm', [SaleController::class, 'print80mm'])->name('sales.print-80mm');

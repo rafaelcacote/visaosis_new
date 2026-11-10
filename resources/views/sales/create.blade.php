@@ -198,6 +198,14 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="tipo_venda" class="form-label">Tipo de Venda</label>
+                            <select class="form-select" id="tipo_venda">
+                                <option value="varejo" selected>Varejo</option>
+                                <option value="atacado">Atacado</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
                             <label for="observations" class="form-label">Observações</label>
                             <textarea class="form-control" id="observations" rows="2" placeholder="Observações sobre a venda..."></textarea>
                         </div>
@@ -2425,6 +2433,7 @@
                 desconto_autorizacao_token: discountAuthToken,
                 subtotal: subtotal,
                 total: total,
+                tipo_venda: document.getElementById('tipo_venda').value || 'varejo',
                 observacoes: document.getElementById('observations').value || null
             };
 

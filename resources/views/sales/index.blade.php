@@ -120,8 +120,8 @@
                             <input type="text" class="form-control form-control-sm" id="search" name="search"
                                 placeholder="Número, cliente..." value="{{ request('search') }}">
                         </div>
-                        <div class="col-md-2">
-                            <label for="status" class="form-label">Status Pagamento</label>
+                        <div class="col-md-1">
+                            <label for="status" class="form-label">Status</label>
                             <select class="form-select form-select-sm" id="status" name="status"
                                 onchange="this.form.submit()">
                                 <option value="">Todos</option>
@@ -134,7 +134,7 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
                             <label for="pagamento" class="form-label">Pagamento</label>
                             <select class="form-select form-select-sm" id="pagamento" name="pagamento">
                                 <option value="">Todos</option>
@@ -149,6 +149,17 @@
                                 <option value="Crediário" {{ request('pagamento') == 'Crediário' ? 'selected' : '' }}>
                                     Crediário</option>
                                 <option value="PIX" {{ request('pagamento') == 'PIX' ? 'selected' : '' }}>PIX</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="tipo_venda" class="form-label">Tipo de Venda</label>
+                            <select class="form-select form-select-sm" id="tipo_venda" name="tipo_venda"
+                                onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                <option value="varejo" {{ request('tipo_venda') == 'varejo' ? 'selected' : '' }}>Varejo
+                                </option>
+                                <option value="atacado" {{ request('tipo_venda') == 'atacado' ? 'selected' : '' }}>
+                                    Atacado</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -230,6 +241,7 @@
                                     <th class="list-actions-col-descricao">Cliente</th>
                                     <th class="d-none d-md-table-cell">Data</th>
                                     <th>Total</th>
+                                    <th class="d-none d-md-table-cell">Tipo de Venda</th>
                                     <th class="d-none d-md-table-cell">Status Pagamento</th>
                                     <th class="list-actions-col-acoes">Ações</th>
                                 </tr>
@@ -252,6 +264,9 @@
                                                     <small class="text-muted d-md-none d-block">
                                                         {{ \Carbon\Carbon::parse($sale['data'])->format('d/m/Y') }}
                                                     </small>
+                                                    <small class="text-muted d-md-none d-block">
+                                                        {{ $sale['tipo_venda_label'] }}
+                                                    </small>
                                                 </div>
                                             </div>
                                         </td>
@@ -268,6 +283,22 @@
                                         <td>
                                             <h6 class="mb-0 text-success">R$
                                                 {{ number_format($sale['total'], 2, ',', '.') }}</h6>
+                                        </td>
+                                        <td class="d-none d-md-table-cell">
+                                            @switch($sale['tipo_venda'])
+                                                @case(\App\Models\PedidoVenda::TIPO_ATACADO)
+                                                    <span class="badge bg-primary">
+                                                        <i class="mdi mdi-package-variant me-1"></i>
+                                                        Atacado
+                                                    </span>
+                                                @break
+
+                                                @default
+                                                    <span class="badge bg-info text-dark">
+                                                        <i class="mdi mdi-store me-1"></i>
+                                                        Varejo
+                                                    </span>
+                                            @endswitch
                                         </td>
                                         <td class="d-none d-md-table-cell">
                                             @switch($sale['status_pagamento'])
@@ -329,7 +360,7 @@
                                     </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="text-center py-5">
+                                            <td colspan="6" class="text-center py-5">
                                                 <div class="text-muted">
                                                     <i class="mdi mdi-inbox" style="font-size: 3rem;"></i>
                                                     <p class="mt-3 mb-0">Nenhuma venda encontrada.</p>
@@ -620,9 +651,10 @@
                         });
                 }
 
-                function exportSales() {
-                    alert('Funcionalidade de exportação será implementada!');
-                }
+                window.exportSales = function() {
+                    const params = new URLSearchParams(window.location.search);
+                    window.location.href = `{{ route('sales.export') }}?${params.toString()}`;
+                };
 
                 document.addEventListener('DOMContentLoaded', function() {
                     ensureModalInstance();

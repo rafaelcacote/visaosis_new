@@ -16,6 +16,10 @@ class PedidoVenda extends Model
     const STATUS_FATURADO = 'faturado';
     const STATUS_CANCELADO = 'cancelado';
 
+    // Tipo de venda constants
+    const TIPO_VAREJO = 'varejo';
+    const TIPO_ATACADO = 'atacado';
+
     protected $primaryKey = 'id';
     public $incrementing = true;
     protected $keyType = 'int';
@@ -26,6 +30,7 @@ class PedidoVenda extends Model
         'user_id',
         'pessoa_cliente_id',
         'status',
+        'tipo_venda',
         'data_pedido',
         'valor_total',
         'desconto_valor',
@@ -165,6 +170,18 @@ class PedidoVenda extends Model
             self::STATUS_FATURADO => 'Faturado',
             self::STATUS_CANCELADO => 'Cancelado',
             default => ucfirst($this->status)
+        };
+    }
+
+    /**
+     * Accessor para tipo de venda label
+     */
+    public function getTipoVendaLabelAttribute()
+    {
+        return match ($this->tipo_venda) {
+            self::TIPO_ATACADO => 'Atacado',
+            self::TIPO_VAREJO => 'Varejo',
+            default => ucfirst((string) $this->tipo_venda)
         };
     }
 }

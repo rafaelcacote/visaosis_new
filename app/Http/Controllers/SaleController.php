@@ -30,9 +30,83 @@ class SaleController extends Controller
             $perPage = 10;
         }
 
+        $query = $this->buildSalesQuery($request);
+        $paidStatuses = self::PAID_PARCELA_STATUSES;
+
+        $pedidosStats = (clone $query)->get();
+        $pedidos = $query->paginate($perPage)->appends($request->query());
+
+        // Formatar dados para a view
+        $sales = $pedidos->through(function ($pedido) use ($paidStatuses) {
+            $clienteNome = $pedido->cliente ? $pedido->cliente->nome : 'Cliente não informado';
+            $quantidadeItens = $pedido->itens->sum('quantidade');
+            $quantidadeProdutos = $pedido->itens->count();
+            $totalParcelas = $pedido->parcelas->count();
+            $parcelasPagas = $pedido->parcelas->filter(function ($parcela) use ($paidStatuses) {
+                return !empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+            })->count();
+
+            if ($totalParcelas > 0 && $parcelasPagas === $totalParcelas) {
+                $statusPagamento = 'quitada';
+            } elseif ($parcelasPagas > 0) {
+                $statusPagamento = 'pagamento_parcial';
+            } else {
+                $statusPagamento = 'pendente';
+            }
+
+            // Gerar número da venda baseado no ID
+            $numero = 'VD-' . date('Y', strtotime($pedido->data_pedido)) . '-' . str_pad($pedido->id, 4, '0', STR_PAD_LEFT);
+
+            // Mapear status
+            $statusMap = [
+                'aberto' => 'pendente',
+                'faturado' => 'finalizada',
+                'cancelado' => 'cancelada'
+            ];
+            $status = $statusMap[$pedido->status] ?? $pedido->status;
+
+            // Forma de pagamento do banco
+            $formaPagamento = $pedido->forma_pagamento ?? 'Não informado';
+            $parcelas = 1; // Pode ser adicionado na tabela se necessário
+
+            return [
+                'id' => $pedido->id,
+                'numero' => $numero,
+                'cliente' => $clienteNome,
+                'data' => $pedido->data_pedido->format('Y-m-d'),
+                'total' => (float) $pedido->valor_total,
+                'status' => $status,
+                'status_pagamento' => $statusPagamento,
+                'tipo_venda' => $pedido->tipo_venda,
+                'tipo_venda_label' => $pedido->tipo_venda_label,
+                'forma_pagamento' => $formaPagamento,
+                'parcelas' => $parcelas,
+                'produtos' => $quantidadeProdutos,
+                'itens_total' => $quantidadeItens
+            ];
+        });
+
+        // Calcular estatísticas
+        $vendasHoje = $pedidosStats->filter(function ($pedido) {
+            return $pedido->data_pedido->format('Y-m-d') === today()->format('Y-m-d');
+        })->sum('valor_total');
+
+        $totalVendas = $pedidosStats->count();
+        $ticketMedio = $totalVendas > 0 ? $pedidosStats->sum('valor_total') / $totalVendas : 0;
+        $pendentes = $pedidosStats->where('status', 'aberto')->count();
+
+        return view('sales.index', compact('sales', 'vendasHoje', 'totalVendas', 'ticketMedio', 'pendentes', 'perPage'));
+    }
+
+    /**
+     * Query base da listagem de vendas, com tenant/location e filtros da tela aplicados.
+     */
+    private function buildSalesQuery(Request $request)
+    {
         $tenantId = session('tenant_id');
         $locationId = session('location_id');
         $userLocations = session('user_locations', []);
+        $paidStatuses = self::PAID_PARCELA_STATUSES;
 
         $locationIds = [];
         if ($tenantId) {
@@ -46,7 +120,6 @@ class SaleController extends Controller
 
         $query = PedidoVenda::with(['cliente', 'itens', 'parcelas'])
             ->where('ativo', true);
-        $paidStatuses = ['pago', 'paga', 'cancelado', 'cancelada'];
 
         if ($tenantId) {
             $query->where('tenant_id', $tenantId);
@@ -106,6 +179,10 @@ class SaleController extends Controller
             $query->where('forma_pagamento', $request->get('pagamento'));
         }
 
+        if ($request->filled('tipo_venda')) {
+            $query->where('tipo_venda', $request->get('tipo_venda'));
+        }
+
         if ($request->filled('periodo')) {
             $periodo = $request->get('periodo');
             switch ($periodo) {
@@ -122,68 +199,84 @@ class SaleController extends Controller
             }
         }
 
-        $pedidosStats = (clone $query)->get();
-        $pedidos = $query->paginate($perPage)->appends($request->query());
+        return $query;
+    }
 
-        // Formatar dados para a view
-        $sales = $pedidos->through(function ($pedido) use ($paidStatuses) {
-            $clienteNome = $pedido->cliente ? $pedido->cliente->nome : 'Cliente não informado';
-            $quantidadeItens = $pedido->itens->sum('quantidade');
-            $quantidadeProdutos = $pedido->itens->count();
-            $totalParcelas = $pedido->parcelas->count();
-            $parcelasPagas = $pedido->parcelas->filter(function ($parcela) use ($paidStatuses) {
-                return !empty($parcela->pago_em) || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
-            })->count();
+    /**
+     * Exporta a lista de vendas (com os filtros aplicados) em CSV.
+     */
+    public function export(Request $request)
+    {
+        $pedidos = $this->buildSalesQuery($request)->get();
+        $paidStatuses = self::PAID_PARCELA_STATUSES;
 
-            if ($totalParcelas > 0 && $parcelasPagas === $totalParcelas) {
-                $statusPagamento = 'quitada';
-            } elseif ($parcelasPagas > 0) {
-                $statusPagamento = 'pagamento_parcial';
-            } else {
-                $statusPagamento = 'pendente';
+        $statusLabels = [
+            'aberto' => 'Pendente',
+            'faturado' => 'Finalizada',
+            'cancelado' => 'Cancelada',
+        ];
+
+        $filename = 'vendas_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($pedidos, $paidStatuses, $statusLabels) {
+            $output = fopen('php://output', 'w');
+
+            // BOM para o Excel reconhecer os acentos (UTF-8)
+            fwrite($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($output, [
+                'Número',
+                'Cliente',
+                'Data',
+                'Tipo de Venda',
+                'Status',
+                'Status Pagamento',
+                'Forma de Pagamento',
+                'Produtos',
+                'Itens',
+                'Total (R$)',
+            ], ';');
+
+            foreach ($pedidos as $pedido) {
+                $totalParcelas = $pedido->parcelas->count();
+                $parcelasPagas = $pedido->parcelas->filter(function ($parcela) use ($paidStatuses) {
+                    return !empty($parcela->pago_em)
+                        || in_array(strtolower((string) ($parcela->status ?? '')), $paidStatuses, true);
+                })->count();
+
+                if ($totalParcelas > 0 && $parcelasPagas === $totalParcelas) {
+                    $statusPagamento = 'Quitada';
+                } elseif ($parcelasPagas > 0) {
+                    $statusPagamento = 'Pagamento Parcial';
+                } else {
+                    $statusPagamento = 'Pendente';
+                }
+
+                $numero = 'VD-' . date('Y', strtotime($pedido->data_pedido))
+                    . '-' . str_pad($pedido->id, 4, '0', STR_PAD_LEFT);
+
+                fputcsv($output, [
+                    $numero,
+                    $pedido->cliente ? $pedido->cliente->nome : 'Cliente não informado',
+                    $pedido->data_pedido->format('d/m/Y'),
+                    $pedido->tipo_venda_label,
+                    $statusLabels[$pedido->status] ?? ucfirst((string) $pedido->status),
+                    $statusPagamento,
+                    $pedido->forma_pagamento ?? 'Não informado',
+                    $pedido->itens->count(),
+                    $pedido->itens->sum('quantidade'),
+                    number_format((float) $pedido->valor_total, 2, ',', '.'),
+                ], ';');
             }
 
-            // Gerar número da venda baseado no ID
-            $numero = 'VD-' . date('Y', strtotime($pedido->data_pedido)) . '-' . str_pad($pedido->id, 4, '0', STR_PAD_LEFT);
-
-            // Mapear status
-            $statusMap = [
-                'aberto' => 'pendente',
-                'faturado' => 'finalizada',
-                'cancelado' => 'cancelada'
-            ];
-            $status = $statusMap[$pedido->status] ?? $pedido->status;
-
-            // Forma de pagamento do banco
-            $formaPagamento = $pedido->forma_pagamento ?? 'Não informado';
-            $parcelas = 1; // Pode ser adicionado na tabela se necessário
-
-            return [
-                'id' => $pedido->id,
-                'numero' => $numero,
-                'cliente' => $clienteNome,
-                'data' => $pedido->data_pedido->format('Y-m-d'),
-                'total' => (float) $pedido->valor_total,
-                'status' => $status,
-                'status_pagamento' => $statusPagamento,
-                'forma_pagamento' => $formaPagamento,
-                'parcelas' => $parcelas,
-                'produtos' => $quantidadeProdutos,
-                'itens_total' => $quantidadeItens
-            ];
-        });
-
-        // Calcular estatísticas
-        $vendasHoje = $pedidosStats->filter(function ($pedido) {
-            return $pedido->data_pedido->format('Y-m-d') === today()->format('Y-m-d');
-        })->sum('valor_total');
-
-        $totalVendas = $pedidosStats->count();
-        $ticketMedio = $totalVendas > 0 ? $pedidosStats->sum('valor_total') / $totalVendas : 0;
-        $pendentes = $pedidosStats->where('status', 'aberto')->count();
-
-        return view('sales.index', compact('sales', 'vendasHoje', 'totalVendas', 'ticketMedio', 'pendentes', 'perPage'));
+            fclose($output);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
+
+    /**
+     * Status de parcela considerados como pagos.
+     */
+    private const PAID_PARCELA_STATUSES = ['pago', 'paga', 'cancelado', 'cancelada'];
 
     /**
      * Quantidade de produtos retornados por página no catálogo da tela de venda.
@@ -508,6 +601,7 @@ class SaleController extends Controller
                 'desconto_autorizacao_token' => 'nullable|string|max:100',
                 'subtotal' => 'required|numeric|min:0',
                 'total' => 'required|numeric|min:0',
+                'tipo_venda' => 'nullable|string|in:atacado,varejo',
                 'observacoes' => 'nullable|string|max:1000'
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -649,6 +743,7 @@ class SaleController extends Controller
                 'user_id' => $userId,
                 'pessoa_cliente_id' => $validated['cliente_id'],
                 'status' => 'faturado', // Status inicial como 'faturado' quando finaliza a venda
+                'tipo_venda' => $validated['tipo_venda'] ?? PedidoVenda::TIPO_VAREJO,
                 'data_pedido' => now(),
                 'valor_total' => $validated['total'],
                 'desconto_valor' => $discountValue,
