@@ -239,7 +239,7 @@ class FinancialController extends Controller
 
         $paidStatusSet = ['pago', 'paga', 'cancelado', 'cancelada'];
 
-        $pedidoIds = $installmentsRaw->pluck('pedido_id')->filter()->map(fn($v) => (int) $v)->values()->all();
+        $pedidoIds = $installmentsRaw->pluck('pedido_id')->filter()->map(fn($v) => (string) $v)->values()->all();
         $nextParcelas = [];
         if (! empty($pedidoIds)) {
             $nextParcelas = PedidoVendaParcela::query()
@@ -261,7 +261,7 @@ class FinancialController extends Controller
                 ->orderBy('id')
                 ->get(['id', 'pedido_venda_id'])
                 ->groupBy('pedido_venda_id')
-                ->map(fn($rows) => (int) $rows->first()->id)
+                ->map(fn($rows) => (string) $rows->first()->id)
                 ->toArray();
         }
 
@@ -300,10 +300,10 @@ class FinancialController extends Controller
                 }
             }
 
-            $proximaParcelaId = isset($nextParcelas[(int) $row->pedido_id]) ? (int) $nextParcelas[(int) $row->pedido_id] : null;
+            $proximaParcelaId = isset($nextParcelas[(string) $row->pedido_id]) ? $nextParcelas[(string) $row->pedido_id] : null;
             $boletoSecureUrl = null;
             if ($tenantId && $proximaParcelaId) {
-                $boletoToken = Crypt::encryptString((int) $tenantId . '|' . (int) $proximaParcelaId);
+                $boletoToken = Crypt::encryptString((int) $tenantId . '|' . $proximaParcelaId);
                 $boletoSecureUrl = URL::temporarySignedRoute(
                     'public.boleto.view',
                     now()->addDays(7),
@@ -312,7 +312,7 @@ class FinancialController extends Controller
             }
 
             return [
-                'pedido_id' => (int) $row->pedido_id,
+                'pedido_id' => (string) $row->pedido_id,
                 'proxima_parcela_id' => $proximaParcelaId,
                 'proxima_parcela_boleto_url' => $boletoSecureUrl,
                 'cliente' => $cliente,
@@ -517,11 +517,11 @@ class FinancialController extends Controller
 
             $dataPedido = $row->data_pedido ? Carbon::parse((string) $row->data_pedido, $tz) : null;
             $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
-            $vendaId = 'VD-' . $year . '-' . str_pad((int) $row->pedido_id, 4, '0', STR_PAD_LEFT);
+            $vendaId = 'VD-' . $year . '-' . strtoupper(substr(str_replace('-', '', (string) $row->pedido_id), 0, 8));
 
             $valorParcela = (float) ($row->valor_parcela ?? 0);
             $juros = 0.0;
-            $secureToken = Crypt::encryptString((int) $tenantId . '|' . (int) $row->parcela_id);
+            $secureToken = Crypt::encryptString((int) $tenantId . '|' . $row->parcela_id);
             $boletoSecureUrl = URL::temporarySignedRoute(
                 'public.boleto.view',
                 now()->addDays(7),
@@ -529,12 +529,12 @@ class FinancialController extends Controller
             );
 
             return [
-                'id' => (int) $row->parcela_id,
+                'id' => (string) $row->parcela_id,
                 'cliente' => $cliente,
                 'telefone' => $telefone,
                 'cpf' => $cpf,
                 'venda_id' => $vendaId,
-                'venda_id_numero' => (int) $row->pedido_id,
+                'venda_id_numero' => (string) $row->pedido_id,
                 'parcela' => (int) $row->numero_parcela . '/' . (int) $row->total_parcelas,
                 'valor_parcela' => $valorParcela,
                 'valor_total' => (float) ($row->valor_total ?? 0),
@@ -738,7 +738,7 @@ class FinancialController extends Controller
 
             $dataPedido = $row->data_pedido ? Carbon::parse((string) $row->data_pedido, $tz) : null;
             $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
-            $vendaId = 'VD-' . $year . '-' . str_pad((int) $row->pedido_id, 4, '0', STR_PAD_LEFT);
+            $vendaId = 'VD-' . $year . '-' . strtoupper(substr(str_replace('-', '', (string) $row->pedido_id), 0, 8));
 
             $valorParcela = (float) ($row->valor_parcela ?? 0);
 
@@ -804,7 +804,7 @@ class FinancialController extends Controller
             return redirect()->route('financial.receivables')->with('error', 'Tenant não informado na sessão.');
         }
 
-        $parcela = $this->findAccessibleParcela((int) $id, $tenantId, $locationIds);
+        $parcela = $this->findAccessibleParcela($id, $tenantId, $locationIds);
 
         if (! $parcela) {
             return redirect()->route('financial.receivables')->with('error', 'Parcela não encontrada.');
@@ -814,7 +814,7 @@ class FinancialController extends Controller
         $cliente = $parcela->pedido?->cliente;
         $dataPedido = $parcela->pedido?->data_pedido ? Carbon::parse($parcela->pedido->data_pedido, $tz) : null;
         $year = $dataPedido ? $dataPedido->format('Y') : now($tz)->format('Y');
-        $vendaId = 'VD-' . $year . '-' . str_pad((int) $parcela->pedido_venda_id, 4, '0', STR_PAD_LEFT);
+        $vendaId = 'VD-' . $year . '-' . strtoupper(substr(str_replace('-', '', (string) $parcela->pedido_venda_id), 0, 8));
         $valorParcela = (float) ($parcela->valor ?? 0);
         $juros = 0.0;
         $valorAtualizado = $valorParcela + $juros;
@@ -825,7 +825,7 @@ class FinancialController extends Controller
         $dataNovaParcelaSugerida = $vencimentoAnterior ?? now($tz)->addMonth()->toDateString();
 
         $receivable = [
-            'id' => (int) $parcela->id,
+            'id' => (string) $parcela->id,
             'cliente' => $cliente?->nome ?? 'Cliente não informado',
             'cpf' => $cliente?->cpf_formatado ?? $cliente?->cpf ?? '',
             'venda_id' => $vendaId,
@@ -866,7 +866,7 @@ class FinancialController extends Controller
             ->with(['pedido.cliente'])
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -921,9 +921,9 @@ class FinancialController extends Controller
 
         $dataPedido = $pedido?->data_pedido ? Carbon::parse($pedido->data_pedido, $tz) : null;
         $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
-        $vendaId = $pedido ? 'VD-' . $year . '-' . str_pad((int) $pedido->id, 4, '0', STR_PAD_LEFT) : null;
+        $vendaId = $pedido ? 'VD-' . $year . '-' . strtoupper(substr(str_replace('-', '', (string) $pedido->id), 0, 8)) : null;
 
-        $secureToken = Crypt::encryptString((int) $parcela->tenant_id . '|' . (int) $parcela->id);
+        $secureToken = Crypt::encryptString((int) $parcela->tenant_id . '|' . $parcela->id);
         $boletoSecureUrl = URL::temporarySignedRoute(
             'public.boleto.view',
             now()->addDays(7),
@@ -994,7 +994,7 @@ class FinancialController extends Controller
             ->with(['pedido.cliente'])
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -1034,14 +1034,14 @@ class FinancialController extends Controller
                 $diasAtraso = $venc->diffInDays($today);
             }
 
-            $secureToken = Crypt::encryptString((int) $p->tenant_id . '|' . (int) $p->id);
+            $secureToken = Crypt::encryptString((int) $p->tenant_id . '|' . $p->id);
             $secureUrl = URL::temporarySignedRoute(
                 'public.recibo.view',
                 now()->addDays(7),
                 ['token' => $secureToken]
             );
 
-            $boletoToken = Crypt::encryptString((int) $p->tenant_id . '|' . (int) $p->id);
+            $boletoToken = Crypt::encryptString((int) $p->tenant_id . '|' . $p->id);
             $boletoSecureUrl = URL::temporarySignedRoute(
                 'public.boleto.view',
                 now()->addDays(7),
@@ -1064,7 +1064,7 @@ class FinancialController extends Controller
 
         $dataPedido = $pedido?->data_pedido ? Carbon::parse($pedido->data_pedido, $tz) : null;
         $year = $dataPedido ? $dataPedido->format('Y') : $today->format('Y');
-        $vendaId = $pedido ? 'VD-' . $year . '-' . str_pad((int) $pedido->id, 4, '0', STR_PAD_LEFT) : null;
+        $vendaId = $pedido ? 'VD-' . $year . '-' . strtoupper(substr(str_replace('-', '', (string) $pedido->id), 0, 8)) : null;
 
         return response()->json([
             'success' => true,
@@ -1119,7 +1119,7 @@ class FinancialController extends Controller
         $parcela = PedidoVendaParcela::query()
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -1402,7 +1402,7 @@ class FinancialController extends Controller
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
                 });
             })
-            ->orderByDesc('id')
+            ->orderByDesc('created_at')
             ->limit(200);
 
         $history = $historyQuery->get();
@@ -1550,13 +1550,12 @@ class FinancialController extends Controller
             'items' => 'required|array',
             'items.*.template_tipo' => 'required|string|max:50',
             'items.*.referencia_tipo' => 'nullable|string|max:50',
-            'items.*.referencia_id' => 'nullable|integer',
-            'items.*.pessoa_id' => 'nullable|integer',
+            'items.*.referencia_id' => 'nullable',
+            'items.*.pessoa_id' => 'nullable',
             'items.*.telefone' => 'nullable|string|max:40',
         ], [
             'required' => 'O campo :attribute é obrigatório.',
             'string' => 'O campo :attribute deve ser um texto.',
-            'integer' => 'O campo :attribute deve ser um número inteiro.',
             'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
             'array' => 'O campo :attribute deve ser uma lista.',
         ]);
@@ -1610,7 +1609,7 @@ class FinancialController extends Controller
             ]);
 
             $created++;
-            SendWhatsappNotificationJob::dispatch((int) $notification->id);
+            SendWhatsappNotificationJob::dispatch($notification->id);
             $queued++;
         }
 
@@ -1630,13 +1629,12 @@ class FinancialController extends Controller
         $validated = $request->validate([
             'template_tipo' => 'required|string|max:50',
             'referencia_tipo' => 'nullable|string|max:50',
-            'referencia_id' => 'nullable|integer',
-            'pessoa_id' => 'nullable|integer',
+            'referencia_id' => 'nullable',
+            'pessoa_id' => 'nullable',
             'telefone' => 'nullable|string|max:40',
         ], [
             'required' => 'O campo :attribute é obrigatório.',
             'string' => 'O campo :attribute deve ser um texto.',
-            'integer' => 'O campo :attribute deve ser um número inteiro.',
             'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
         ], [
             'template_tipo' => 'Template',
@@ -2174,7 +2172,7 @@ class FinancialController extends Controller
             ->get();
 
         $boletos = $parcelas->map(function (PedidoVendaParcela $p) {
-            $secureToken = Crypt::encryptString((int) $p->tenant_id . '|' . (int) $p->id);
+            $secureToken = Crypt::encryptString((int) $p->tenant_id . '|' . $p->id);
             $secureUrl = URL::temporarySignedRoute(
                 'public.boleto.view',
                 now()->addDays(7),
@@ -2211,7 +2209,7 @@ class FinancialController extends Controller
             ->with('pedido.cliente')
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -2227,7 +2225,7 @@ class FinancialController extends Controller
         }
 
         $boleto = $this->buildBoletoFromParcela($parcela);
-        $secureToken = Crypt::encryptString((int) $parcela->tenant_id . '|' . (int) $parcela->id);
+        $secureToken = Crypt::encryptString((int) $parcela->tenant_id . '|' . $parcela->id);
         $secureUrl = URL::temporarySignedRoute(
             'public.boleto.view',
             now()->addDays(7),
@@ -2256,7 +2254,7 @@ class FinancialController extends Controller
             ->with('pedido.cliente')
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -2284,7 +2282,7 @@ class FinancialController extends Controller
             ->with('pedido.cliente')
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -2307,8 +2305,8 @@ class FinancialController extends Controller
         }
 
         $tenantId = (int) $tenantId;
-        $parcelaId = (int) $parcelaId;
-        if ($tenantId <= 0 || $parcelaId <= 0) {
+        $parcelaId = (string) $parcelaId;
+        if ($tenantId <= 0 || ! $parcelaId) {
             abort(403, 'Link inválido.');
         }
 
@@ -2334,8 +2332,8 @@ class FinancialController extends Controller
         }
 
         $tenantId = (int) $tenantId;
-        $parcelaId = (int) $parcelaId;
-        if ($tenantId <= 0 || $parcelaId <= 0) {
+        $parcelaId = (string) $parcelaId;
+        if ($tenantId <= 0 || ! $parcelaId) {
             abort(403, 'Link inválido.');
         }
 
@@ -2384,7 +2382,7 @@ class FinancialController extends Controller
 
         return [
             'id' => 'BOL-' . $parcela->id,
-            'nosso_numero' => str_pad((string) $parcela->id, 11, '0', STR_PAD_LEFT),
+            'nosso_numero' => str_pad((string) hexdec(substr(md5((string) $parcela->id), 0, 12)), 11, '0', STR_PAD_LEFT),
             'linha_digitavel' => '34191.09008 61207.954566 00000.142508 1 95470000014962',
             'codigo_barras' => '34191954700000149620000061207954560000014250',
             'beneficiario' => $tenantName ?: 'Beneficiário não informado',
@@ -2401,7 +2399,7 @@ class FinancialController extends Controller
             'juros' => 0.0,
             'valor_total' => $valor,
             'gerado_em' => now()->format('Y-m-d H:i:s'),
-            'descricao' => 'Venda #' . (int) $parcela->pedido_venda_id . ' - Parcela ' . (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
+            'descricao' => 'Venda #' . $parcela->pedido_venda_id . ' - Parcela ' . (int) $parcela->numero_parcela . '/' . (int) $parcela->total_parcelas,
             'observacoes' => null,
         ];
     }
@@ -2429,7 +2427,7 @@ class FinancialController extends Controller
 
         $saleDate = $pedido?->data_pedido ? Carbon::parse($pedido->data_pedido, $tz) : null;
         $year = $saleDate ? $saleDate->format('Y') : ($paidAt ? $paidAt->format('Y') : now($tz)->format('Y'));
-        $vendaId = $pedido ? 'VD-' . $year . '-' . str_pad((int) $pedido->id, 4, '0', STR_PAD_LEFT) : null;
+        $vendaId = $pedido ? 'VD-' . $year . '-' . strtoupper(substr(str_replace('-', '', (string) $pedido->id), 0, 8)) : null;
 
         return [
             'id' => 'RCB-' . $parcela->id,
@@ -2553,7 +2551,7 @@ class FinancialController extends Controller
         }
 
         $validated = $request->validate([
-            'receivable_id' => 'required|integer',
+            'receivable_id' => 'required',
             'date' => 'required|date_format:Y-m-d',
             'method' => 'nullable|string|max:50',
             'bank' => 'nullable|string|max:50',
@@ -2565,7 +2563,6 @@ class FinancialController extends Controller
             'return_url' => 'nullable|string|max:500',
         ], [
             'required' => 'O campo :attribute é obrigatório.',
-            'integer' => 'O campo :attribute deve ser um número inteiro.',
             'date_format' => 'O campo :attribute deve estar no formato YYYY-MM-DD.',
             'numeric' => 'O campo :attribute deve ser numérico.',
             'max.string' => 'O campo :attribute não pode ter mais que :max caracteres.',
@@ -2574,7 +2571,7 @@ class FinancialController extends Controller
             'date' => 'Data do pagamento',
         ]);
 
-        $parcela = $this->findAccessibleParcela((int) $validated['receivable_id'], $tenantId, $locationIds);
+        $parcela = $this->findAccessibleParcela($validated['receivable_id'], $tenantId, $locationIds);
 
         if (! $parcela) {
             if ($request->expectsJson()) {
@@ -2714,7 +2711,7 @@ class FinancialController extends Controller
         ]);
     }
 
-    private function findAccessibleParcela(int $id, $tenantId, array $locationIds): ?PedidoVendaParcela
+    private function findAccessibleParcela(string $id, $tenantId, array $locationIds): ?PedidoVendaParcela
     {
         return PedidoVendaParcela::query()
             ->with(['pedido.cliente'])

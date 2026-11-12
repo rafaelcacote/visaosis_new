@@ -2,18 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuidV4;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OrdemServico extends Model
 {
-    use SoftDeletes;
+    use HasUuidV4, SoftDeletes;
 
     protected $table = 'ordem_servico';
-
-    protected $primaryKey = 'id';
-    public $incrementing = true;
-    protected $keyType = 'int';
 
     protected $fillable = [
         'tenant_id',
@@ -157,6 +154,14 @@ class OrdemServico extends Model
     public function getTotalFormatadoAttribute()
     {
         return 'R$ ' . number_format($this->total_linha, 2, ',', '.');
+    }
+
+    /**
+     * Código curto legível derivado do UUID, usado na interface e nos PDFs.
+     */
+    public function getNumeroAttribute()
+    {
+        return strtoupper(substr(str_replace('-', '', (string) $this->id), 0, 8));
     }
 
     public function getPrecoUnitFormatadoAttribute()

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuidV4;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 class ProductImage extends Model
 {
-    use SoftDeletes;
+    use HasUuidV4, SoftDeletes;
 
     // Tabela física: comercial.produto_imagem
     protected $table = 'comercial.produto_imagem';

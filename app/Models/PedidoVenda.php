@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuidV4;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PedidoVenda extends Model
 {
-    use SoftDeletes;
+    use HasUuidV4, SoftDeletes;
 
     protected $table = 'pedido_venda';
 
@@ -19,10 +20,6 @@ class PedidoVenda extends Model
     // Tipo de venda constants
     const TIPO_VAREJO = 'varejo';
     const TIPO_ATACADO = 'atacado';
-
-    protected $primaryKey = 'id';
-    public $incrementing = true;
-    protected $keyType = 'int';
 
     protected $fillable = [
         'tenant_id',
@@ -141,7 +138,7 @@ class PedidoVenda extends Model
      */
     public function getNumeroAttribute()
     {
-        return str_pad($this->id, 6, '0', STR_PAD_LEFT);
+        return strtoupper(substr(str_replace('-', '', (string) $this->id), 0, 8));
     }
 
     /**

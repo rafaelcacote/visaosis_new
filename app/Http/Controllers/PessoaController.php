@@ -325,7 +325,7 @@ class PessoaController extends Controller
     {
         $this->checkTenantAccess($pessoa);
 
-        abort_unless((int) $prescricao->pessoa_paciente_id === (int) $pessoa->id, 404);
+        abort_unless($prescricao->pessoa_paciente_id === $pessoa->id, 404);
 
         $tenantId = session('tenant_id');
         if ($tenantId && (int) $prescricao->tenant_id !== (int) $tenantId) {
@@ -350,7 +350,7 @@ class PessoaController extends Controller
                 : \Carbon\Carbon::now('America/Manaus')->format('Y-m-d'));
 
         $prescription = [
-            'numero' => 'RX-' . date('Y') . '-' . str_pad($prescricao->id, 4, '0', STR_PAD_LEFT),
+            'numero' => 'RX-' . date('Y') . '-' . strtoupper(substr(str_replace('-', '', (string) $prescricao->id), 0, 8)),
             'data' => $dataReceita,
             'paciente' => [
                 'nome' => $paciente->nome ?? '',
@@ -778,7 +778,7 @@ class PessoaController extends Controller
             DB::beginTransaction();
 
             $profissionalId = isset($validatedData['profissional_id']) && $validatedData['profissional_id'] !== ''
-                ? (int) $validatedData['profissional_id']
+                ? $validatedData['profissional_id']
                 : null;
             $consultaId = null;
 
@@ -933,7 +933,7 @@ class PessoaController extends Controller
             }
 
             $profissionalId = isset($validatedData['profissional_id']) && $validatedData['profissional_id'] !== ''
-                ? (int) $validatedData['profissional_id']
+                ? $validatedData['profissional_id']
                 : null;
             $consultaId = $prescricao->consulta_id;
 
@@ -1016,7 +1016,7 @@ class PessoaController extends Controller
 
     private function checkPrescriptionAccess(Pessoa $pessoa, Prescricao $prescricao): void
     {
-        if ((int) $prescricao->pessoa_paciente_id !== (int) $pessoa->id) {
+        if ($prescricao->pessoa_paciente_id !== $pessoa->id) {
             abort(404);
         }
 
@@ -1101,7 +1101,7 @@ class PessoaController extends Controller
             ->get();
     }
 
-    private function getCurrentProfessionalId(): ?int
+    private function getCurrentProfessionalId(): ?string
     {
         $tenantId = AuthHelper::tenantId();
         $locationId = AuthHelper::locationId();
@@ -1117,10 +1117,10 @@ class PessoaController extends Controller
             ->where('user_id', $userId)
             ->value('id');
 
-        return $profissionalId ? (int) $profissionalId : null;
+        return $profissionalId ?: null;
     }
 
-    private function createSystemPrescriptionConsulta(Pessoa $pessoa, int $profissionalId): Consulta
+    private function createSystemPrescriptionConsulta(Pessoa $pessoa, string $profissionalId): Consulta
     {
         $consulta = new Consulta();
         $consulta->tenant_id = AuthHelper::tenantId();

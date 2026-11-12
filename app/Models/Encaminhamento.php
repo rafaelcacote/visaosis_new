@@ -2,18 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuidV4;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Encaminhamento extends Model
 {
-    use SoftDeletes;
+    use HasUuidV4, SoftDeletes;
 
     protected $table = 'encaminhamento';
 
-    protected $primaryKey = 'id';
-    public $incrementing = true;
-    protected $keyType = 'int';
     public $timestamps = true;
 
     protected $fillable = [

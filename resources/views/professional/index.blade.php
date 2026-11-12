@@ -352,7 +352,7 @@
                                                 <div class="btn-group btn-group-sm">
                                                     @if ($patient->status == \App\Models\Consulta::STATUS_AGUARDANDO)
                                                         <button class="btn btn-sm btn-primary" title="Iniciar Atendimento"
-                                                            onclick="showStartConsultationModal({{ $patient->id }}, '{{ addslashes($patient->paciente->nome ?? 'Paciente') }}', @json($patient->profissional_id))">
+                                                            onclick="showStartConsultationModal('{{ $patient->id }}', '{{ addslashes($patient->paciente->nome ?? 'Paciente') }}', @js($patient->profissional_id))">
                                                             <i class="mdi mdi-play"></i>
                                                         </button>
                                                     @elseif($patient->status == \App\Models\Consulta::STATUS_EM_ATENDIMENTO)
@@ -630,8 +630,8 @@
 
             const selection = document.getElementById('startProfissionalSelection');
             const select = document.getElementById('start_profissional_id');
-            const parsedProfissionalId = profissionalId ? parseInt(profissionalId, 10) : null;
-            selectedStartProfissionalId = Number.isFinite(parsedProfissionalId) ? parsedProfissionalId : null;
+            const parsedProfissionalId = profissionalId ? String(profissionalId) : null;
+            selectedStartProfissionalId = parsedProfissionalId;
 
             if (selection) selection.style.display = 'block';
             if (select) select.value = selectedStartProfissionalId ? String(selectedStartProfissionalId) : '';
@@ -655,8 +655,8 @@
             let profissionalId = selectedStartProfissionalId;
 
             if (selection && selection.style.display !== 'none') {
-                profissionalId = select && select.value ? parseInt(select.value, 10) : null;
-                if (!profissionalId || !Number.isFinite(profissionalId)) {
+                profissionalId = select && select.value ? select.value : null;
+                if (!profissionalId) {
                     window.showAppModalMessage?.('Selecione um profissional para iniciar o atendimento.', 'Atenção',
                         'warning');
                     return;

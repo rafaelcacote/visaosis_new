@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Ordem de Serviço #' . str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) . ' - Connect Plus')
+@section('title', 'Ordem de Serviço #' . $ordemServico->numero . ' - Connect Plus')
 
 @section('content')
     <div class="d-xl-flex justify-content-between align-items-start mb-4">
         <div>
             <h2 class="text-dark font-weight-bold mb-2">
                 <i class="mdi mdi-cog me-2"></i>
-                Ordem de Serviço #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}
+                Ordem de Serviço #{{ $ordemServico->numero }}
             </h2>
             <p class="text-muted mb-0">
                 Criada em {{ $ordemServico->created_at->format('d/m/Y H:i') }}

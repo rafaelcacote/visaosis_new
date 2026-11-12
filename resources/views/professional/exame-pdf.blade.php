@@ -171,7 +171,7 @@
         <div class="header text-center mb-4">
             <h4 class="mb-1">EXAME DE VISTA</h4>
             <p class="mb-0">
-                EX-{{ \Carbon\Carbon::parse($exame['data'])->format('Y') }}-{{ str_pad($exame['id'], 4, '0', STR_PAD_LEFT) }}
+                EX-{{ \Carbon\Carbon::parse($exame['data'])->format('Y') }}-{{ strtoupper(substr(str_replace('-', '', (string) ($exame['id'] ?? '')), 0, 8)) }}
                 -
                 {{ \Carbon\Carbon::parse($exame['data'])->format('d/m/Y') }}</p>
         </div>

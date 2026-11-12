@@ -65,7 +65,7 @@ class ProdutoController extends Controller
         }
 
         if ($filters['categoria'] !== '') {
-            $categoriaId = (int) $filters['categoria'];
+            $categoriaId = $filters['categoria'];
             $query->where('categoria_id', $categoriaId)
                 ->whereHas('categoria', function ($categoriaQuery) use ($tenantId, $locationIds, $categoriaId) {
                     $categoriaQuery->where('id', $categoriaId)
@@ -183,7 +183,7 @@ class ProdutoController extends Controller
         }
 
         $request->validate([
-            'categoria_id' => ['required', 'integer'],
+            'categoria_id' => ['required'],
             'arquivo' => ['required', 'file', 'mimes:xlsx,xls,csv,txt'],
         ], [
             'categoria_id.required' => 'A categoria é obrigatória.',
@@ -201,7 +201,7 @@ class ProdutoController extends Controller
             $locationIds = [$locationId];
         }
 
-        $categoriaId = (int) $request->input('categoria_id');
+        $categoriaId = $request->input('categoria_id');
         $categoriaOk = Categoria::query()
             ->where('id', $categoriaId)
             ->where('tenant_id', $tenantId)
@@ -880,7 +880,7 @@ class ProdutoController extends Controller
         }
     }
 
-    private function applyPrimaryImage(Produto $produto, ?int $desiredPrimaryId): void
+    private function applyPrimaryImage(Produto $produto, ?string $desiredPrimaryId): void
     {
         $images = $produto->images()
             ->whereNull('deleted_at')

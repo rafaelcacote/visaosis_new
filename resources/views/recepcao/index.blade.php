@@ -348,20 +348,20 @@
                                                     @if ($consulta->status == \App\Models\Consulta::STATUS_AGUARDANDO)
                                                         <button class="btn-action"
                                                             style="background-color: #e0f0ff; color: #1d7dd6;"
-                                                            onclick="openStatusModal({{ $consulta->id }}, '{{ addslashes($consulta->paciente->nome ?? 'N/A') }}', 'iniciar', {{ $consulta->profissional_id ?: 'null' }})"
+                                                            onclick="openStatusModal('{{ $consulta->id }}', '{{ addslashes($consulta->paciente->nome ?? 'N/A') }}', 'iniciar', @js($consulta->profissional_id))"
                                                             data-bs-toggle="modal" data-bs-target="#statusModal"
                                                             title="Iniciar Atendimento">
                                                             <i class="mdi mdi-play"></i>
                                                         </button>
                                                         <button class="btn-action btn-action-delete"
-                                                            onclick="openStatusModal({{ $consulta->id }}, '{{ addslashes($consulta->paciente->nome ?? 'N/A') }}', 'cancelar')"
+                                                            onclick="openStatusModal('{{ $consulta->id }}', '{{ addslashes($consulta->paciente->nome ?? 'N/A') }}', 'cancelar')"
                                                             data-bs-toggle="modal" data-bs-target="#statusModal"
                                                             title="Cancelar">
                                                             <i class="mdi mdi-close"></i>
                                                         </button>
                                                     @elseif($consulta->status == \App\Models\Consulta::STATUS_EM_ATENDIMENTO)
                                                         <button class="btn-action btn-action-status-ativar"
-                                                            onclick="openStatusModal({{ $consulta->id }}, '{{ addslashes($consulta->paciente->nome ?? 'N/A') }}', 'finalizar')"
+                                                            onclick="openStatusModal('{{ $consulta->id }}', '{{ addslashes($consulta->paciente->nome ?? 'N/A') }}', 'finalizar')"
                                                             data-bs-toggle="modal" data-bs-target="#statusModal"
                                                             title="Finalizar Atendimento">
                                                             <i class="mdi mdi-check"></i>
@@ -369,7 +369,7 @@
                                                     @endif
 
                                                     <button class="btn-action btn-action-view d-none d-md-inline-flex"
-                                                        onclick="viewConsulta({{ $consulta->id }})" title="Visualizar">
+                                                        onclick="viewConsulta('{{ $consulta->id }}')" title="Visualizar">
                                                         <i class="mdi mdi-eye"></i>
                                                     </button>
                                                 </div>

@@ -16,7 +16,7 @@ class SendWhatsappNotificationJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public int $notificationId) {}
+    public function __construct(public string $notificationId) {}
 
     public function handle(): void
     {

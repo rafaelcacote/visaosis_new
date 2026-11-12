@@ -356,17 +356,17 @@
                                                 </button>
                                                 @if ($notification['status'] == 'enviado')
                                                     <button class="btn btn-outline-success" title="Reenviar"
-                                                        onclick="resendMessage({{ $notification['id'] }})">
+                                                        onclick="resendMessage('{{ $notification['id'] }}')">
                                                         <i class="mdi mdi-refresh"></i>
                                                     </button>
                                                 @endif
                                                 @if ($notification['status'] == 'programado')
                                                     <button class="btn btn-outline-warning" title="Editar"
-                                                        onclick="editMessage({{ $notification['id'] }})">
+                                                        onclick="editMessage('{{ $notification['id'] }}')">
                                                         <i class="mdi mdi-pencil"></i>
                                                     </button>
                                                     <button class="btn btn-outline-danger" title="Cancelar"
-                                                        onclick="cancelMessage({{ $notification['id'] }})">
+                                                        onclick="cancelMessage('{{ $notification['id'] }}')">
                                                         <i class="mdi mdi-close"></i>
                                                     </button>
                                                 @endif

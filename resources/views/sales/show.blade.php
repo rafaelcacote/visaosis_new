@@ -24,7 +24,7 @@
                     <i class="mdi mdi-receipt me-2"></i>
                     Venda {{ $sale['numero'] }}
                 </h2>
-                <p class="text-muted mb-0">Detalhes da venda #{{ $sale['id'] }}</p>
+                <p class="text-muted mb-0">Detalhes da venda {{ $sale['numero'] }}</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
                 @php
@@ -422,13 +422,13 @@
                                                     @if ($podeEditar)
                                                         <button type="button" class="btn btn-sm btn-outline-warning"
                                                             title="Editar parcela"
-                                                            onclick="openEditParcelaModal({{ $parcela['id'] }})">
+                                                            onclick="openEditParcelaModal('{{ $parcela['id'] }}')">
                                                             <i class="mdi mdi-pencil"></i>
                                                         </button>
                                                     @elseif($isPaga || $isCancelada)
                                                         <button type="button" class="btn btn-sm btn-outline-danger"
                                                             title="Reabrir parcela (estornar pagamento ou cancelamento)"
-                                                            onclick="openReopenParcelaModal({{ $parcela['id'] }}, '{{ $parcela['parcela'] }}')">
+                                                            onclick="openReopenParcelaModal('{{ $parcela['id'] }}', '{{ $parcela['parcela'] }}')">
                                                             <i class="mdi mdi-lock-open-outline"></i>
                                                         </button>
                                                     @else

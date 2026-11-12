@@ -201,7 +201,7 @@
         <div class="header text-center mb-4">
             <h4 class="mb-1">TERMO DE ENCAMINHAMENTO</h4>
             <p class="mb-0">
-                REF-{{ \Carbon\Carbon::parse($referral['data'])->format('Y') }}-{{ str_pad($referral['id'], 4, '0', STR_PAD_LEFT) }}
+                REF-{{ \Carbon\Carbon::parse($referral['data'])->format('Y') }}-{{ strtoupper(substr(str_replace('-', '', (string) ($referral['id'] ?? '')), 0, 8)) }}
                 -
                 {{ \Carbon\Carbon::parse($referral['data'])->format('d/m/Y') }}</p>
         </div>

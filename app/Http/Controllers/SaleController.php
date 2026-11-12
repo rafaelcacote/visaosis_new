@@ -55,7 +55,7 @@ class SaleController extends Controller
             }
 
             // Gerar número da venda baseado no ID
-            $numero = 'VD-' . date('Y', strtotime($pedido->data_pedido)) . '-' . str_pad($pedido->id, 4, '0', STR_PAD_LEFT);
+            $numero = 'VD-' . date('Y', strtotime($pedido->data_pedido)) . '-' . strtoupper(substr(str_replace('-', '', (string) $pedido->id), 0, 8));
 
             // Mapear status
             $statusMap = [
@@ -253,7 +253,7 @@ class SaleController extends Controller
                 }
 
                 $numero = 'VD-' . date('Y', strtotime($pedido->data_pedido))
-                    . '-' . str_pad($pedido->id, 4, '0', STR_PAD_LEFT);
+                    . '-' . strtoupper(substr(str_replace('-', '', (string) $pedido->id), 0, 8));
 
                 fputcsv($output, [
                     $numero,
@@ -407,9 +407,9 @@ class SaleController extends Controller
         $canApplyDiscountWithoutAuth = AuthHelper::canApplyDiscountWithoutAuthorization();
 
         $preselectedClient = null;
-        $clienteId = (int) $request->query('cliente_id');
+        $clienteId = $request->query('cliente_id');
 
-        if ($clienteId > 0) {
+        if ($clienteId) {
             $locationIds = $this->currentLocationIds();
             $locationId = session('location_id');
 
@@ -455,7 +455,7 @@ class SaleController extends Controller
      * Monta o payload paginado de produtos (usado tanto no carregamento inicial da tela
      * quanto no endpoint de busca AJAX), filtrando por estoque, termo de busca e categoria.
      */
-    private function searchProductsData(?string $search = null, ?int $categoryId = null, int $page = 1): array
+    private function searchProductsData(?string $search = null, ?string $categoryId = null, int $page = 1): array
     {
         $page = max(1, $page);
         $perPage = self::PRODUCTS_PAGE_SIZE;
@@ -504,7 +504,7 @@ class SaleController extends Controller
     public function searchProducts(Request $request)
     {
         $search = trim((string) $request->get('q', ''));
-        $categoryId = $request->filled('category_id') ? (int) $request->get('category_id') : null;
+        $categoryId = $request->filled('category_id') ? $request->get('category_id') : null;
         $page = (int) $request->get('page', 1);
 
         return response()->json(
@@ -585,9 +585,9 @@ class SaleController extends Controller
         try {
             // Validação dos dados
             $validated = $request->validate([
-                'cliente_id' => 'required|integer|exists:pessoa,id',
+                'cliente_id' => 'required|exists:pessoa,id',
                 'produtos' => 'required|array|min:1',
-                'produtos.*.produto_id' => 'required|integer|exists:produto,id',
+                'produtos.*.produto_id' => 'required|exists:produto,id',
                 'produtos.*.quantidade' => 'required|integer|min:1',
                 'produtos.*.preco_unitario' => 'required|numeric|gt:0',
                 'produtos.*.subtotal' => 'required|numeric|gt:0',
@@ -897,7 +897,7 @@ class SaleController extends Controller
         $pedidoVenda = $pedidoVenda->findOrFail($id);
 
         // Gerar número da venda
-        $numero = 'VD-' . date('Y', strtotime($pedidoVenda->data_pedido)) . '-' . str_pad($pedidoVenda->id, 4, '0', STR_PAD_LEFT);
+        $numero = 'VD-' . date('Y', strtotime($pedidoVenda->data_pedido)) . '-' . strtoupper(substr(str_replace('-', '', (string) $pedidoVenda->id), 0, 8));
 
         // Mapear status
         $statusMap = [
@@ -1116,7 +1116,7 @@ class SaleController extends Controller
         $pedidoVenda = $pedidoVenda->findOrFail($id);
 
         // Gerar número da venda
-        $numero = 'VD-' . date('Y', strtotime($pedidoVenda->data_pedido)) . '-' . str_pad($pedidoVenda->id, 4, '0', STR_PAD_LEFT);
+        $numero = 'VD-' . date('Y', strtotime($pedidoVenda->data_pedido)) . '-' . strtoupper(substr(str_replace('-', '', (string) $pedidoVenda->id), 0, 8));
 
         // Mapear status
         $statusMap = [
@@ -1377,7 +1377,7 @@ class SaleController extends Controller
             ->with(['parcelas'])
             ->where('ativo', true)
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -1553,7 +1553,7 @@ class SaleController extends Controller
             ->with(['pedido.cliente'])
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -1654,7 +1654,7 @@ class SaleController extends Controller
             ->with(['pedido'])
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -1788,7 +1788,7 @@ class SaleController extends Controller
             ->with(['pedido'])
             ->whereNull('deleted_at')
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');
@@ -1886,11 +1886,11 @@ class SaleController extends Controller
             $parcelaRemanescenteVinculada = PedidoVendaParcela::query()
                 ->whereNull('deleted_at')
                 ->where('tenant_id', $tenantId)
-                ->where('pedido_venda_id', (int) $parcela->pedido_venda_id)
+                ->where('pedido_venda_id', $parcela->pedido_venda_id)
                 ->where('numero_parcela', (int) $parcela->numero_parcela)
-                ->where('id', '!=', (int) $parcela->id)
+                ->where('id', '!=', $parcela->id)
                 ->where('status', 'saldo_remanescente')
-                ->orderBy('id', 'desc')
+                ->orderByDesc('created_at')
                 ->first();
 
             if ($parcelaRemanescenteVinculada) {
@@ -2012,7 +2012,7 @@ class SaleController extends Controller
             ->with(['parcelas'])
             ->where('ativo', true)
             ->where('tenant_id', $tenantId)
-            ->where('id', (int) $saleId)
+            ->where('id', $saleId)
             ->when(! empty($locationIds), function ($q) use ($locationIds) {
                 $q->where(function ($q2) use ($locationIds) {
                     $q2->whereIn('location_id', $locationIds)->orWhereNull('location_id');

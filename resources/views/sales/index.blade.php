@@ -351,7 +351,7 @@
                                                     @endphp
                                                     <button type="button" class="btn btn-sm btn-outline-danger"
                                                         title="Cancelar venda pendente (sem pagamentos)"
-                                                        onclick="event.stopPropagation(); openCancelVendaModal({{ $sale['id'] }}, {{ \Illuminate\Support\Js::from($cancelLabel) }})">
+                                                        onclick="event.stopPropagation(); openCancelVendaModal('{{ $sale['id'] }}', {{ \Illuminate\Support\Js::from($cancelLabel) }})">
                                                         <i class="mdi mdi-close"></i>
                                                     </button>
                                                 @endif

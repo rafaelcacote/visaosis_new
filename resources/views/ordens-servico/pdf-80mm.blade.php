@@ -15,7 +15,7 @@
     $totalOS =
         $itensOrdem->count() > 0 ? max(0, $subtotalItens - $descontoOS) : (float) ($ordemServico->total_linha ?? 0);
 
-    $osNumero = str_pad($ordemServico->id, 8, '0', STR_PAD_LEFT);
+    $osNumero = $ordemServico->numero;
     $dataOS = $ordemServico->created_at?->format('d/m/Y H:i') ?? 'Nao informado';
     $entrega = $ordemServico->entrega_em?->format('d/m/Y') ?? 'Nao definida';
     $viaLabel = $via === 'laboratorio' ? 'Via do Laboratorio' : 'Via da Otica';

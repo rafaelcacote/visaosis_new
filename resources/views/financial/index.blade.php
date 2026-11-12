@@ -241,7 +241,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            #{{ str_pad((int) ($row['pedido_id'] ?? 0), 6, '0', STR_PAD_LEFT) }}<br>
+                                            #{{ strtoupper(substr(str_replace('-', '', (string) ($row['pedido_id'] ?? '')), 0, 8)) }}<br>
                                             <small class="text-muted">R$
                                                 {{ number_format((float) ($row['valor_total'] ?? 0), 2, ',', '.') }}</small>
                                         </td>

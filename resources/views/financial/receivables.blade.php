@@ -250,9 +250,9 @@
                                         $statusPagamentoParcial = $receivable['status'] === 'pagamento_parcial';
                                         $statusSaldoRemanescente = $receivable['status'] === 'saldo_remanescente';
                                         $vendaIdPk =
-                                            (int) ($receivable['venda_id_numero'] ?? ($receivable['pedido_id'] ?? 0));
+                                            $receivable['venda_id_numero'] ?? ($receivable['pedido_id'] ?? null);
                                         $showUrl =
-                                            $vendaIdPk > 0
+                                            $vendaIdPk
                                                 ? route('sales.show', [
                                                     'sale' => $vendaIdPk,
                                                     'from_history' => 1,
@@ -386,7 +386,7 @@
                                                     @if ($receivable['status'] == 'vencida')
                                                         <li>
                                                             <button type="button" class="dropdown-item text-danger"
-                                                                onclick="sendUrgentReminder({{ $receivable['id'] }})">
+                                                                onclick="sendUrgentReminder('{{ $receivable['id'] }}')">
                                                                 <i class="mdi mdi-phone me-2"></i>Cobrar Urgente
                                                             </button>
                                                         </li>
@@ -417,7 +417,7 @@
                                                         </li>
                                                         <li>
                                                             <button type="button" class="dropdown-item text-warning"
-                                                                onclick="openRenegotiateModal({{ $receivable['id'] }})">
+                                                                onclick="openRenegotiateModal('{{ $receivable['id'] }}')">
                                                                 <i class="mdi mdi-refresh me-2"></i>Renegociar
                                                             </button>
                                                         </li>
@@ -428,13 +428,13 @@
                                                     </li>
                                                     <li>
                                                         <button type="button" class="dropdown-item"
-                                                            onclick="viewDetails({{ $receivable['id'] }})">
+                                                            onclick="viewDetails('{{ $receivable['id'] }}')">
                                                             <i class="mdi mdi-eye me-2"></i>Ver Detalhes
                                                         </button>
                                                     </li>
                                                     <li>
                                                         <button type="button" class="dropdown-item"
-                                                            onclick="viewHistory({{ $receivable['id'] }})">
+                                                            onclick="viewHistory('{{ $receivable['id'] }}')">
                                                             <i class="mdi mdi-history me-2"></i>Histórico
                                                         </button>
                                                     </li>

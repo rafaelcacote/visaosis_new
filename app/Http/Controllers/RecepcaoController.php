@@ -300,7 +300,7 @@ class RecepcaoController extends Controller
                     ->where('tenant_id', $tenantId)
                     ->first();
 
-                if ($pessoaPorCpf && $pessoa && (int) $pessoaPorCpf->id !== (int) $pessoa->id) {
+                if ($pessoaPorCpf && $pessoa && $pessoaPorCpf->id !== $pessoa->id) {
                     return redirect()->back()
                         ->with('validation_warning', "CPF {$request->cpf} já está cadastrado para: {$pessoaPorCpf->nome}. Verifique se não há duplicidade ou erro de digitação.")
                         ->withInput();
@@ -315,7 +315,7 @@ class RecepcaoController extends Controller
             // ignorando registros excluídos (soft delete) e o próprio paciente em atualização.
             $nomeNormalizado = mb_strtoupper((string) $request->nome, 'UTF-8');
             $apelidoNormalizado = mb_strtoupper((string) $request->apelido, 'UTF-8');
-            $pessoaIdAtual = $pessoa ? (int) $pessoa->id : null;
+            $pessoaIdAtual = $pessoa ? $pessoa->id : null;
 
             $duplicadoNomeApelido = Pessoa::where('tenant_id', $tenantId)
                 ->where('nome', $nomeNormalizado)

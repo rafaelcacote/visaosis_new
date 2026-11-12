@@ -117,7 +117,7 @@
                                         <tr data-id="{{ $ordem->id }}">
                                             <td class="d-none d-lg-table-cell os-col-shrink">
                                                 <div>
-                                                    <h6 class="mb-0">#{{ str_pad($ordem->id, 6, '0', STR_PAD_LEFT) }}
+                                                    <h6 class="mb-0">#{{ $ordem->numero }}
                                                     </h6>
                                                     <small
                                                         class="text-muted">{{ $ordem->created_at->format('d/m/Y H:i') }}</small>
@@ -231,13 +231,13 @@
                                                     </a>
                                                     <button type="button" class="btn-action"
                                                         style="background-color: #f3e8ff; color: #9333ea;"
-                                                        onclick="changeStatus({{ $ordem->id }}, '#{{ str_pad($ordem->id, 6, '0', STR_PAD_LEFT) }}', '{{ $ordem->status }}', '{{ $ordem->pedido->cliente->nome ?? 'N/A' }}', '{{ $ordem->fornecedor->razao_social ?? 'N/A' }}', '{{ $ordem->total_formatado }}', '{{ $ordem->prioridade }}')"
+                                                        onclick="changeStatus('{{ $ordem->id }}', '#{{ $ordem->numero }}', '{{ $ordem->status }}', '{{ $ordem->pedido->cliente->nome ?? 'N/A' }}', '{{ $ordem->fornecedor->razao_social ?? 'N/A' }}', '{{ $ordem->total_formatado }}', '{{ $ordem->prioridade }}')"
                                                         title="Alterar Status">
                                                         <i class="mdi mdi-swap-horizontal"></i>
                                                     </button>
                                                     <button type="button" class="btn-action"
                                                         style="background-color: #fee2e2; color: #dc2626;"
-                                                        onclick="confirmDelete({{ $ordem->id }}, '#{{ str_pad($ordem->id, 6, '0', STR_PAD_LEFT) }}')"
+                                                        onclick="confirmDelete('{{ $ordem->id }}', '#{{ $ordem->numero }}')"
                                                         title="Excluir">
                                                         <i class="mdi mdi-delete"></i>
                                                     </button>

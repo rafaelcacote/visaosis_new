@@ -121,28 +121,28 @@ class OrdemServicoController extends Controller
                 ->with('error', 'Tenant ou localização inválidos para criar a ordem de serviço.');
         }
 
-        $pedido = $this->findScopedPedidoVenda((int) $request->pedido_id);
+        $pedido = $this->findScopedPedidoVenda($request->pedido_id);
         if (! $pedido) {
             return redirect()->back()
                 ->withInput()
                 ->withErrors(['pedido_id' => 'A venda informada não pertence ao tenant/localização atuais.']);
         }
 
-        $fornecedor = $this->findScopedLaboratorio((int) $request->fornecedor_id);
+        $fornecedor = $this->findScopedLaboratorio($request->fornecedor_id);
         if (! $fornecedor) {
             return redirect()->back()
                 ->withInput()
                 ->withErrors(['fornecedor_id' => 'O laboratório informado não pertence ao tenant/localização atuais.']);
         }
 
-        if ($request->filled('prescricao_id') && ! $this->findScopedPrescricao((int) $request->prescricao_id)) {
+        if ($request->filled('prescricao_id') && ! $this->findScopedPrescricao($request->prescricao_id)) {
             return redirect()->back()
                 ->withInput()
                 ->withErrors(['prescricao_id' => 'A prescrição informada não pertence ao tenant/localização atuais.']);
         }
 
         $itemIds = collect($request->itens_selecionados)
-            ->map(fn($id) => (int) $id)
+            ->map(fn($id) => (string) $id)
             ->unique()
             ->values()
             ->all();
@@ -168,7 +168,7 @@ class OrdemServicoController extends Controller
                 'location_id' => $locationId,
                 'user_id' => $userId,
                 'pedido_id' => $pedido->id,
-                'prescricao_id' => $request->filled('prescricao_id') ? (int) $request->prescricao_id : null,
+                'prescricao_id' => $request->filled('prescricao_id') ? $request->prescricao_id : null,
                 'fornecedor_id' => $fornecedor->id,
                 'quantidade' => $request->quantidade,
                 'preco_unit' => $precoUnit,
@@ -479,7 +479,7 @@ class OrdemServicoController extends Controller
             'observacoes' => 'nullable|string|max:1000'
         ]);
 
-        $fornecedor = $this->findScopedLaboratorio((int) $request->fornecedor_id);
+        $fornecedor = $this->findScopedLaboratorio($request->fornecedor_id);
         if (! $fornecedor) {
             return redirect()->back()
                 ->withInput()
@@ -555,7 +555,7 @@ class OrdemServicoController extends Controller
 
         $pdf = Pdf::loadView('ordens-servico.pdf', compact('ordemServico', 'currentStatus'));
 
-        $filename = 'ordem_servico_' . str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) . '.pdf';
+        $filename = 'ordem_servico_' . strtoupper(substr(str_replace('-', '', (string) $ordemServico->id), 0, 8)) . '.pdf';
 
         return $pdf->stream($filename);
     }
@@ -669,28 +669,28 @@ class OrdemServicoController extends Controller
         return $query;
     }
 
-    private function findScopedPedidoVenda(int $pedidoId): ?PedidoVenda
+    private function findScopedPedidoVenda(string $pedidoId): ?PedidoVenda
     {
         return $this->applyScope(
             PedidoVenda::query()->where('ativo', true)->where('status', PedidoVenda::STATUS_FATURADO)
         )->find($pedidoId);
     }
 
-    private function findScopedLaboratorio(int $fornecedorId): ?Laboratorio
+    private function findScopedLaboratorio(string $fornecedorId): ?Laboratorio
     {
         return $this->applyScope(
             Laboratorio::query()->where('ativo', true)
         )->find($fornecedorId);
     }
 
-    private function findScopedPrescricao(int $prescricaoId): ?Prescricao
+    private function findScopedPrescricao(string $prescricaoId): ?Prescricao
     {
         return $this->applyScope(
             Prescricao::query()->where('ativo', true)
         )->find($prescricaoId);
     }
 
-    private function findScopedItensPedido(array $itemIds, int $pedidoId)
+    private function findScopedItensPedido(array $itemIds, string $pedidoId)
     {
         return $this->applyScope(
             ItemPedido::query()->where('ativo', true)->where('pedido_id', $pedidoId)

@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Ordem #' . str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) . ' - Connect Plus')
+@section('title', 'Editar Ordem #' . $ordemServico->numero . ' - Connect Plus')
 
 @section('content')
     <div class="d-xl-flex justify-content-between align-items-start mb-4">
         <div>
             <h2 class="text-dark font-weight-bold mb-2">
                 <i class="mdi mdi-pencil me-2"></i>
-                Editar Ordem de Serviço #{{ str_pad($ordemServico->id, 6, '0', STR_PAD_LEFT) }}
+                Editar Ordem de Serviço #{{ $ordemServico->numero }}
             </h2>
             <p class="text-muted mb-0">Altere fornecedor, valores, status e demais dados editáveis</p>
         </div>

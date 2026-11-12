@@ -1085,7 +1085,7 @@
 
             const attributesBtnHtml = hasAttributes
                 ? `<button type="button" class="btn btn-outline-secondary btn-sm product-attributes-btn"
-                        onclick="showProductAttributes(${product.id})"
+                        onclick="showProductAttributes('${product.id}')"
                         title="Ver atributos">
                         <i class="mdi mdi-tag-multiple-outline"></i>
                    </button>`
@@ -1114,7 +1114,7 @@
                     <div class="product-row-actions">
                         ${attributesBtnHtml}
                         <button type="button" class="btn btn-primary btn-sm add-to-cart-btn"
-                            data-product-id="${product.id}" onclick="addToCart(${product.id})"
+                            data-product-id="${product.id}" onclick="addToCart('${product.id}')"
                             ${outOfStock ? 'disabled' : ''} title="Adicionar ao carrinho">
                             <i class="mdi mdi-cart-plus"></i>
                         </button>
@@ -1255,7 +1255,7 @@
 
         function syncCatalogCartBadges() {
             document.querySelectorAll('[data-cart-badge]').forEach(badge => {
-                const id = Number(badge.dataset.cartBadge);
+                const id = badge.dataset.cartBadge;
                 const qty = getCartQuantity(id);
                 if (qty > 0) {
                     badge.classList.remove('d-none');
@@ -1560,7 +1560,7 @@
             <div class="cart-item">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <h6 class="mb-0">${item.name}</h6>
-                    <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.id})">
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart('${item.id}')">
                         <i class="mdi mdi-close"></i>
                     </button>
                 </div>
@@ -1575,17 +1575,17 @@
                                step="0.01"
                                min="0.01"
                                placeholder="0,00"
-                               onchange="updateItemPrice(${item.id}, this.value)"
-                               onblur="updateItemPrice(${item.id}, this.value)">
+                               onchange="updateItemPrice('${item.id}', this.value)"
+                               onblur="updateItemPrice('${item.id}', this.value)">
                     </div>
                     ${priceHint}
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="quantity-controls">
-                        <button onclick="updateQuantity(${item.id}, ${item.quantity - 1})">-</button>
+                        <button onclick="updateQuantity('${item.id}', ${item.quantity - 1})">-</button>
                         <input type="number" value="${item.quantity}" min="1" ${maxAttr}
-                               onchange="updateQuantity(${item.id}, parseInt(this.value))">
-                        <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})" ${disableIncrease ? 'disabled' : ''}>+</button>
+                               onchange="updateQuantity('${item.id}', parseInt(this.value))">
+                        <button onclick="updateQuantity('${item.id}', ${item.quantity + 1})" ${disableIncrease ? 'disabled' : ''}>+</button>
                     </div>
                     <div class="text-end">
                         <div class="text-success fw-bold cart-item-subtotal" id="cart-subtotal-${item.id}">
@@ -2185,7 +2185,7 @@
             const hasClient = selectedClient !== null;
 
             addToCartButtons.forEach(btn => {
-                const product = catalogProductsById[Number(btn.dataset.productId)];
+                const product = catalogProductsById[btn.dataset.productId];
                 const isOutOfStock = product && product.stock === 0;
 
                 // Desabilitar se não há cliente ou se está sem estoque

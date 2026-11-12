@@ -2,18 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuidV4;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemPedido extends Model
 {
-    use SoftDeletes;
+    use HasUuidV4, SoftDeletes;
 
     protected $table = 'item_pedido';
-
-    protected $primaryKey = 'id';
-    public $incrementing = true;
-    protected $keyType = 'int';
 
     protected $fillable = [
         'tenant_id',

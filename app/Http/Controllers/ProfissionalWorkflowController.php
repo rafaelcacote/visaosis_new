@@ -118,7 +118,7 @@ class ProfissionalWorkflowController extends Controller
 
     public function printExamDoc($id)
     {
-        $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional.especialidade']);
+        $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional.especialidade']);
         $exame = $this->buildExamPdfData($consulta);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.exame-pdf', compact('exame'));
@@ -128,7 +128,7 @@ class ProfissionalWorkflowController extends Controller
 
     public function printReferralDoc($id)
     {
-        $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional.especialidade']);
+        $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional.especialidade']);
         $referral = $this->buildReferralPdfData($consulta);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.referral-pdf', compact('referral'));
@@ -142,7 +142,7 @@ class ProfissionalWorkflowController extends Controller
     public function startConsultation($id)
     {
         $consulta = $this->consultaQuery(['paciente', 'exame', 'prescricao', 'encaminhamento'])
-            ->where('id', (int) $id)
+            ->where('id', $id)
             ->first();
 
         if (! $consulta) {
@@ -328,7 +328,7 @@ class ProfissionalWorkflowController extends Controller
      */
     public function generatePrescription(Request $request, $id)
     {
-        $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional']);
+        $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional']);
 
         $prescricao = \App\Models\Prescricao::where('consulta_id', $consulta->id)
             ->where('tenant_id', $consulta->tenant_id)
@@ -343,7 +343,7 @@ class ProfissionalWorkflowController extends Controller
             : \Carbon\Carbon::now('America/Manaus')->format('Y-m-d');
 
         $prescription = [
-            'numero' => 'RX-' . date('Y') . '-' . str_pad($consulta->id, 4, '0', STR_PAD_LEFT),
+            'numero' => 'RX-' . date('Y') . '-' . strtoupper(substr(str_replace('-', '', (string) $consulta->id), 0, 8)),
             'data' => $dataReceita,
             'paciente' => [
                 'nome' => $paciente->nome ?? '',
@@ -419,7 +419,7 @@ class ProfissionalWorkflowController extends Controller
         }
 
         try {
-            $consulta = $this->findConsultaOrFail((int) $consultaId, ['paciente', 'profissional.especialidade']);
+            $consulta = $this->findConsultaOrFail($consultaId, ['paciente', 'profissional.especialidade']);
 
             $prescription = $this->buildPrescriptionPdfData($consulta, $request);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
@@ -472,7 +472,7 @@ class ProfissionalWorkflowController extends Controller
         }
 
         try {
-            $consulta = $this->findConsultaOrFail((int) $consultaId, ['paciente', 'profissional.especialidade']);
+            $consulta = $this->findConsultaOrFail($consultaId, ['paciente', 'profissional.especialidade']);
 
             $exame = $this->buildExamPdfData($consulta, $request);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.exame-pdf', compact('exame'));
@@ -525,7 +525,7 @@ class ProfissionalWorkflowController extends Controller
         }
 
         try {
-            $consulta = $this->findConsultaOrFail((int) $consultaId, ['paciente', 'profissional.especialidade']);
+            $consulta = $this->findConsultaOrFail($consultaId, ['paciente', 'profissional.especialidade']);
 
             $referral = $this->buildReferralPdfData($consulta, $request);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.referral-pdf', compact('referral'));
@@ -571,7 +571,7 @@ class ProfissionalWorkflowController extends Controller
     public function referPatient(Request $request, $id)
     {
         try {
-            $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional']);
+            $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional']);
 
             $usuarioOculos = $request->input('usuario_ocular') === 'sim' ? 1 : 0;
             $ultimaAvaliacao = $request->input('data')
@@ -584,7 +584,7 @@ class ProfissionalWorkflowController extends Controller
                     'consulta_id' => $consulta->id,
                 ],
                 [
-                    'especialidade_id' => (int) $request->input('especialidade'),
+                    'especialidade_id' => $request->input('especialidade'),
                     'user_id' => AuthHelper::userId(),
                     'usuario_oculos' => $usuarioOculos,
                     'ultima_avaliacao_em' => $ultimaAvaliacao,
@@ -627,7 +627,7 @@ class ProfissionalWorkflowController extends Controller
     public function finishConsultation(Request $request, $id)
     {
         try {
-            $consulta = $this->findConsultaOrFail((int) $id, ['encaminhamento']);
+            $consulta = $this->findConsultaOrFail($id, ['encaminhamento']);
 
             $consulta->atendido_em = \Carbon\Carbon::now('America/Manaus');
             $retornoSelecionado = $request->input('retorno');
@@ -664,7 +664,7 @@ class ProfissionalWorkflowController extends Controller
      */
     public function patientHistory($id)
     {
-        $patient = $this->pessoaQuery()->find((int) $id);
+        $patient = $this->pessoaQuery()->find($id);
 
         if (! $patient) {
             return response()->json(['error' => 'Paciente não encontrado'], 404);
@@ -731,7 +731,7 @@ class ProfissionalWorkflowController extends Controller
         $returnTo = $request->query('return_to', 'queue');
         $consultaId = $request->query('consulta_id');
 
-        $patientModel = $this->pessoaQuery()->find((int) $id);
+        $patientModel = $this->pessoaQuery()->find($id);
         if (! $patientModel) {
             abort(404, 'Paciente não encontrado');
         }
@@ -876,7 +876,7 @@ class ProfissionalWorkflowController extends Controller
             : \Carbon\Carbon::now('America/Manaus')->format('Y-m-d');
 
         $prescription = [
-            'numero' => 'RX-' . date('Y') . '-' . str_pad($consulta->id, 4, '0', STR_PAD_LEFT),
+            'numero' => 'RX-' . date('Y') . '-' . strtoupper(substr(str_replace('-', '', (string) $consulta->id), 0, 8)),
             'data' => $dataReceita,
             'paciente' => [
                 'nome' => $paciente->nome ?? '',
@@ -1051,7 +1051,7 @@ class ProfissionalWorkflowController extends Controller
      */
     public function printPrescription($id)
     {
-        $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional']);
+        $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional']);
         $prescription = $this->buildPrescriptionPdfData($consulta);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
@@ -1061,7 +1061,7 @@ class ProfissionalWorkflowController extends Controller
 
     public function printPrescription80mm($id)
     {
-        $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional']);
+        $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional']);
         $prescription = $this->buildPrescriptionPdfData($consulta);
 
         return view('professional.prescription-80mm', compact('prescription'));
@@ -1069,7 +1069,7 @@ class ProfissionalWorkflowController extends Controller
 
     public function printPrescriptionFromForm(Request $request, $id)
     {
-        $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional']);
+        $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional']);
         $prescription = $this->buildPrescriptionPdfData($consulta, $request);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('professional.prescription-pdf', compact('prescription'));
@@ -1079,7 +1079,7 @@ class ProfissionalWorkflowController extends Controller
 
     public function printPrescription80mmFromForm(Request $request, $id)
     {
-        $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional']);
+        $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional']);
         $prescription = $this->buildPrescriptionPdfData($consulta, $request);
 
         return view('professional.prescription-80mm', compact('prescription'));
@@ -1101,7 +1101,7 @@ class ProfissionalWorkflowController extends Controller
                 : Carbon::now('America/Manaus')->format('Y-m-d'));
 
         return [
-            'numero' => 'RX-' . date('Y') . '-' . str_pad($consulta->id, 4, '0', STR_PAD_LEFT),
+            'numero' => 'RX-' . date('Y') . '-' . strtoupper(substr(str_replace('-', '', (string) $consulta->id), 0, 8)),
             'data' => $dataReceita,
             'paciente' => [
                 'nome' => $paciente->nome ?? '',
@@ -1379,7 +1379,7 @@ class ProfissionalWorkflowController extends Controller
         if (! $selectedProfissionalId && $userId) {
             $profissional = $this->profissionalQuery()->where('user_id', $userId)->first();
         } elseif ($selectedProfissionalId) {
-            $profissional = $this->profissionalQuery()->find((int) $selectedProfissionalId);
+            $profissional = $this->profissionalQuery()->find($selectedProfissionalId);
             if (! $profissional) {
                 return redirect()->back()
                     ->withInput()
@@ -1449,7 +1449,7 @@ class ProfissionalWorkflowController extends Controller
 
     public function togglePause(Request $request, $id)
     {
-        $profissional = $this->profissionalQuery()->findOrFail((int) $id);
+        $profissional = $this->profissionalQuery()->findOrFail($id);
         $profissional->pausar_atendimento = ! $profissional->pausar_atendimento;
         $profissional->save();
 
@@ -1463,14 +1463,14 @@ class ProfissionalWorkflowController extends Controller
             'profissional_id' => 'sometimes|nullable|exists:profissional,id',
         ]);
 
-        $consulta = $this->findConsultaOrFail((int) $id);
+        $consulta = $this->findConsultaOrFail($id);
 
         $consulta->status = (int) $request->input('status');
 
         if ($request->has('profissional_id')) {
             $profissionalId = $request->input('profissional_id');
             if ($profissionalId) {
-                $profissional = $this->profissionalQuery()->find((int) $profissionalId);
+                $profissional = $this->profissionalQuery()->find($profissionalId);
                 if (! $profissional) {
                     return response()->json([
                         'success' => false,
@@ -1498,7 +1498,7 @@ class ProfissionalWorkflowController extends Controller
     {
         try {
             $requestData = $request->validated();
-            $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional']);
+            $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional']);
 
             $paciente = $consulta->paciente;
             $prescricao = \App\Models\Prescricao::updateOrCreate(
@@ -1586,7 +1586,7 @@ class ProfissionalWorkflowController extends Controller
                     ->withInput()
                     ->with('active_tab', 'examination');
             }
-            $consulta = $this->findConsultaOrFail((int) $id, ['paciente', 'profissional']);
+            $consulta = $this->findConsultaOrFail($id, ['paciente', 'profissional']);
 
             $exame = \App\Models\Exame::updateOrCreate(
                 [
@@ -1709,7 +1709,7 @@ class ProfissionalWorkflowController extends Controller
         return $this->applyTenantLocationScope(Profissional::query());
     }
 
-    private function findConsultaOrFail(int $id, array $with = []): Consulta
+    private function findConsultaOrFail(string $id, array $with = []): Consulta
     {
         return $this->consultaQuery($with)
             ->where('id', $id)

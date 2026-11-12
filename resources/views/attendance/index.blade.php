@@ -301,18 +301,18 @@
                                         <td>
                                             <div class="btn-group" role="group">
                                                 @if (($patient['status'] ?? 'waiting') == 'waiting')
-                                                    <button class="btn btn-sm btn-primary" onclick="startService({{ $patient['id'] }})" title="Iniciar Atendimento">
+                                                    <button class="btn btn-sm btn-primary" onclick="startService('{{ $patient['id'] }}')" title="Iniciar Atendimento">
                                                         <i class="mdi mdi-play"></i>
                                                     </button>
-                                                    <button class="btn btn-sm btn-danger" onclick="showCancelModal({{ $patient['id'] }}, '{{ addslashes($patient['name'] ?? 'Paciente') }}')" title="Cancelar">
+                                                    <button class="btn btn-sm btn-danger" onclick="showCancelModal('{{ $patient['id'] }}', '{{ addslashes($patient['name'] ?? 'Paciente') }}')" title="Cancelar">
                                                         <i class="mdi mdi-close"></i>
                                                     </button>
                                                 @elseif(($patient['status'] ?? '') == 'in_service')
-                                                    <button class="btn btn-sm btn-success" onclick="completeService({{ $patient['id'] }})" title="Finalizar Atendimento">
+                                                    <button class="btn btn-sm btn-success" onclick="completeService('{{ $patient['id'] }}')" title="Finalizar Atendimento">
                                                         <i class="mdi mdi-check"></i>
                                                     </button>
                                                 @endif
-                                                <button class="btn btn-sm btn-outline-secondary" onclick="viewPatient({{ $patient['id'] }})" title="Visualizar">
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="viewPatient('{{ $patient['id'] }}')" title="Visualizar">
                                                     <i class="mdi mdi-eye"></i>
                                                 </button>
                                             </div>

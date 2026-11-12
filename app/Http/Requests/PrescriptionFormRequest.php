@@ -129,7 +129,6 @@ class PrescriptionFormRequest extends FormRequest
                     'email' => ['nullable', 'email'],
                     'profissional_id' => [
                         'nullable',
-                        'integer',
                         Rule::exists('profissional', 'id')->where(function ($query) use ($tenantId, $locationId) {
                             $query
                                 ->where('tenant_id', $tenantId)
@@ -151,7 +150,6 @@ class PrescriptionFormRequest extends FormRequest
                 [
                     'profissional_id' => [
                         'nullable',
-                        'integer',
                         Rule::exists('profissional', 'id')->where(function ($query) use ($tenantId, $locationId) {
                             $query
                                 ->where('tenant_id', $tenantId)

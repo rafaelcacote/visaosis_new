@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUuidV4;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Categoria extends Model
 {
-    use SoftDeletes;
+    use HasUuidV4, SoftDeletes;
 
     protected $table = 'categoria_produto';
 
