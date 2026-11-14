@@ -206,6 +206,12 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="data_pedido" class="form-label">Data da Venda</label>
+                            <input type="date" class="form-control" id="data_pedido"
+                                value="{{ now()->format('Y-m-d') }}" max="{{ now()->format('Y-m-d') }}" required>
+                        </div>
+
+                        <div class="mb-3">
                             <label for="observations" class="form-label">Observações</label>
                             <textarea class="form-control" id="observations" rows="2" placeholder="Observações sobre a venda..."></textarea>
                         </div>
@@ -2434,6 +2440,7 @@
                 subtotal: subtotal,
                 total: total,
                 tipo_venda: document.getElementById('tipo_venda').value || 'varejo',
+                data_pedido: document.getElementById('data_pedido').value || null,
                 observacoes: document.getElementById('observations').value || null
             };
 

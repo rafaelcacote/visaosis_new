@@ -602,7 +602,11 @@ class SaleController extends Controller
                 'subtotal' => 'required|numeric|min:0',
                 'total' => 'required|numeric|min:0',
                 'tipo_venda' => 'nullable|string|in:atacado,varejo',
+                'data_pedido' => 'nullable|date|before_or_equal:today',
                 'observacoes' => 'nullable|string|max:1000'
+            ], [
+                'data_pedido.date' => 'Informe uma data válida para a venda.',
+                'data_pedido.before_or_equal' => 'A data da venda não pode ser uma data futura.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->expectsJson() || $request->ajax()) {
@@ -737,6 +741,10 @@ class SaleController extends Controller
                 ->join(' + ');
 
             // Criar o pedido de venda
+            $dataVenda = filled($validated['data_pedido'] ?? null)
+                ? Carbon::parse($validated['data_pedido'], 'America/Manaus')->setTimeFrom(Carbon::now('America/Manaus'))
+                : Carbon::now('America/Manaus');
+
             $pedidoVenda = PedidoVenda::create([
                 'tenant_id' => $tenantId,
                 'location_id' => $locationId,
@@ -744,7 +752,7 @@ class SaleController extends Controller
                 'pessoa_cliente_id' => $validated['cliente_id'],
                 'status' => 'faturado', // Status inicial como 'faturado' quando finaliza a venda
                 'tipo_venda' => $validated['tipo_venda'] ?? PedidoVenda::TIPO_VAREJO,
-                'data_pedido' => now(),
+                'data_pedido' => $dataVenda,
                 'valor_total' => $validated['total'],
                 'desconto_valor' => $discountValue,
                 'desconto_percentual' => $discountPercent,
