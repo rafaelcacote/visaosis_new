@@ -43,25 +43,25 @@
             </div>
         </div>
 
-        {{-- Card: Receitas vencidas --}}
+        {{-- Card: Vendas do mês --}}
         <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
                 <div class="card-body">
                     <div class="clearfix">
                         <div class="float-start">
-                            <i class="mdi mdi-timer-sand text-warning icon-lg"></i>
+                            <i class="mdi mdi-cash-multiple text-warning icon-lg"></i>
                         </div>
                         <div class="float-end">
-                            <p class="mb-0 text-right text-dark">Receitas Vencidas</p>
+                            <p class="mb-0 text-right text-dark">Vendas Mês</p>
                             <div class="fluid-container">
                                 <h3 class="font-weight-medium text-right mb-0 text-dark">
-                                    {{ $clientesComReceitasVencidas ?? 0 }}</h3>
+                                    R$ {{ number_format((float) ($vendasMes ?? 0), 2, ',', '.') }}</h3>
                             </div>
                         </div>
                     </div>
                     <p class="text-muted mt-3 mb-0">
-                        <i class="mdi mdi-account-clock-outline me-1" aria-hidden="true"></i> Total de clientes com
-                        receitas vencidas
+                        <i class="mdi mdi-calendar-month-outline me-1" aria-hidden="true"></i> Valor total das vendas do
+                        mês atual
                     </p>
                 </div>
             </div>
