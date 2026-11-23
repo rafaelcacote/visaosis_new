@@ -14,7 +14,31 @@ class EspecialidadeController extends Controller
             'search' => $request->get('search', ''),
         ];
 
-        $query = Especialidade::query();
+        // Obter tenant_id e location_ids da sessão
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        // Buscar location_ids do tenant atual
+        $locationIds = [];
+        if ($tenantId) {
+            // Filtrar locations do tenant atual
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            // Se não tem tenant_id mas tem location_id, usar apenas essa location
+            $locationIds = [$locationId];
+        }
+
+        // Se não tem location_ids válidos, retornar vazio
+        if (empty($locationIds)) {
+            $especialidades = Especialidade::whereRaw('1 = 0')->paginate(15);
+            return view('especialidades.index', compact('especialidades', 'filters'));
+        }
+
+        $query = Especialidade::whereIn('location_id', $locationIds);
 
         if (!empty($filters['search'])) {
             $search = $filters['search'];
@@ -33,17 +57,43 @@ class EspecialidadeController extends Controller
 
     public function store(Request $request)
     {
+        // Obter location_id do tenant atual
+        $locationId = session('location_id');
+        $tenantId = session('tenant_id');
+        $userLocations = session('user_locations', []);
+
+        // Se não tem location_id, buscar a primeira location do tenant
+        if (!$locationId && $tenantId) {
+            $firstLocation = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->first();
+            $locationId = $firstLocation['location_id'] ?? null;
+        }
+
+        if (!$tenantId) {
+            return back()->withInput()
+                ->with('error', 'Nenhum tenant disponível para criar a especialidade.');
+        }
+
+        if (!$locationId) {
+            return back()->withInput()
+                ->with('error', 'Nenhuma localização disponível para criar a especialidade.');
+        }
+
         $request->validate([
             'descricao' => [
                 'required',
                 'string',
                 'max:255',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($locationId, $tenantId) {
                     $exists = Especialidade::whereRaw('LOWER(descricao) = ?', [strtolower($value)])
+                        ->where('tenant_id', $tenantId)
+                        ->where('location_id', $locationId)
+                        ->whereNull('deleted_at')
                         ->exists();
 
                     if ($exists) {
-                        $fail('Já existe uma especialidade com esta descrição.');
+                        $fail('Já existe uma especialidade com esta descrição nesta localização.');
                     }
                 },
             ],
@@ -56,6 +106,9 @@ class EspecialidadeController extends Controller
             DB::beginTransaction();
 
             Especialidade::create([
+                'tenant_id' => $tenantId,
+                'location_id' => $locationId,
+                'user_id' => auth()->id(),
                 'descricao' => $request->descricao,
                 'ativo' => true,
             ]);
@@ -74,16 +127,25 @@ class EspecialidadeController extends Controller
 
     public function show(Especialidade $especialidade)
     {
+        // Verificar se a especialidade pertence ao tenant atual
+        $this->checkTenantAccess($especialidade);
+
         return view('especialidades.show', compact('especialidade'));
     }
 
     public function edit(Especialidade $especialidade)
     {
+        // Verificar se a especialidade pertence ao tenant atual
+        $this->checkTenantAccess($especialidade);
+
         return view('especialidades.edit', compact('especialidade'));
     }
 
     public function update(Request $request, Especialidade $especialidade)
     {
+        // Verificar se a especialidade pertence ao tenant atual
+        $this->checkTenantAccess($especialidade);
+
         $request->validate([
             'descricao' => [
                 'required',
@@ -91,11 +153,13 @@ class EspecialidadeController extends Controller
                 'max:255',
                 function ($attribute, $value, $fail) use ($especialidade) {
                     $exists = Especialidade::whereRaw('LOWER(descricao) = ?', [strtolower($value)])
+                        ->where('location_id', $especialidade->location_id)
                         ->where('id', '!=', $especialidade->id)
+                        ->whereNull('deleted_at')
                         ->exists();
 
                     if ($exists) {
-                        $fail('Já existe uma especialidade com esta descrição.');
+                        $fail('Já existe uma especialidade com esta descrição nesta localização.');
                     }
                 },
             ],
@@ -125,6 +189,9 @@ class EspecialidadeController extends Controller
 
     public function destroy(Especialidade $especialidade)
     {
+        // Verificar se a especialidade pertence ao tenant atual
+        $this->checkTenantAccess($especialidade);
+
         try {
             DB::beginTransaction();
 
@@ -145,6 +212,32 @@ class EspecialidadeController extends Controller
             }
 
             return back()->with('error', 'Erro ao excluir especialidade: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Verifica se a especialidade pertence ao tenant atual
+     */
+    private function checkTenantAccess(Especialidade $especialidade)
+    {
+        $tenantId = session('tenant_id');
+        $locationId = session('location_id');
+        $userLocations = session('user_locations', []);
+
+        // Buscar location_ids do tenant atual
+        $locationIds = [];
+        if ($tenantId) {
+            $locationIds = collect($userLocations)
+                ->where('tenant_id', $tenantId)
+                ->pluck('location_id')
+                ->toArray();
+        } elseif ($locationId) {
+            $locationIds = [$locationId];
+        }
+
+        // Verificar se a especialidade pertence a uma location do tenant atual
+        if (empty($locationIds) || !in_array($especialidade->location_id, $locationIds)) {
+            abort(403, 'Acesso negado. Esta especialidade não pertence ao seu tenant.');
         }
     }
 }

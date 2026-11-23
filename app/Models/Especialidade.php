@@ -12,6 +12,9 @@ class Especialidade extends Model
     protected $table = 'especialidade';
 
     protected $fillable = [
+        'tenant_id',
+        'location_id',
+        'user_id',
         'descricao',
         'ativo'
     ];
@@ -46,6 +49,11 @@ class Especialidade extends Model
     }
 
     // Relacionamentos
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function profissionais()
     {
         return $this->hasMany(Profissional::class, 'especialidade_id');
