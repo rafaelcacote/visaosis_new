@@ -468,48 +468,52 @@
     </div>
 
     <div class="modal fade" id="receivableDetailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 560px;">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Detalhes da Parcela</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="mdi mdi-eye-outline me-2"></i>
+                        Detalhes da Parcela
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <div class="text-muted small">Cliente</div>
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3 pb-3 border-bottom">
+                        <div>
+                            <div class="text-muted small text-uppercase">Cliente</div>
                             <div class="fw-semibold" id="rdCliente">-</div>
                             <div class="text-muted small" id="rdTelefone">-</div>
                             <div class="text-muted small" id="rdCpf">-</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="text-muted small">Venda</div>
+                        <div class="text-sm-end">
+                            <div class="text-muted small text-uppercase">Venda</div>
                             <div class="fw-semibold" id="rdVendaId">-</div>
                             <div class="text-muted small" id="rdDataPedido">-</div>
                         </div>
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-md-3">
-                            <div class="text-muted small">Parcela</div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase">Parcela</div>
                             <div class="fw-semibold" id="rdParcela">-</div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="text-muted small">Vencimento</div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase">Vencimento</div>
                             <div class="fw-semibold" id="rdVencimento">-</div>
-                            <div class="text-muted small" id="rdDiasAtraso"></div>
+                            <div class="text-danger small" id="rdDiasAtraso"></div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="text-muted small">Valor</div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase">Valor</div>
                             <div class="fw-semibold" id="rdValor">-</div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="text-muted small">Status</div>
-                            <div class="fw-semibold" id="rdStatus">-</div>
+                        <div class="col-6">
+                            <div class="text-muted small text-uppercase">Status</div>
+                            <div id="rdStatus">-</div>
                             <div class="text-muted small" id="rdPagoEm"></div>
                         </div>
-                        <div class="col-12">
-                            <a class="btn btn-outline-primary" href="#" id="rdBoletoLink" target="_blank">
+                        <div class="col-12 pt-2">
+                            <a class="btn btn-outline-primary btn-sm" href="#" id="rdBoletoLink" target="_blank">
                                 <i class="mdi mdi-file-document me-2"></i>Abrir boleto
                             </a>
                         </div>
@@ -523,22 +527,26 @@
     </div>
 
     <div class="modal fade" id="receivableHistoryModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 640px;">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Histórico de Parcelas</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="mdi mdi-history me-2"></i>
+                        Histórico de Parcelas
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <div class="text-muted small">Cliente</div>
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3 pb-3 border-bottom">
+                        <div>
+                            <div class="text-muted small text-uppercase">Cliente</div>
                             <div class="fw-semibold" id="rhCliente">-</div>
                             <div class="text-muted small" id="rhTelefone">-</div>
                             <div class="text-muted small" id="rhCpf">-</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="text-muted small">Venda</div>
+                        <div class="text-sm-end">
+                            <div class="text-muted small text-uppercase">Venda</div>
                             <div class="fw-semibold" id="rhVendaId">-</div>
                             <div class="text-muted small" id="rhDataPedido">-</div>
                         </div>
@@ -553,13 +561,12 @@
                                     <th>Pago em</th>
                                     <th class="text-end">Valor</th>
                                     <th>Status</th>
-                                    <th class="text-end">Boleto</th>
-                                    <th class="text-end">Recibo</th>
+                                    <th class="text-end">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="rhRows">
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-3">Carregando...</td>
+                                    <td colspan="6" class="text-center text-muted py-3">Carregando...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1049,17 +1056,30 @@
                     setText('rdTelefone', cliente.telefone ? ('Tel: ' + cliente.telefone) : '-');
                     setText('rdCpf', cliente.cpf ? ('CPF: ' + cliente.cpf) : '-');
                     setText('rdVendaId', pedido.venda_id || '-');
-                    setText('rdDataPedido', pedido.data_pedido ? ('Data: ' + pedido.data_pedido) : '-');
+                    setText('rdDataPedido', pedido.data_pedido ? ('Data: ' + formatDateBR(pedido.data_pedido)) :
+                        '-');
                     setText('rdParcela', (parcela.numero ? String(parcela.numero) : '-') + '/' + (parcela.total ?
                         String(
                             parcela.total) : '-'));
-                    setText('rdVencimento', parcela.vencimento || '-');
+                    setText('rdVencimento', formatDateBR(parcela.vencimento) || '-');
                     setText('rdDiasAtraso', parcela.dias_atraso ? (String(parcela.dias_atraso) + ' dias atraso') : '');
                     setText('rdValor', typeof parcela.valor === 'number' ? ('R$ ' + parcela.valor.toFixed(2).replace(
                         '.',
                         ',')) : '-');
-                    setText('rdStatus', parcela.status || '-');
-                    setText('rdPagoEm', parcela.pago_em ? ('Pago em: ' + parcela.pago_em) : '');
+
+                    const statusBadges = {
+                        paga: '<span class="badge bg-success">Paga</span>',
+                        vencida: '<span class="badge bg-danger">Vencida</span>',
+                        a_vencer: '<span class="badge bg-info">A vencer</span>',
+                        pagamento_parcial: '<span class="badge bg-warning text-dark">Pagamento Parcial</span>',
+                        saldo_remanescente: '<span class="badge bg-secondary">Saldo Remanescente</span>',
+                    };
+                    const rdStatusEl = document.getElementById('rdStatus');
+                    if (rdStatusEl) {
+                        rdStatusEl.innerHTML = statusBadges[parcela.status] ||
+                            '<span class="badge bg-secondary">-</span>';
+                    }
+                    setText('rdPagoEm', parcela.pago_em ? ('Pago em: ' + formatDateBR(parcela.pago_em)) : '');
 
                     const boletoLink = document.getElementById('rdBoletoLink');
                     if (boletoLink) {
@@ -1079,6 +1099,15 @@
                 }
 
                 return false;
+            }
+
+            function formatDateBR(value, withTime = false) {
+                if (!value) return null;
+                const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+                if (!match) return value;
+                const [, y, m, d, h, min] = match;
+                const datePart = `${d}/${m}/${y}`;
+                return (withTime && h) ? `${datePart} ${h}:${min}` : datePart;
             }
 
             async function viewHistory(id) {
@@ -1120,15 +1149,16 @@
                     setText('rhTelefone', cliente.telefone ? ('Tel: ' + cliente.telefone) : '-');
                     setText('rhCpf', cliente.cpf ? ('CPF: ' + cliente.cpf) : '-');
                     setText('rhVendaId', pedido.venda_id || '-');
-                    setText('rhDataPedido', pedido.data_pedido ? ('Data: ' + pedido.data_pedido) : '-');
+                    setText('rhDataPedido', pedido.data_pedido ? ('Data: ' + formatDateBR(pedido.data_pedido)) :
+                        '-');
                     currentHistoryWaPhone = normalizeWhatsappPhone(cliente.telefone || null);
 
                     if (tbody) {
                         const rows = parcelas.map(function(p) {
                             const parcelaLabel = (p.numero ? String(p.numero) : '-') + '/' + (p.total ? String(p
                                 .total) : '-');
-                            const venc = p.vencimento || '-';
-                            const pagoEm = p.pago_em || '-';
+                            const venc = formatDateBR(p.vencimento) || '-';
+                            const pagoEm = formatDateBR(p.pago_em) || '—';
                             const valor = typeof p.valor === 'number' ? ('R$ ' + p.valor.toFixed(2).replace('.',
                                 ',')) : '-';
 
@@ -1145,21 +1175,20 @@
 
                             const boletoBtn = p.boleto_secure_url ?
                                 ('<a class="btn btn-sm btn-outline-primary" href="' + p.boleto_secure_url +
-                                    '" target="_blank"><i class="mdi mdi-file-document-outline"></i></a>') :
+                                    '" target="_blank" title="Boleto"><i class="mdi mdi-file-document-outline"></i></a>'
+                                    ) :
                                 (
-                                    '<button class="btn btn-sm btn-outline-secondary" disabled><i class="mdi mdi-file-document-outline"></i></button>'
+                                    '<button class="btn btn-sm btn-outline-secondary" disabled title="Boleto"><i class="mdi mdi-file-document-outline"></i></button>'
                                 );
 
                             const secureUrl = (p.recibo_secure_url || '').replace(/'/g, "\\'");
-                            const reciboBtn = p.status === 'paga' ?
-                                ('<div class="btn-group btn-group-sm" role="group">' +
-                                    '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="openReceivableReceipt(' +
+                            const reciboBtns = p.status === 'paga' ?
+                                ('<button type="button" class="btn btn-sm btn-outline-secondary" title="Recibo" onclick="openReceivableReceipt(' +
                                     String(p.id) + ')"><i class="mdi mdi-receipt"></i></button>' +
-                                    '<button type="button" class="btn btn-sm btn-outline-success" onclick="sendReceivableReceiptWhatsapp(\'' +
-                                    secureUrl + '\')"><i class="mdi mdi-whatsapp"></i></button>' +
-                                    '</div>') :
+                                    '<button type="button" class="btn btn-sm btn-outline-success" title="Enviar recibo via WhatsApp" onclick="sendReceivableReceiptWhatsapp(\'' +
+                                    secureUrl + '\')"><i class="mdi mdi-whatsapp"></i></button>') :
                                 (
-                                    '<button class="btn btn-sm btn-outline-secondary" disabled><i class="mdi mdi-receipt"></i></button>'
+                                    '<button class="btn btn-sm btn-outline-secondary" disabled title="Recibo"><i class="mdi mdi-receipt"></i></button>'
                                 );
 
                             return '<tr>' +
@@ -1169,13 +1198,13 @@
                                 '<td>' + pagoEm + '</td>' +
                                 '<td class="text-end">' + valor + '</td>' +
                                 '<td>' + badge + '</td>' +
-                                '<td class="text-end">' + boletoBtn + '</td>' +
-                                '<td class="text-end">' + reciboBtn + '</td>' +
+                                '<td class="text-end"><div class="btn-group btn-group-sm" role="group">' +
+                                boletoBtn + reciboBtns + '</div></td>' +
                                 '</tr>';
                         }).join('');
 
                         tbody.innerHTML = rows ||
-                            '<tr><td colspan="7" class="text-center text-muted py-3">Nenhuma parcela encontrada.</td></tr>';
+                            '<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma parcela encontrada.</td></tr>';
                     }
 
                     const modalEl = document.getElementById('receivableHistoryModal');
