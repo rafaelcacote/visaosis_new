@@ -283,22 +283,7 @@
 
 <body>
     @php
-        $logoBase64 = null;
-        if (AuthHelper::hasTenantLogo()) {
-            try {
-                $logoUrl = AuthHelper::tenantLogoUrl();
-                if ($logoUrl) {
-                    $imageData = @file_get_contents($logoUrl);
-                    if ($imageData !== false) {
-                        $finfo = new finfo(FILEINFO_MIME_TYPE);
-                        $mimeType = $finfo->buffer($imageData);
-                        $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-                    }
-                }
-            } catch (Exception $e) {
-                $logoBase64 = null;
-            }
-        }
+        $logoBase64 = AuthHelper::tenantLogoBase64();
     @endphp
 
     <header class="pdf-header">

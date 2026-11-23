@@ -5,6 +5,7 @@ namespace App\Helpers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class AuthHelper
 {
@@ -324,6 +325,133 @@ class AuthHelper
     {
         $logo = self::tenantLogo();
         return !empty($logo) && is_string($logo) && trim($logo) !== '';
+    }
+
+    /**
+     * Obtém a logo do tenant já baixada, redimensionada e codificada em
+     * base64, pronta para embutir em templates de PDF. Logos enviadas em
+     * resolução muito alta (ex. milhares de pixels) estouram o limite de
+     * memória do PHP quando o DomPDF tenta processá-las; aqui a imagem é
+     * reduzida antes disso. Retorna null se não houver logo ou em caso de
+     * falha ao baixar/processar a imagem.
+     */
+    public static function tenantLogoBase64(int $maxDimension = 200): ?string
+    {
+        static $requestCache = [];
+
+        if (! self::hasTenantLogo()) {
+            return null;
+        }
+
+        $logoUrl = self::tenantLogoUrl();
+        if (! $logoUrl) {
+            return null;
+        }
+
+        $cacheKey = $logoUrl . '|' . $maxDimension;
+        if (array_key_exists($cacheKey, $requestCache)) {
+            return $requestCache[$cacheKey];
+        }
+
+        // Baixar e redimensionar uma logo grande pode levar vários segundos
+        // (decodificação de imagem em alta resolução); evitamos repetir
+        // esse custo a cada PDF gerado guardando o resultado em cache por
+        // algumas horas, chaveado pela URL da logo.
+        $persistentCacheKey = 'tenant_logo_base64_' . md5($cacheKey);
+
+        $result = Cache::remember($persistentCacheKey, now()->addHours(12), function () use ($logoUrl, $maxDimension) {
+            // Decodificar e redimensionar uma logo em altíssima resolução
+            // pode levar mais tempo do que o limite padrão de execução do
+            // PHP em ambiente web; como isso só roda uma vez a cada ciclo
+            // de cache, estendemos o limite apenas para esta operação.
+            @set_time_limit(90);
+
+            try {
+                $context = stream_context_create([
+                    'http' => ['timeout' => 15],
+                    'https' => ['timeout' => 15],
+                ]);
+                $imageData = @file_get_contents($logoUrl, false, $context);
+
+                if ($imageData === false || $imageData === '') {
+                    return '';
+                }
+
+                return self::resizeImageForPdf($imageData, $maxDimension) ?? '';
+            } catch (\Throwable $e) {
+                return '';
+            }
+        });
+
+        // Cache não armazena null; usamos string vazia como marcador de falha.
+        return $requestCache[$cacheKey] = ($result !== '' ? $result : null);
+    }
+
+    /**
+     * Redimensiona uma imagem (em memória) para no máximo $maxDimension
+     * pixels de largura/altura, preservando transparência, e retorna a
+     * string "data:image/png;base64,...". Retorna null se o GD não estiver
+     * disponível ou a imagem não puder ser lida.
+     */
+    private static function resizeImageForPdf(string $imageData, int $maxDimension): ?string
+    {
+        if (! function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        // Usa getimagesize (leve, não decodifica a imagem inteira) para
+        // estimar quanta memória o GD vai precisar para decodificar a
+        // imagem original e calcular um limite temporário suficiente,
+        // evitando tanto o estouro de memória quanto um limite arbitrário
+        // excessivo.
+        $imageInfo = @getimagesizefromstring($imageData);
+        if ($imageInfo === false) {
+            return null;
+        }
+        [$width, $height] = $imageInfo;
+
+        $estimatedBytes = $width * $height * 4 * 3 + (10 * 1024 * 1024);
+        $requiredLimitMb = max(256, (int) ceil($estimatedBytes / (1024 * 1024)));
+        $requiredLimitMb = min($requiredLimitMb, 2048); // teto de segurança
+
+        // Imagens muito grandes exigem mais memória do que o limite padrão
+        // do PHP para serem decodificadas pelo GD; aumentamos temporariamente
+        // o limite apenas para este processamento pontual. Não revertemos
+        // para o valor anterior ao final: o PHP recusa reduzir o limite
+        // abaixo do uso de memória corrente (lança erro), e cada requisição
+        // web tem seu próprio processo/worker que é reciclado depois.
+        $requiredLimit = ini_get('memory_limit');
+        if ($requiredLimit !== '-1') {
+            ini_set('memory_limit', $requiredLimitMb . 'M');
+        }
+
+        $source = @imagecreatefromstring($imageData);
+        if ($source === false) {
+            return null;
+        }
+
+        $width = imagesx($source);
+        $height = imagesy($source);
+
+        $ratio = min(1, $maxDimension / max($width, $height, 1));
+        $newWidth = max(1, (int) round($width * $ratio));
+        $newHeight = max(1, (int) round($height * $ratio));
+
+        $destination = imagecreatetruecolor($newWidth, $newHeight);
+        imagealphablending($destination, false);
+        imagesavealpha($destination, true);
+        $transparent = imagecolorallocatealpha($destination, 0, 0, 0, 127);
+        imagefilledrectangle($destination, 0, 0, $newWidth, $newHeight, $transparent);
+        imagecopyresampled($destination, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        ob_start();
+        imagepng($destination);
+        $output = ob_get_clean();
+
+        imagedestroy($source);
+        imagedestroy($destination);
+
+        return $output ? ('data:image/png;base64,' . base64_encode($output)) : null;
     }
 
     /**

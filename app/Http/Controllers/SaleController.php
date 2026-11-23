@@ -1174,42 +1174,7 @@ class SaleController extends Controller
         // Dados do tenant (empresa)
         $tenant = AuthHelper::tenant();
         $logoUrl = AuthHelper::tenantLogoUrl();
-        $logoBase64 = null;
-
-        // Converter logo para base64 para garantir que apareça no PDF
-        if (!empty($logoUrl)) {
-            try {
-                // Tentar buscar a imagem via HTTP usando Http facade do Laravel
-                $response = \Illuminate\Support\Facades\Http::timeout(10)
-                    ->withOptions(['verify' => false])
-                    ->get($logoUrl);
-
-                if ($response->successful()) {
-                    $imageContent = $response->body();
-                    if (!empty($imageContent)) {
-                        $imageInfo = @getimagesizefromstring($imageContent);
-                        if ($imageInfo !== false) {
-                            $mimeType = $imageInfo['mime'];
-                            $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageContent);
-                        }
-                    }
-                } else {
-                    // Fallback: tentar com file_get_contents
-                    $imageContent = @file_get_contents($logoUrl);
-                    if ($imageContent !== false && !empty($imageContent)) {
-                        $imageInfo = @getimagesizefromstring($imageContent);
-                        if ($imageInfo !== false) {
-                            $mimeType = $imageInfo['mime'];
-                            $logoBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageContent);
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                \Log::warning('Erro ao converter logo para base64: ' . $e->getMessage(), [
-                    'logo_url' => $logoUrl
-                ]);
-            }
-        }
+        $logoBase64 = AuthHelper::tenantLogoBase64();
 
         $tenantData = [
             'nome' => $tenant && property_exists($tenant, 'name') ? $tenant->name : 'Empresa',
